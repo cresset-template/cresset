@@ -1,2 +1,2 @@
 # PyTorch-Template
-Template repository for PyTorch Projects.
+Template repository for PyTorch projects.
