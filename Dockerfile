@@ -116,7 +116,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
 
-# Install PyTorch because TorchVision requires installed PyTorch.
+# Install PyTorch because TorchVision and TorchText require PyTorch to be installed.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
