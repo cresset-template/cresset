@@ -77,7 +77,8 @@ RUN conda install -y \
     six \
     requests \
     pillow \
-    libpng
+    libpng \
+    pkgconfig
 
 # `magma-cuda` appears to have only one version per CUDA version.
 RUN conda install -y -c pytorch magma-cuda${MAGMA_VERSION} && \
@@ -89,6 +90,7 @@ WORKDIR /opt
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch
 RUN git clone https://github.com/pytorch/vision.git
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/text
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
 
 FROM build-install as build-torch
@@ -116,7 +118,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
 
-# Install PyTorch because TorchVision and TorchText require PyTorch to be installed.
+# Install PyTorch for PyTorch subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
@@ -147,11 +149,15 @@ RUN if [ -n ${TORCHTEXT_VERSION_TAG} ]; then git checkout ${TORCHTEXT_VERSION_TA
 RUN python setup.py bdist_wheel -d /tmp/dist
 
 
-# This stage exists to gather the outputs of all builds into one place.
-FROM build-install AS build-last
+FROM build-torch AS build-audio
 
-COPY --from=build-vision /tmp/dist /tmp/dist
-COPY --from=build-text /tmp/dist /tmp/dist
+ARG TORCHAUDIO_VERSION_TAG
+ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+WORKDIR /opt/audio
+RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then git checkout ${TORCHAUDIO_VERSION_TAG}; fi
+RUN BUILD_SOX=1 USE_CUDA=1 TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+    python setup.py bdist_wheel -d /tmp/dist
+
 
 FROM ${TRAIN_IMAGE} as train
 LABEL maintainer="joonhyung.lee@vuno.co"
@@ -185,7 +191,9 @@ RUN groupadd -g $GID $GRP && \
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
-COPY --from=build-last --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-vision --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-text --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-audio --chown=$GRP:$USR /tmp/dist /tmp/dist
 
 # Path order conveys precedence.
 ENV PATH=$PROJECT_ROOT:/opt/conda/bin:/usr/local/cuda/bin:$PATH
@@ -198,6 +206,8 @@ RUN conda install -y \
     numpy && \
     conda clean -ya
 
+# CuPy version must match that of the underlying CUDA version.
+ARG CUPY_VERSION=112
 RUN python -m pip install --no-cache-dir /tmp/dist/*.whl \
     pytorch-lightning==1.4.5 \
     pytorch-pfn-extras==0.4.2 \
@@ -211,11 +221,10 @@ RUN python -m pip install --no-cache-dir /tmp/dist/*.whl \
     hydra_colorlog==1.1.0 \
     fire==0.4.0 \
     openpyxl==3.0.7 \
-    cupy-cuda112==9.2.0 \
+    cupy-cuda${CUPY_VERSION}==9.2.0 \
     SimpleITK==2.1.0 \
     seaborn==0.11.1 \
-    albumentations==1.0.3 \
-    nibabel==3.2.1 && \
+    albumentations==1.0.3 && \
     rm -rf /tmp/dist
 
 # Edit .bashrc file for environment settings.
