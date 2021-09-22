@@ -37,7 +37,7 @@ RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
         cmake \
         curl \
         git \
-        libjpeg-dev \
+        libjpeg-turbo8-dev \
         libpng-dev && \
     rm -rf /var/lib/apt/lists/*
 
@@ -77,7 +77,6 @@ RUN conda install -y \
     six \
     requests \
     pillow \
-    libpng \
     pkgconfig
 
 # `magma-cuda` appears to have only one version per CUDA version.
@@ -199,12 +198,18 @@ COPY --from=build-audio --chown=$GRP:$USR /tmp/dist /tmp/dist
 ENV PATH=$PROJECT_ROOT:/opt/conda/bin:/usr/local/cuda/bin:$PATH
 ENV PYTHONPATH=$PROJECT_ROOT
 
+# Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
 # Numpy from conda to use MKL. Specify version later.
 RUN conda install -y \
     numpy && \
     conda clean -ya
+
+# Not using a `requirements.txt` file by design.
+# This would create external dependency and complicate the install process.
+# Also, the file would not be a true requirements file
+# because of source builds and conda installs.
 
 # CuPy version must match that of the underlying CUDA version.
 ARG CUPY_VERSION=112
