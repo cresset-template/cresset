@@ -81,13 +81,12 @@ RUN conda install -y \
 
 # `magma-cuda` appears to have only one version per CUDA version.
 RUN conda install -y -c pytorch magma-cuda${MAGMA_VERSION} && \
-    conda install -y -c conda-forge libjpeg-turbo && \
     conda clean -ya
 
 WORKDIR /opt
 # Using --jobs 0 gives a reasonable default value for parallel recursion.
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch
-RUN git clone https://github.com/pytorch/vision.git
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/vision.git
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/text
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
@@ -103,7 +102,7 @@ ARG PYTORCH_VERSION_TAG
 # The `+PTX` means that PTX should be built for that CC.
 # PyTorch will find the best CC for the host hardware even if
 # `TORCH_CUDA_ARCH_LIST` is not given explicitly
-# (default is set because of TorchVision).
+# Default is set because of TorchVision and other subsidiary libraries.
 ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 
@@ -136,7 +135,8 @@ ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 # Also not using `/opt/ccache` to preserve PyTorch cache, which takes far longer.
 WORKDIR /opt/vision
 RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then git checkout ${TORCHVISION_VERSION_TAG}; fi
-RUN TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} FORCE_CUDA=1 \
+RUN FORCE_CUDA=1 \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
 FROM build-torch AS build-text
@@ -152,9 +152,11 @@ FROM build-torch AS build-audio
 
 ARG TORCHAUDIO_VERSION_TAG
 ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+
 WORKDIR /opt/audio
 RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then git checkout ${TORCHAUDIO_VERSION_TAG}; fi
-RUN BUILD_SOX=1 USE_CUDA=1 TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+RUN BUILD_SOX=1 USE_CUDA=1 \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
 
@@ -195,13 +197,13 @@ COPY --from=build-text --chown=$GRP:$USR /tmp/dist /tmp/dist
 COPY --from=build-audio --chown=$GRP:$USR /tmp/dist /tmp/dist
 
 # Path order conveys precedence.
-ENV PATH=$PROJECT_ROOT:/opt/conda/bin:/usr/local/cuda/bin:$PATH
+ENV PATH=$PROJECT_ROOT:/opt/conda/bin:$PATH
 ENV PYTHONPATH=$PROJECT_ROOT
 
 # Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
-# Numpy from conda to use MKL. Specify version later.
+# Get numpy from conda to use MKL. Specify version later.
 RUN conda install -y \
     numpy && \
     conda clean -ya
@@ -211,7 +213,7 @@ RUN conda install -y \
 # Also, the file would not be a true requirements file
 # because of source builds and conda installs.
 
-# CuPy version must match that of the underlying CUDA version.
+# CuPy version must match the underlying CUDA version.
 ARG CUPY_VERSION=112
 RUN python -m pip install --no-cache-dir /tmp/dist/*.whl \
     pytorch-lightning==1.4.5 \
