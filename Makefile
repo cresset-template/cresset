@@ -10,14 +10,14 @@ TARGET_GPU_CC=
 all: build-install build-train
 
 build-install:
-	docker buildx build \
+	DOCKER_BUILDKIT=1 docker build \
 		--no-cache \
 		--target build-install \
 		--tag pytorch_source:build_install \
 		- < Dockerfile
 
 build-train:
-	docker buildx build \
+	DOCKER_BUILDKIT=1 docker build \
 		--cache-from=pytorch_source:build_install \
 		--target train \
 		--tag pytorch_source:train \
