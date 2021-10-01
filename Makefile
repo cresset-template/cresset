@@ -31,7 +31,7 @@ build-torch:
 
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
-		--cache-from=pytorch_source:build_install \
+		--cache-from=pytorch_source:build_torch \
 		--target train \
 		--tag pytorch_source:train \
 		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
