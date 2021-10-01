@@ -3,11 +3,11 @@
 # please use the Dockerfile directly.
 # See https://developer.nvidia.com/cuda-gpus for CCs.
 # Also assumes Unix shell for UID, GID.
-GPU_CC=
-PYTORCH_VERSION_TAG=v1.9.1
-TORCHVISION_VERSION_TAG=v0.10.1
-TORCHTEXT_VERSION_TAG=v0.10.1
-TORCHAUDIO_VERSION_TAG=v0.9.1
+GPU_CC                  =
+PYTORCH_VERSION_TAG     = v1.9.1
+TORCHVISION_VERSION_TAG = v0.10.1
+TORCHTEXT_VERSION_TAG   = v0.10.1
+TORCHAUDIO_VERSION_TAG  = v0.9.1
 
 .PHONY: all build-install build-torch build-train
 
