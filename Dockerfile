@@ -93,7 +93,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/text
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
 
-FROM build-install as build-torch
+FROM build-install AS build-torch
 
 ARG PYTORCH_VERSION_TAG
 
@@ -141,6 +141,7 @@ ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 # Setting `FORCE_CUDA=1` creates bizarre errors unless CCs are specified explicitly.
 # Fix this issue later if necessary by getting output from `torch.cuda.get_arch_list()`.
 # Also not using `/opt/ccache` to preserve PyTorch cache, which takes far longer.
+# Also note that the `FORCE_CUDA` flag may be changed to `USE_CUDA` in later versions.
 WORKDIR /opt/vision
 RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
     git checkout ${TORCHVISION_VERSION_TAG} && \
@@ -184,7 +185,7 @@ RUN BUILD_SOX=1 USE_CUDA=1 \
     python setup.py bdist_wheel -d /tmp/dist
 
 
-FROM ${TRAIN_IMAGE} as train
+FROM ${TRAIN_IMAGE} AS train
 LABEL maintainer="joonhyung.lee@vuno.co"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -229,11 +230,11 @@ RUN conda config --set pip_interop_enabled True
 
 # Get numpy from conda to use MKL. Specify version later.
 RUN conda install -y \
-    numpy && \
+        numpy && \
     conda clean -ya
 
 # Not using a `requirements.txt` file by design.
-# This would create external dependency and complicate the install process.
+# This both create external dependency and complicate the install process.
 # Also, the file would not be a true requirements file
 # because of source builds and conda installs.
 
@@ -273,4 +274,4 @@ CMD ["/bin/bash"]
 # internet access is unavailable there, install everything in
 # build-install and use it as a base image to build on-site.
 
-# FROM ${DEPLOY_IMAGE} as deploy
+# FROM ${DEPLOY_IMAGE} AS deploy
