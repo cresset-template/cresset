@@ -40,6 +40,13 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
 
+# Python won’t try to write .pyc or .pyo files on the import of source modules.
+# Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
+# Allows UTF-8 characters as outputs in Docker.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=UTF-8
+
 ARG PYTHON_VERSION=3.8
 # Conda is always the latest version but uses the specified version of Python.
 RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
@@ -186,8 +193,12 @@ RUN BUILD_SOX=1 USE_CUDA=1 \
 FROM ${TRAIN_IMAGE} AS train
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
-
+ENV PYTHONIOENCODING=UTF-8
 ARG PROJECT_ROOT=/opt/project
+
+# Set as `ARG` values to reduce the image footprint but not affect rsulting containers.
+ARG PYTHONDONTWRITEBYTECODE=1
+ARG PYTHONUNBUFFERED=1
 
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
