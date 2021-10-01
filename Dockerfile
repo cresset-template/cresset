@@ -25,25 +25,20 @@ FROM ${BUILD_IMAGE} AS build-base
 LABEL maintainer="joonhyung.lee@vuno.co"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-# tzdata is a hidden dependecy here.
-ENV TZ=Asia/Seoul
-ARG DEBIAN_FRONTEND=noninteractive
-
 RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
     apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
         ccache \
-        cmake \
         curl \
-        git \
-        libjpeg-dev \
-        libpng-dev && \
+        git && \
     rm -rf /var/lib/apt/lists/*
+
+# Conda packages have higher priority than system packages during build.
+ENV PATH=/opt/conda/bin:$PATH
 
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
-ENV PATH=/opt/conda/bin:$PATH
 
 ARG PYTHON_VERSION=3.8
 # Conda is always the latest version but uses the specified version of Python.
@@ -56,42 +51,47 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Mini
 
 
 # Install everything required for build.
-FROM build-base as build-install
+FROM build-base AS build-install
 
 # Magma version must match CUDA version of build image.
 ARG MAGMA_VERSION=112
 
 # TODO: Fix versions for these libraries.
-RUN conda install -y \
-    astunparse \
-    numpy \
-    ninja \
-    pyyaml \
-    mkl \
-    mkl-include \
-    setuptools \
-    cmake \
-    cffi \
-    typing_extensions \
-    future \
-    six \
-    requests \
-    pillow \
-    libpng
-
 # `magma-cuda` appears to have only one version per CUDA version.
-RUN conda install -y -c pytorch magma-cuda${MAGMA_VERSION} && \
-    conda install -y -c conda-forge libjpeg-turbo && \
+# Perhaps multiple conda installs are not the best solution but
+# Using multiple channels in one install would use older packages.
+RUN conda install -y \
+        astunparse \
+        numpy \
+        ninja \
+        pyyaml \
+        mkl \
+        mkl-include \
+        setuptools \
+        cmake \
+        cffi \
+        typing_extensions \
+        future \
+        six \
+        requests \
+        pillow \
+        pkgconfig && \
+    conda install -y -c pytorch \
+        magma-cuda${MAGMA_VERSION} && \
+    conda install -y -c conda-forge \
+        libpng \
+        libjpeg-turbo && \
     conda clean -ya
 
 WORKDIR /opt
 # Using --jobs 0 gives a reasonable default value for parallel recursion.
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch
-RUN git clone https://github.com/pytorch/vision.git
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/vision.git
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/text
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
 
-FROM build-install as build-torch
+FROM build-install AS build-torch
 
 ARG PYTORCH_VERSION_TAG
 
@@ -102,13 +102,19 @@ ARG PYTORCH_VERSION_TAG
 # The `+PTX` means that PTX should be built for that CC.
 # PyTorch will find the best CC for the host hardware even if
 # `TORCH_CUDA_ARCH_LIST` is not given explicitly
-# (default is set because of TorchVision).
+# Default is set because of TorchVision and other subsidiary libraries.
 ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 
-# Build PyTorch. `USE_CUDA` and `USE_CUDNN` are made explicit just in case.
+# Checkout to specific version and update submodules.
 WORKDIR /opt/pytorch
-RUN if [ -n ${PYTORCH_VERSION_TAG} ]; then git checkout ${PYTORCH_VERSION_TAG}; fi
+RUN if [ -n ${PYTORCH_VERSION_TAG} ]; then \
+    git checkout ${PYTORCH_VERSION_TAG} && \
+    git submodule sync && \
+    git submodule update --init --recursive --jobs 0; \
+    fi
+
+# Build PyTorch. `USE_CUDA` and `USE_CUDNN` are made explicit just in case.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
@@ -116,7 +122,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
 
-# Install PyTorch because TorchVision and TorchText require PyTorch to be installed.
+# Install PyTorch for PyTorch subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
@@ -133,9 +139,16 @@ ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 # Setting `FORCE_CUDA=1` creates bizarre errors unless CCs are specified explicitly.
 # Fix this issue later if necessary by getting output from `torch.cuda.get_arch_list()`.
 # Also not using `/opt/ccache` to preserve PyTorch cache, which takes far longer.
+# Note that the `FORCE_CUDA` flag may be changed to `USE_CUDA` in later versions.
 WORKDIR /opt/vision
-RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then git checkout ${TORCHVISION_VERSION_TAG}; fi
-RUN TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} FORCE_CUDA=1 \
+RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
+    git checkout ${TORCHVISION_VERSION_TAG} && \
+    git submodule sync && \
+    git submodule update --init --recursive --jobs 0; \
+    fi
+
+RUN FORCE_CUDA=1 \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
 FROM build-torch AS build-text
@@ -143,17 +156,34 @@ FROM build-torch AS build-text
 ARG TORCHTEXT_VERSION_TAG
 
 WORKDIR /opt/text
-RUN if [ -n ${TORCHTEXT_VERSION_TAG} ]; then git checkout ${TORCHTEXT_VERSION_TAG}; fi
+RUN if [ -n ${TORCHTEXT_VERSION_TAG} ]; then \
+    git checkout ${TORCHTEXT_VERSION_TAG} && \
+    git submodule sync && \
+    git submodule update --init --recursive --jobs 0; \
+    fi
+
+# TorchText does not use CUDA.
 RUN python setup.py bdist_wheel -d /tmp/dist
 
 
-# This stage exists to gather the outputs of all builds into one place.
-FROM build-install AS build-last
+FROM build-torch AS build-audio
 
-COPY --from=build-vision /tmp/dist /tmp/dist
-COPY --from=build-text /tmp/dist /tmp/dist
+ARG TORCHAUDIO_VERSION_TAG
+ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 
-FROM ${TRAIN_IMAGE} as train
+WORKDIR /opt/audio
+RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
+    git checkout ${TORCHAUDIO_VERSION_TAG} && \
+    git submodule sync && \
+    git submodule update --init --recursive --jobs 0; \
+    fi
+
+RUN BUILD_SOX=1 USE_CUDA=1 \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+    python setup.py bdist_wheel -d /tmp/dist
+
+
+FROM ${TRAIN_IMAGE} AS train
 LABEL maintainer="joonhyung.lee@vuno.co"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -163,12 +193,12 @@ ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,id=apt-train,target=/var/cache/apt \
     apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    sudo \
-    nano \
-    tmux \
-    openssh-server \
-    tzdata && \
+        git \
+        sudo \
+        nano \
+        tmux \
+        openssh-server \
+        tzdata && \
     rm -rf /var/lib/apt/lists/*
 
 ARG GID
@@ -185,37 +215,47 @@ RUN groupadd -g $GID $GRP && \
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
-COPY --from=build-last --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-vision --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-text --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=build-audio --chown=$GRP:$USR /tmp/dist /tmp/dist
 
 # Path order conveys precedence.
-ENV PATH=$PROJECT_ROOT:/opt/conda/bin:/usr/local/cuda/bin:$PATH
+ENV PATH=$PROJECT_ROOT:/opt/conda/bin:$PATH
 ENV PYTHONPATH=$PROJECT_ROOT
 
+# Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
-# Numpy from conda to use MKL. Specify version later.
+# Get numpy from conda to use MKL. Specify version later.
 RUN conda install -y \
-    numpy && \
+        numpy && \
     conda clean -ya
 
-RUN python -m pip install --no-cache-dir /tmp/dist/*.whl \
-    pytorch-lightning==1.4.5 \
-    pytorch-pfn-extras==0.4.2 \
-    h5py==3.4.0 \
-    captum==0.4.0 \
-    mlflow==1.20.2 \
-    tensorboard==2.5.0 \
-    tensorboard-plugin-wit==1.8.0 \
-    torch_tb_profiler==0.2.1 \
-    hydra-core==1.1.0 \
-    hydra_colorlog==1.1.0 \
-    fire==0.4.0 \
-    openpyxl==3.0.7 \
-    cupy-cuda112==9.2.0 \
-    SimpleITK==2.1.0 \
-    seaborn==0.11.1 \
-    albumentations==1.0.3 \
-    nibabel==3.2.1 && \
+# Not using a `requirements.txt` file by design.
+# This both create external dependency and complicate the install process.
+# Also, the file would not be a true requirements file
+# because of source builds and conda installs.
+
+# CuPy version must match the underlying CUDA version.
+ARG CUPY_VERSION=112
+RUN python -m pip install --no-cache-dir \
+        /tmp/dist/*.whl \
+        pytorch-lightning==1.4.5 \
+        pytorch-pfn-extras==0.4.2 \
+        h5py==3.4.0 \
+        captum==0.4.0 \
+        mlflow==1.20.2 \
+        tensorboard==2.5.0 \
+        tensorboard-plugin-wit==1.8.0 \
+        torch_tb_profiler==0.2.1 \
+        hydra-core==1.1.0 \
+        hydra_colorlog==1.1.0 \
+        fire==0.4.0 \
+        openpyxl==3.0.7 \
+        cupy-cuda${CUPY_VERSION}==9.4.0 \
+        SimpleITK==2.1.0 \
+        seaborn==0.11.1 \
+        albumentations==1.0.3 && \
     rm -rf /tmp/dist
 
 # Edit .bashrc file for environment settings.
@@ -232,4 +272,4 @@ CMD ["/bin/bash"]
 # internet access is unavailable there, install everything in
 # build-install and use it as a base image to build on-site.
 
-# FROM ${DEPLOY_IMAGE} as deploy
+# FROM ${DEPLOY_IMAGE} AS deploy
