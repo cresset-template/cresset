@@ -25,10 +25,6 @@ FROM ${BUILD_IMAGE} AS build-base
 LABEL maintainer="joonhyung.lee@vuno.co"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-# tzdata is a hidden dependecy here.
-ENV TZ=Asia/Seoul
-ARG DEBIAN_FRONTEND=noninteractive
-
 RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
     apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -62,6 +58,8 @@ ARG MAGMA_VERSION=112
 
 # TODO: Fix versions for these libraries.
 # `magma-cuda` appears to have only one version per CUDA version.
+# Perhaps multiple conda installs are not the best solution but
+# Using multiple channels in one install would use older packages.
 RUN conda install -y \
         astunparse \
         numpy \
@@ -141,7 +139,7 @@ ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 # Setting `FORCE_CUDA=1` creates bizarre errors unless CCs are specified explicitly.
 # Fix this issue later if necessary by getting output from `torch.cuda.get_arch_list()`.
 # Also not using `/opt/ccache` to preserve PyTorch cache, which takes far longer.
-# Also note that the `FORCE_CUDA` flag may be changed to `USE_CUDA` in later versions.
+# Note that the `FORCE_CUDA` flag may be changed to `USE_CUDA` in later versions.
 WORKDIR /opt/vision
 RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
     git checkout ${TORCHVISION_VERSION_TAG} && \
