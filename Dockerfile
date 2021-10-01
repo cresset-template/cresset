@@ -22,7 +22,7 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 
 
 FROM ${BUILD_IMAGE} AS build-base
-LABEL maintainer="joonhyung.lee@vuno.co"
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
@@ -184,7 +184,7 @@ RUN BUILD_SOX=1 USE_CUDA=1 \
 
 
 FROM ${TRAIN_IMAGE} AS train
-LABEL maintainer="joonhyung.lee@vuno.co"
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 ARG PROJECT_ROOT=/opt/project
