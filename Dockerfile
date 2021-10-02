@@ -2,6 +2,8 @@
 # The top line is used by Buildkit. DO NOT ERASE IT.
 # See the link below for documentation on Buildkit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
+# Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
+# However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
 # All `ARG` variables must be redefined for every stage.
 # `ENV` and `LABEL` variables are inherited only by child stages.
@@ -41,10 +43,10 @@ RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
 
 # Python won’t try to write .pyc or .pyo files on the import of source modules.
-# Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
-# Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONDONTWRITEBYTECODE=1
+# Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
 ENV PYTHONUNBUFFERED=1
+# Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
 
 ARG PYTHON_VERSION=3.8
@@ -63,7 +65,7 @@ FROM build-base AS build-install
 # Magma version must match CUDA version of build image.
 ARG MAGMA_VERSION=112
 
-# TODO: Fix versions for these libraries.
+# Maybe fix versions for these libraries.
 # `magma-cuda` appears to have only one version per CUDA version.
 # Perhaps multiple conda installs are not the best solution but
 # Using multiple channels in one install would use older packages.
@@ -194,12 +196,15 @@ FROM ${TRAIN_IMAGE} AS train
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
+
+# `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 
-# Set as `ARG` values to reduce the image footprint but not affect resulting containers.
+# Set as `ARG` values to reduce the image footprint but not affect resulting images.
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+# `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=cache,id=apt-train,target=/var/cache/apt \
@@ -224,7 +229,6 @@ RUN groupadd -g $GID $GRP && \
     echo "$GRP ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo $USR
 
-# Set user. Directories created afterwards will be owned by the user.
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
@@ -239,13 +243,13 @@ ENV PYTHONPATH=$PROJECT_ROOT
 # Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
-# Get numpy from conda to utilize MKL. Specify version later.
+# Get numpy from conda to utilize MKL.
 RUN conda install -y \
-        numpy && \
+        numpy==1.20.3 && \
     conda clean -ya
 
 # Not using a `requirements.txt` file by design.
-# This both create external dependency and complicate the install process.
+# This both creates an external dependency and complicates the install process.
 # Also, the file would not be a true requirements file
 # because of source builds and conda installs.
 
@@ -263,7 +267,6 @@ RUN python -m pip install --no-cache-dir \
         torch_tb_profiler==0.2.1 \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
-        fire==0.4.0 \
         openpyxl==3.0.7 \
         cupy-cuda${CUPY_VERSION}==9.4.0 \
         SimpleITK==2.1.0 \
@@ -274,8 +277,8 @@ RUN python -m pip install --no-cache-dir \
 # Edit .bashrc file for environment settings.
 RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
 
-# The `$PROJECT_ROOT` directory belongs to `$USR`
-# as it is created after `USER` has been set.
+# `$PROJECT_ROOT` belongs to `$USR` if created after `USER` has been set.
+# Not so for pre-existing directories, which will still belong to root.
 WORKDIR $PROJECT_ROOT
 
 CMD ["/bin/bash"]
