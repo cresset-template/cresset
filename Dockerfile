@@ -192,6 +192,16 @@ RUN BUILD_SOX=1 USE_CUDA=1 \
     python setup.py bdist_wheel -d /tmp/dist
 
 
+FROM build-install AS train-builds
+# Exists as a convenience layer to save all builds for training libraries.
+# Gather PyTorch and subsidiary builds neceesary for training.
+# If other source builds are included later on, gather them here as well.
+
+COPY --from=build-vision /tmp/dist /tmp/dist
+COPY --from=build-text /tmp/dist /tmp/dist
+COPY --from=build-audio /tmp/dist /tmp/dist
+
+
 FROM ${TRAIN_IMAGE} AS train
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -232,9 +242,7 @@ RUN groupadd -g $GID $GRP && \
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
-COPY --from=build-vision --chown=$GRP:$USR /tmp/dist /tmp/dist
-COPY --from=build-text --chown=$GRP:$USR /tmp/dist /tmp/dist
-COPY --from=build-audio --chown=$GRP:$USR /tmp/dist /tmp/dist
+COPY --from=train-builds --chown=$GRP:$USR /tmp/dist /tmp/dist
 
 # Path order conveys precedence.
 ENV PATH=$PROJECT_ROOT:/opt/conda/bin:$PATH
@@ -283,8 +291,8 @@ WORKDIR $PROJECT_ROOT
 
 CMD ["/bin/bash"]
 
-# NOTE: Add code for the deployment image at some future date.
-# If build must occur at the deployment environment on-site but 
+
+# If build must occur at the deployment environment on-site but
 # internet access is unavailable there, install everything in
 # build-install and use it as a base image to build on-site.
 

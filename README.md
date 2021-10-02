@@ -11,17 +11,20 @@ Compute Capability (CC) of the target GPU device.
 
 Finally, run `make all GPU_CC=TARGET_GPU_CC(s)`.
 
-Examples: (1) `make all GPU_CC="7.5"` for RTX 2080Ti, 
-(2) `make all GPU_CC="7.5; 8.6"` for both RTX 2080Ti and RTX 3090.
+Examples: (1) `make all GPU_CC="8.6"` for RTX 3090, 
+(2) `make all GPU_CC="7.5; 8.6"` for both RTX 2080Ti and RTX 3090 
+(building for many GPU CCs will increase build time).
 
 This will result in an image, `pytorch_source:train`, which can be used for training.
 
-Note that building for many GPU CCs increases build times.
+Note that CCs for devices not available during the build can be used to build the image.
+
+For example, if the image must be used on an RTX 2080Ti machine but the user only has an RTX 3090, 
+the user can set `GPU_CC="7.5"` to enable the image to operate on the RTX 2080Ti GPU.
 
 See https://pytorch.org/docs/stable/cpp_extension.html 
 for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable, 
 which is specified by `GPU_CC` in the `Makefile`.
-
 
 ## Multiple Training Images
 
@@ -29,16 +32,30 @@ To use multiple training images on the same host,
 give a different name to `TRAIN_IMAGE_NAME`, 
 which has a default value of `train`.
 
+Assuming that the PyTorch build has already been completed, use 
+`make build-train 
+TORCH_IMAGE_NAME=EXISTING_PYTORCH_IMAGE_NAME 
+TRAIN_IMAGE_NAME=YOUR_TRAINING_IMAGE_NAME`
+to create new training images without having to rebuild PyTorch.
+
 This is useful for the following use cases.
 1. Allowing different users, who have different UID/GIDs, 
 to use separate training images.
 2. Using different versions of the final training image with 
 different library installations and configurations.
 
-Example: Alice would use `make all GPU_CC="7.5" TRAIN_IMAGE_NAME=train_alice` and 
-Bob would use `make all GPU_CC="7.5" TRAIN_IMAGE_NAME=train_bob` to create a separate image.
+Example: Assume that `pytorch_source:build_torch-v1.9.1` has already been created.
+Alice would use `make build-train TORCH_IMAGE_NAME=build_torch-v1.9.1 TRAIN_IMAGE_NAME=train_alice` and 
+Bob would use `make build-train TORCH_IMAGE_NAME=build_torch-v1.9.1 TRAIN_IMAGE_NAME=train_bob` 
+to create a separate image. 
+
+This way, Alice's image would have her UID and GID while Bob's image would have his UID and GID.
 
 This procedure is necessary because training images have their users set during build.
+
+Also, different users may install different libraries in their training images.
+
+Their environment variables and other settings may also be different.
 
 
 ## Specific PyTorch Version
@@ -54,9 +71,9 @@ Visit the GitHub repositories of each library to find the appropriate tags.
 
 __*PyTorch subsidiary libraries only work with matching versions of PyTorch.*__
 
-Example: To build on an RTX 2080Ti GPU with PyTorch 1.9.1, use the following command:
+Example: To build on an RTX 3090 GPU with PyTorch 1.9.1, use the following command:
 
-`make all GPU_CC="7.5" 
+`make all GPU_CC="8.6" 
 TRAIN_IMAGE_NAME=train_torch191
 PYTORCH_VERSION_TAG=v1.9.1 
 TORCHVISION_VERSION_TAG=v0.10.1 
@@ -64,4 +81,4 @@ TORCHTEXT_VERSION_TAG=v0.10.1
 TORCHAUDIO_VERSION_TAG=v0.9.1`.
 
 The resulting image is `pytorch_source:train_torch191`, 
-which can be used for training with PyTorch 1.9.1 on GPUs with Compute Capability 7.5.
+which can be used for training with PyTorch 1.9.1 on GPUs with Compute Capability 8.6.
