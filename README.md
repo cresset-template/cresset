@@ -1,5 +1,23 @@
 # PyTorch-Template
-Template repository for PyTorch projects.
+Template repository for building PyTorch from source.
+
+PyTorch built from source is much faster (as much as x4 times on some benchmarks) 
+than PyTorch installed from `pip`/`conda` but building from source is a 
+difficult and bug-prone process.
+
+This repository provides an easy-to-use Dockerfile that can be integrated into any project. 
+
+This repository is a highly modular template to build 
+any version of PyTorch from source on any version of CUDA.
+
+The provided Dockerfile can be extended to any Ubuntu-based image.
+
+For researchers unfamiliar with Docker, 
+the generated wheel files can be extracted 
+to install PyTorch on their local environments.
+
+A Makefile is provided both as an interface for easy use and as 
+a tutorial for building images.    
 
 ## Quick Start
 

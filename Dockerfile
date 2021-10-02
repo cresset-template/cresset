@@ -5,11 +5,10 @@
 # Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
 # However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
+# Do not use `ccache` for any build other than PyTorch.
+
 # All `ARG` variables must be redefined for every stage.
 # `ENV` and `LABEL` variables are inherited only by child stages.
-
-# `ccache` can only be used for a single project with exactly the same settings.
-# Do not use `ccache` for any build other than PyTorch.
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.2.2-cudnn8-devel-ubuntu20.04.
@@ -234,6 +233,7 @@ ARG USR=user
 ARG PASSWD=ubuntu
 
 # Create user with home directory and sudo permissions.
+# Default password is `ubuntu`.
 RUN groupadd -g $GID $GRP && \
     useradd --shell /bin/bash --create-home -u $UID -g $GRP -p $(openssl passwd -1 $PASSWD) $USR && \
     echo "$GRP ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
@@ -256,10 +256,8 @@ RUN conda install -y \
         numpy==1.20.3 && \
     conda clean -ya
 
-# Not using a `requirements.txt` file by design.
-# This both creates an external dependency and complicates the install process.
-# Also, the file would not be a true requirements file
-# because of source builds and conda installs.
+# Not using a `requirements.txt` file by design as this would create an external dependency.
+# Also, the file would not be a true requirements file because of the source builds and conda installs.
 
 # CuPy version must match the underlying CUDA version.
 ARG CUPY_VERSION=112
@@ -292,8 +290,5 @@ WORKDIR $PROJECT_ROOT
 CMD ["/bin/bash"]
 
 
-# If build must occur at the deployment environment on-site but
-# internet access is unavailable there, install everything in
-# build-install and use it as a base image to build on-site.
-
+# Create a deployment image as necessary.
 # FROM ${DEPLOY_IMAGE} AS deploy
