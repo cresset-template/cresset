@@ -129,7 +129,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
 
-# Install PyTorch for PyTorch subsidiary libraries.
+# Install PyTorch for subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
@@ -196,7 +196,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ARG PROJECT_ROOT=/opt/project
 
-# Set as `ARG` values to reduce the image footprint but not affect rsulting containers.
+# Set as `ARG` values to reduce the image footprint but not affect resulting containers.
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
@@ -218,11 +218,13 @@ ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
 
+# Create user with home directory and sudo permissions.
 RUN groupadd -g $GID $GRP && \
     useradd --shell /bin/bash --create-home -u $UID -g $GRP -p $(openssl passwd -1 $PASSWD) $USR && \
     echo "$GRP ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo $USR
 
+# Set user. Directories created afterwards will be owned by the user.
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
@@ -237,7 +239,7 @@ ENV PYTHONPATH=$PROJECT_ROOT
 # Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
-# Get numpy from conda to use MKL. Specify version later.
+# Get numpy from conda to utilize MKL. Specify version later.
 RUN conda install -y \
         numpy && \
     conda clean -ya

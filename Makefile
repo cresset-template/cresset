@@ -1,9 +1,11 @@
 # Basic Makefile for starting projects.
-# For more sophisticated settings, 
-# please use the Dockerfile directly.
-# See https://developer.nvidia.com/cuda-gpus for CCs.
+# For more sophisticated settings, please use the Dockerfile directly.
+# See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
 # Also assumes Unix shell for UID, GID.
-GPU_CC                  =
+# See https://pytorch.org/docs/stable/cpp_extension.html
+# for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
+# which is specified by `GPU_CC` in the `Makefile`.
+GPU_CC                  = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 PYTORCH_VERSION_TAG     = v1.9.1
 TORCHVISION_VERSION_TAG = v0.10.1
 TORCHTEXT_VERSION_TAG   = v0.10.1
