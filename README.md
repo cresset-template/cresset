@@ -19,7 +19,11 @@ a tutorial for building custom images.
 
 ## Quick Start
 
-To build an image, first edit the Dockerfile `train` stage to include 
+This template assumes that the code is being run on a Unix distro with 
+the necessary NVIDIA Drivers and a recent version of Docker pre-installed.
+If this is not the case, install these first.
+
+To build a training image, first edit the Dockerfile `train` stage to include 
 desired packages from `apt`/`conda`/`pip`.
 
 Then, visit https://developer.nvidia.com/cuda-gpus to find the
@@ -55,7 +59,7 @@ Use [IANA](https://www.iana.org/time-zones) time zone names to specify the desir
 
 Example: `make all GPU_CC="8.6" TZ=America/Los_Angeles` to use LA time on the training image.
 
-Note: Only the training image has timezone settings. 
+NOTE: Only the training image has timezone settings. 
 The installation and build images do not use timezone information.
 
 ## Multiple Training Images
