@@ -12,11 +12,10 @@ PYTORCH_VERSION_TAG     = v1.9.1
 TORCHVISION_VERSION_TAG = v0.10.1
 TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
-TORCH_IMAGE_NAME        = build_torch-${PYTORCH_VERSION_TAG}
 
-.PHONY: all build-install build-torch build-train
+.PHONY: all build-install build-train
 
-all: build-install build-torch build-train
+all: build-install build-train
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -24,26 +23,14 @@ build-install:
 		--tag pytorch_source:build_install \
 		- < Dockerfile
 
-build-torch:
-	DOCKER_BUILDKIT=1 docker build \
-		--target train-builds \
-		--cache-from=pytorch_source:build_install \
-		--tag pytorch_source:${TORCH_IMAGE_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
-		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
-		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
-		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
-		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
-		- < Dockerfile
 
-
-# PyTorch version tags must be specified or otherwise
-# Docker will try to rebuild with the `main`/`master` branches.
+# Hopefully, different PyTorch version build images will be automatically cached as intermediate layers.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--cache-from=pytorch_source:${TORCH_IMAGE_NAME} \
+		--cache-from=pytorch_source:build_install \
 		--tag pytorch_source:${TRAIN_IMAGE_NAME} \
+		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \

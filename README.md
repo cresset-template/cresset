@@ -68,11 +68,11 @@ To use multiple training images on the same host,
 give a different name to `TRAIN_IMAGE_NAME`, 
 which has a default value of `train`.
 
-Assuming that the PyTorch build has already been completed, use 
-`make build-train 
-TORCH_IMAGE_NAME=EXISTING_PYTORCH_IMAGE_NAME 
-TRAIN_IMAGE_NAME=YOUR_TRAINING_IMAGE_NAME`
-to create new training images without having to rebuild PyTorch.
+Assuming that the PyTorch build has already been completed for 
+a specific version of PyTorch and subsidiary libraries,
+Docker will have saved those results in intermediate layers (TODO: this needs verification).
+
+New training images can thus be created without having to rebuild PyTorch.
 
 This is useful for the following use cases.
 1. Allowing different users, who have different UID/GIDs, 
@@ -80,10 +80,10 @@ to use separate training images.
 2. Using different versions of the final training image with 
 different library installations and configurations.
 
-Example: Assume that `pytorch_source:build_torch-v1.9.1` has already been created.
-Alice would use `make build-train TORCH_IMAGE_NAME=build_torch-v1.9.1 TRAIN_IMAGE_NAME=train_alice` and 
-Bob would use `make build-train TORCH_IMAGE_NAME=build_torch-v1.9.1 TRAIN_IMAGE_NAME=train_bob` 
-to create a separate image. 
+Example: Assume that PyTorch has already been built and cached.
+Alice would use `make build-train TRAIN_IMAGE_NAME=train_alice` and 
+Bob would use `make build-train TRAIN_IMAGE_NAME=train_bob` 
+to create separate images. 
 
 This way, Alice's image would have her UID and GID while Bob's image would have his UID and GID.
 

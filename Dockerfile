@@ -198,12 +198,6 @@ FROM build-install AS train-builds
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
 
-# Version tags are necessary to prevent Docker from rebuilding using the `main`/`master` branches.
-ARG PYTORCH_VERSION_TAG
-ARG TORCHVISION_VERSION_TAG
-ARG TORCHTEXT_VERSION_TAG
-ARG TORCHAUDIO_VERSION_TAG
-
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
 COPY --from=build-audio /tmp/dist /tmp/dist
@@ -220,12 +214,6 @@ ARG PROJECT_ROOT=/opt/project
 # Set as `ARG` values to reduce the image footprint but not affect resulting images.
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
-
-# Version tags are necessary to prevent Docker from rebuilding using the `main`/`master` branches.
-ARG PYTORCH_VERSION_TAG
-ARG TORCHVISION_VERSION_TAG
-ARG TORCHTEXT_VERSION_TAG
-ARG TORCHAUDIO_VERSION_TAG
 
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
