@@ -270,7 +270,6 @@ RUN python -m pip install --no-cache-dir \
         /tmp/dist/*.whl \
         pytorch-lightning==1.4.5 \
         pytorch-pfn-extras==0.4.2 \
-        h5py==3.4.0 \
         captum==0.4.0 \
         mlflow==1.20.2 \
         tensorboard==2.5.0 \
@@ -278,9 +277,7 @@ RUN python -m pip install --no-cache-dir \
         torch_tb_profiler==0.2.1 \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
-        openpyxl==3.0.7 \
         cupy-cuda${CUPY_VERSION}==9.4.0 \
-        SimpleITK==2.1.0 \
         seaborn==0.11.1 \
         albumentations==1.0.3 && \
     rm -rf /tmp/dist
