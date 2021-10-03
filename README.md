@@ -1,4 +1,4 @@
-# PyTorch-Template
+# PyTorch-Universal-Docker-Template
 Template repository to build PyTorch projects __*from source*__ on any version of PyTorch/CUDA/cuDNN.
 
 PyTorch built from source is much faster (as much as x4 times on some benchmarks) 
