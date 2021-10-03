@@ -12,10 +12,11 @@ PYTORCH_VERSION_TAG     = v1.9.1
 TORCHVISION_VERSION_TAG = v0.10.1
 TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
+TORCH_IMAGE_NAME        = build_torch-${PYTORCH_VERSION_TAG}
 
-.PHONY: all build-install build-train
+.PHONY: all build-install build-torch build-train
 
-all: build-install build-train
+all: build-install build-torch build-train
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -24,11 +25,25 @@ build-install:
 		- < Dockerfile
 
 
-# Different PyTorch version build images will be automatically cached as intermediate layers.
+build-torch:
+	DOCKER_BUILDKIT=1 docker build \
+		--target train-builds \
+		--cache-from=pytorch_source:build_install \
+		--tag pytorch_source:${TORCH_IMAGE_NAME} \
+		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
+		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
+		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
+		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
+		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
+		- < Dockerfile
+
+# ARG variables given in `build-torch` (and other previous layers) must be given again here.
+# Otherwise, Docker will rebuild `build-torch` but with the default values for ARG variables.
+# This will both waste time and cause inconsistency in the training image.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--cache-from=pytorch_source:build_install \
+		--cache-from=pytorch_source:${TORCH_IMAGE_NAME} \
 		--tag pytorch_source:${TRAIN_IMAGE_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \

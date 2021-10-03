@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.3.0-labs
-# The top line is used by Buildkit. DO NOT ERASE IT.
-# See the link below for documentation on Buildkit syntax.
+# The top line is used by BuildKit. DO NOT ERASE IT.
+# See the link below for documentation on BuildKit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
 # Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
 # However, the Dockerfile in the official PyTorch repository also uses BuildKit.
@@ -193,10 +193,13 @@ RUN BUILD_SOX=1 USE_CUDA=1 \
     python setup.py bdist_wheel -d /tmp/dist
 
 
-FROM build-install AS train-builds
+FROM ${BUILD_IMAGE} AS train-builds
 # Exists as a convenience layer to save all builds for training libraries.
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
+# Note that `ARG` variables in previous layers must be given again if this image is used as a cache.
+# Otherwise, the image will be built again, but with the default values.
+# This both wastes time and causes inconsistency.
 
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
