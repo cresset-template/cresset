@@ -7,6 +7,7 @@
 # which is specified by `GPU_CC` in the `Makefile`.
 GPU_CC                  = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 TRAIN_IMAGE_NAME        = train
+TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.9.1
 TORCHVISION_VERSION_TAG = v0.10.1
 TORCHTEXT_VERSION_TAG   = v0.10.1
@@ -42,4 +43,5 @@ build-train:
 		--tag pytorch_source:${TRAIN_IMAGE_NAME} \
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
+		--build-arg TZ=${TZ} \
 		- < Dockerfile

@@ -5,19 +5,17 @@ PyTorch built from source is much faster (as much as x4 times on some benchmarks
 than PyTorch installed from `pip`/`conda` but building from source is a 
 difficult and bug-prone process.
 
-This repository provides an easy-to-use Dockerfile that can be integrated into any project. 
-
 This repository is a highly modular template to build 
 any version of PyTorch from source on any version of CUDA.
-
-The provided Dockerfile can be extended to any Ubuntu-based image.
+It provides an easy-to-use Dockerfile which can be integrated 
+into any Ubuntu-based image or project.
 
 For researchers unfamiliar with Docker, 
 the generated wheel files can be extracted 
 to install PyTorch on their local environments.
 
 A Makefile is provided both as an interface for easy use and as 
-a tutorial for building images.    
+a tutorial for building custom images.    
 
 ## Quick Start
 
@@ -43,6 +41,22 @@ the user can set `GPU_CC="7.5"` to enable the image to operate on the RTX 2080Ti
 See https://pytorch.org/docs/stable/cpp_extension.html 
 for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable, 
 which is specified by `GPU_CC` in the `Makefile`.
+
+
+### Timezone Settings
+
+International users may find this section helpful.
+
+The `train` image has its timezone set by the `TZ` variable using the `tzdata` package.
+
+The default timezone is `Asia/Seoul` but this can be changed by specifying the `TZ` variable when calling `make`.
+
+Use [IANA](https://www.iana.org/time-zones) time zone names to specify the desired timezone.
+
+Example: `make all GPU_CC="8.6" TZ=America/Los_Angeles` to use LA time on the training image.
+
+Note: Only the training image has timezone settings. 
+The installation and build images do not use timezone information.
 
 ## Multiple Training Images
 
