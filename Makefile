@@ -24,7 +24,7 @@ build-install:
 		- < Dockerfile
 
 
-# Hopefully, different PyTorch version build images will be automatically cached as intermediate layers.
+# Different PyTorch version build images will be automatically cached as intermediate layers.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
