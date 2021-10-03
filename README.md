@@ -1,5 +1,5 @@
 # PyTorch-Template
-Template repository for building PyTorch from source.
+Template repository to build PyTorch projects __*from source*__ on any version of PyTorch/CUDA/cuDNN.
 
 PyTorch built from source is much faster (as much as x4 times on some benchmarks) 
 than PyTorch installed from `pip`/`conda` but building from source is a 
@@ -63,7 +63,7 @@ which contains all necessary packages for the build.
 
 The second image is `pytorch_source:build_torch-v1.9.1` (by default), 
 which contains the wheels for PyTorch, TorchVision, TorchText, and TorchAudio
-with settings for PyTorch 1.9.1 on Ubuntu 20 LTS with CUDA 11.2.2 and CUDNN 8.
+with settings for PyTorch 1.9.1 on Ubuntu 20 LTS with Python 3.8, CUDA 11.2.2 and cuDNN 8.
 
 The second image exists to cache the results of the build process.
 
