@@ -36,11 +36,18 @@ build-torch:
 		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
 		- < Dockerfile
 
+
+# PyTorch version tags must be specified or otherwise
+# Docker will try to rebuild with the `main`/`master` branches.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--cache-from=pytorch_source:${TORCH_IMAGE_NAME} \
 		--tag pytorch_source:${TRAIN_IMAGE_NAME} \
+		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
+		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
+		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
+		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
