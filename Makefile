@@ -6,13 +6,13 @@
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `GPU_CC` in the `Makefile`.
 GPU_CC                  = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
-TRAIN_IMAGE_NAME        = train
+TRAIN_NAME              = train
 TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.9.1
 TORCHVISION_VERSION_TAG = v0.10.1
 TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
-TORCH_IMAGE_NAME        = build_torch-${PYTORCH_VERSION_TAG}
+TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 
 .PHONY: all build-install build-torch build-train
 
@@ -29,7 +29,7 @@ build-torch:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
 		--cache-from=pytorch_source:build_install \
-		--tag pytorch_source:${TORCH_IMAGE_NAME} \
+		--tag pytorch_source:${TORCH_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
@@ -43,8 +43,8 @@ build-torch:
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--cache-from=pytorch_source:${TORCH_IMAGE_NAME} \
-		--tag pytorch_source:${TRAIN_IMAGE_NAME} \
+		--cache-from=pytorch_source:${TORCH_NAME} \
+		--tag pytorch_source:${TRAIN_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST=${GPU_CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \

@@ -197,9 +197,11 @@ FROM ${BUILD_IMAGE} AS train-builds
 # Exists as a convenience layer to save all builds for training libraries.
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
-# Note that `ARG` variables in previous layers must be given again if this image is used as a cache.
-# Otherwise, the image will be built again, but with the default values.
-# This both wastes time and causes inconsistency.
+# Note that `ARG` variables in previous layers must be given again
+# if this image is used as a build cache.
+# Otherwise, the image will be built again,
+# but with the default values of those variables.
+# This both wastes time and causes environment inconsistency.
 
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
@@ -207,6 +209,9 @@ COPY --from=build-audio /tmp/dist /tmp/dist
 
 
 FROM ${TRAIN_IMAGE} AS train
+# Customize for your use case by editing from here.
+# The `train` image is designed to be separate from the `build` image.
+# Only build artifacts are copied over.
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -221,6 +226,19 @@ ARG PYTHONUNBUFFERED=1
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
+
+# Speedups in `apt` and `pip` installs for Korean users. Change URLs for other locations.
+# http://archive.ubuntu.com/ubuntu/ is specific to nvidia/cuda CUDA Ubuntu images.
+# Check `/etc/apt/sources.list` of your base image to find your Ubuntu URL.
+# This is located here but not in the install image for 2 reasons.
+# 1. Installation images should be modular and not be affected by timezone.
+# 2. Installation is very short compared to build but a speedup is desirable if a build is already cached.
+RUN if [ $TZ = Asia/Seoul ]; then \
+    sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list && \
+    printf "[global]\nindex-url=http://mirror.kakao.com/pypi/simple\ntrusted-host=mirror.kakao.com\n" \
+    >> /etc/pip.conf; \
+    fi
+
 RUN --mount=type=cache,id=apt-train,target=/var/cache/apt \
     apt-get update && apt-get install -y --no-install-recommends \
         git \
@@ -236,7 +254,6 @@ ARG UID
 ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
-
 # Create user with home directory and sudo permissions.
 # Default password is `ubuntu`.
 RUN groupadd -g $GID $GRP && \
@@ -263,13 +280,9 @@ RUN conda install -y \
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
-
-# CuPy version must match the underlying CUDA version.
-ARG CUPY_VERSION=112
 RUN python -m pip install --no-cache-dir \
         /tmp/dist/*.whl \
         pytorch-lightning==1.4.5 \
-        pytorch-pfn-extras==0.4.2 \
         captum==0.4.0 \
         mlflow==1.20.2 \
         tensorboard==2.5.0 \
@@ -277,7 +290,6 @@ RUN python -m pip install --no-cache-dir \
         torch_tb_profiler==0.2.1 \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
-        cupy-cuda${CUPY_VERSION}==9.4.0 \
         seaborn==0.11.1 \
         albumentations==1.0.3 && \
     rm -rf /tmp/dist

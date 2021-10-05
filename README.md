@@ -96,6 +96,10 @@ Example: `make all GPU_CC="8.6" TZ=America/Los_Angeles` to use LA time on the tr
 NOTE: Only the training image has timezone settings. 
 The installation and build images do not use timezone information.
 
+In addition, the training image has `apt` and `pip` installation URLs updated for Korean users.
+
+If you wish to speed up your installs, please find URLs optimized for your location.
+
 
 ## Specific PyTorch Version
 
@@ -113,7 +117,7 @@ __*PyTorch subsidiary libraries only work with matching versions of PyTorch.*__
 Example: To build on an RTX 3090 GPU with PyTorch 1.9.1, use the following command:
 
 `make all GPU_CC="8.6" 
-TRAIN_IMAGE_NAME=train_torch191
+TRAIN_NAME=train_torch191
 PYTORCH_VERSION_TAG=v1.9.1 
 TORCHVISION_VERSION_TAG=v0.10.1 
 TORCHTEXT_VERSION_TAG=v0.10.1
@@ -126,7 +130,7 @@ which can be used for training with PyTorch 1.9.1 on GPUs with Compute Capabilit
 ## Multiple Training Images
 
 To use multiple training images on the same host, 
-give a different name to `TRAIN_IMAGE_NAME`, 
+give a different name to `TRAIN_NAME`, 
 which has a default value of `train`.
 
 New training images can be created without having to rebuild PyTorch
@@ -144,24 +148,24 @@ Alice and Bob would use the following commands to create separate images.
 Alice:
 `make build-train 
 GPU_CC="8.6"
-TORCH_IMAGE_NAME=build_torch-v1.9.1
-TRAIN_IMAGE_NAME=train_torch191
+TRAIN_NAME=train_torch191
+TORCH_NAME=build_torch-v1.9.1
 PYTORCH_VERSION_TAG=v1.9.1
 TORCHVISION_VERSION_TAG=v0.10.1
 TORCHTEXT_VERSION_TAG=v0.10.1
 TORCHAUDIO_VERSION_TAG=v0.9.1
-TRAIN_IMAGE_NAME=train_alice`
+TRAIN_NAME=train_alice`
 
 Bob:
 `make build-train 
 GPU_CC="8.6"
-TORCH_IMAGE_NAME=build_torch-v1.9.1
-TRAIN_IMAGE_NAME=train_torch191
+TRAIN_NAME=train_torch191
+TORCH_NAME=build_torch-v1.9.1
 PYTORCH_VERSION_TAG=v1.9.1
 TORCHVISION_VERSION_TAG=v0.10.1
 TORCHTEXT_VERSION_TAG=v0.10.1
 TORCHAUDIO_VERSION_TAG=v0.9.1
-TRAIN_IMAGE_NAME=train_bob` 
+TRAIN_NAME=train_bob` 
 
 
 This way, Alice's image would have her UID/GID while Bob's image would have his UID/GID.
@@ -201,7 +205,5 @@ First visit https://hub.docker.com/r/nvidia/cuda for NVIDIA CUDA images
 or specify another `BUILD_IMAGE` such as a Tensorflow Docker image.
 
 Then set the `PYTHON_VERSION` and `MAGMA_VERSION` variables appropriately.
-
-If CuPy is being used, set `CUPY_VERSION` as well.
 
 Build the necessary images with the additional options explained above.
