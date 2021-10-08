@@ -83,10 +83,8 @@ FROM build-base AS build-install
 ARG MAGMA_VERSION=112
 
 # Maybe fix versions for these libraries.
-# `magma-cuda` appears to have only one version per CUDA version.
 # Perhaps multiple conda installs are not the best solution but
 # Using multiple channels in one install would use older packages.
-# Cache conda installation.
 RUN conda install -y \
         astunparse \
         numpy \
@@ -165,7 +163,6 @@ ARG TORCH_CUDA_ARCH_LIST
 # Build TorchVision from source to satisfy PyTorch versioning requirements.
 # Setting `FORCE_CUDA=1` creates bizarre errors unless CCs are specified explicitly.
 # Fix this issue later if necessary by getting output from `torch.cuda.get_arch_list()`.
-# Also not using `/opt/ccache` to preserve PyTorch cache, which takes far longer.
 # Note that the `FORCE_CUDA` flag may be changed to `USE_CUDA` in later versions.
 WORKDIR /opt/vision
 RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
@@ -216,11 +213,6 @@ FROM ${BUILD_IMAGE} AS train-builds
 # Exists as a convenience layer to save all builds for training libraries.
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
-# Note that `ARG` variables in previous layers must be given again
-# if this image is used as a build cache due to `COPY`.
-# Otherwise, the image will be built again,
-# but with the default values of those variables.
-# This both wastes time and causes environment inconsistency.
 
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
@@ -228,7 +220,7 @@ COPY --from=build-audio /tmp/dist /tmp/dist
 
 
 FROM ${TRAIN_IMAGE} AS train
-# Customize for your use case by editing from here.
+######### *Customize for your use case by editing from here* #########
 # The `train` image is designed to be separate from the `build` image.
 # Only build artifacts are copied over.
 LABEL maintainer="veritas9872@gmail.com"
