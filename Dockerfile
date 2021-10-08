@@ -5,30 +5,34 @@
 # Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
 # However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
-# Do not use `ccache` for any build other than PyTorch.
-# `ccache` can only manage one project and
-# the PyTorch build takes the longest amount of time.
+# Do not make changes to the `build` layers unless absolutely necessary.
+# Users are free to customize the `train` and `devel` layers as they please.
 
 # All `ARG` variables must be redefined for every stage.
 # `ENV` and `LABEL` variables are inherited only by child stages.
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.2.2-cudnn8-devel-ubuntu20.04.
-# Note that only Ubuntu images will work because of `apt`.
+# Currently, only Ubuntu images are implemented.
 ARG CUDA_VERSION=11.2.2
 ARG CUDNN_VERSION=8
 ARG LINUX_DISTRO=ubuntu
 ARG DISTRO_VERSION=20.04
+ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 
-FROM ${BUILD_IMAGE} AS build-base
-LABEL maintainer="veritas9872@gmail.com"
-ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+FROM ${BUILD_IMAGE} AS build-base-ubuntu
 
-RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
+# Change default settings to allow `apt` cache in Docker image.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    > /etc/apt/apt.conf.d/keep-cache
+
+RUN --mount=type=cache,id=apt-cache-build,target=/var/cache/apt \
+    --mount=type=cache,id=apt-lib-build,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
@@ -37,11 +41,23 @@ RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
         git && \
     rm -rf /var/lib/apt/lists/*
 
+# FROM ${BUILD_IMAGE} AS build-base-centos
+# FROM ${BUILD_IMAGE} AS build-base-ubi
+# To build images based on CentOS or UBI,
+# simply implement the install for the
+# libraries installed by `apt` in the Ubuntu example.
+
+
+FROM build-base-${LINUX_DISTRO} AS build-base
+
+LABEL maintainer="veritas9872@gmail.com"
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:$PATH
 
 RUN /usr/sbin/update-ccache-symlinks
-RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
+RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
 # Python won’t try to write .pyc or .pyo files on the import of source modules.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -70,6 +86,7 @@ ARG MAGMA_VERSION=112
 # `magma-cuda` appears to have only one version per CUDA version.
 # Perhaps multiple conda installs are not the best solution but
 # Using multiple channels in one install would use older packages.
+# Cache conda installation.
 RUN conda install -y \
         astunparse \
         numpy \
@@ -144,7 +161,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM build-torch AS build-vision
 
 ARG TORCHVISION_VERSION_TAG
-ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+ARG TORCH_CUDA_ARCH_LIST
 # Build TorchVision from source to satisfy PyTorch versioning requirements.
 # Setting `FORCE_CUDA=1` creates bizarre errors unless CCs are specified explicitly.
 # Fix this issue later if necessary by getting output from `torch.cuda.get_arch_list()`.
@@ -157,8 +174,8 @@ RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
     git submodule update --init --recursive --jobs 0; \
     fi
 
-RUN FORCE_CUDA=1 \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+RUN --mount=type=cache,target=/opt/ccache \
+    FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
 FROM build-torch AS build-text
@@ -173,13 +190,14 @@ RUN if [ -n ${TORCHTEXT_VERSION_TAG} ]; then \
     fi
 
 # TorchText does not use CUDA.
-RUN python setup.py bdist_wheel -d /tmp/dist
+RUN --mount=type=cache,target=/opt/ccache \
+    python setup.py bdist_wheel -d /tmp/dist
 
 
 FROM build-torch AS build-audio
 
 ARG TORCHAUDIO_VERSION_TAG
-ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+ARG TORCH_CUDA_ARCH_LIST
 
 WORKDIR /opt/audio
 RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
@@ -188,7 +206,8 @@ RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
     git submodule update --init --recursive --jobs 0; \
     fi
 
-RUN BUILD_SOX=1 USE_CUDA=1 \
+RUN --mount=type=cache,target=/opt/ccache \
+    BUILD_SOX=1 USE_CUDA=1 \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -198,7 +217,7 @@ FROM ${BUILD_IMAGE} AS train-builds
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
 # Note that `ARG` variables in previous layers must be given again
-# if this image is used as a build cache.
+# if this image is used as a build cache due to `COPY`.
 # Otherwise, the image will be built again,
 # but with the default values of those variables.
 # This both wastes time and causes environment inconsistency.
@@ -216,12 +235,14 @@ LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
-# `PROJECT_ROOT` is where the project code will reside.
-ARG PROJECT_ROOT=/opt/project
-
 # Set as `ARG` values to reduce the image footprint but not affect resulting images.
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
+
+# Change default settings to allow `apt` cache in Docker image.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    > /etc/apt/apt.conf.d/keep-cache
 
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
@@ -239,7 +260,8 @@ RUN if [ $TZ = Asia/Seoul ]; then \
     >> /etc/pip.conf; \
     fi
 
-RUN --mount=type=cache,id=apt-train,target=/var/cache/apt \
+RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
+    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
         git \
         sudo \
@@ -264,23 +286,38 @@ RUN groupadd -g $GID $GRP && \
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
-COPY --from=train-builds --chown=$GRP:$USR /tmp/dist /tmp/dist
+#COPY --from=train-builds --chown=$GRP:$USR /tmp/dist /tmp/dist
+
+# `PROJECT_ROOT` is where the project code will reside.
+ARG PROJECT_ROOT=/opt/project
+
+# `$PROJECT_ROOT` belongs to `$USR` if created after `USER` has been set.
+# Not so for pre-existing directories, which will still belong to root.
+WORKDIR $PROJECT_ROOT
 
 # Path order conveys precedence.
 ENV PATH=$PROJECT_ROOT:/opt/conda/bin:$PATH
 ENV PYTHONPATH=$PROJECT_ROOT
 
+# Edit .bashrc file for environment settings.
+RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
+
 # Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
 # Get numpy from conda to utilize MKL.
-RUN conda install -y \
-        numpy==1.20.3 && \
-    conda clean -ya
+# Preserving conda cache by design.
+RUN --mount=type=cache,id=conda-train,target=/opt/conda/pkgs \
+    conda install -y \
+        numpy==1.20.3
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
-RUN python -m pip install --no-cache-dir \
+# Preserving pip cache by not using `--no-cache-dir` in pip.
+# TODO: Replacing `COPY` command with `bind` but unsure of side effects.
+RUN --mount=type=cache,target=$HOME/.cache/pip \
+    --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
+    python -m pip install \
         /tmp/dist/*.whl \
         pytorch-lightning==1.4.5 \
         captum==0.4.0 \
@@ -291,15 +328,7 @@ RUN python -m pip install --no-cache-dir \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
         seaborn==0.11.1 \
-        albumentations==1.0.3 && \
-    rm -rf /tmp/dist
-
-# Edit .bashrc file for environment settings.
-RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
-
-# `$PROJECT_ROOT` belongs to `$USR` if created after `USER` has been set.
-# Not so for pre-existing directories, which will still belong to root.
-WORKDIR $PROJECT_ROOT
+        albumentations==1.0.3
 
 CMD ["/bin/bash"]
 
