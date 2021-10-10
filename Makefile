@@ -1,7 +1,7 @@
 # Basic Makefile for starting projects.
 # For more sophisticated settings, please use the Dockerfile directly.
 # See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
-# Also assumes Unix shell for UID, GID.
+# Also assumes Linux shell for UID, GID.
 # See https://pytorch.org/docs/stable/cpp_extension.html
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `CC` in the `Makefile`.
@@ -14,9 +14,10 @@ TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 
-.PHONY: all build-install build-torch build-train build-torch-full
+.PHONY: all build-install build-torch build-train build-torch-full all-full
 
 all: build-install build-torch build-train
+all-full: build-torch-full build-train-full
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \

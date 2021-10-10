@@ -45,7 +45,7 @@ RUN --mount=type=cache,id=apt-cache-build,target=/var/cache/apt \
 # FROM ${BUILD_IMAGE} AS build-base-ubi
 # To build images based on CentOS or UBI,
 # simply implement the install for the
-# libraries installed by `apt` in the Ubuntu example.
+# libraries installed by `apt` in the Ubuntu layer.
 
 
 FROM build-base-${LINUX_DISTRO} AS build-base
@@ -244,8 +244,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Speedups in `apt` and `pip` installs for Korean users. Change URLs for other locations.
 # http://archive.ubuntu.com/ubuntu/ is specific to nvidia/cuda CUDA Ubuntu images.
 # Check `/etc/apt/sources.list` of your base image to find your Ubuntu URL.
-# This is located here but not in the install image for 2 reasons.
-# 1. Installation images should be modular and not be affected by timezone.
+# Download optimization is located here but not in the install image for 2 reasons.
+# 1. Installation images should be modular and should not be affected by the timezone.
 # 2. Installation is very short compared to build but a speedup is desirable if a build is already cached.
 RUN if [ $TZ = Asia/Seoul ]; then \
     sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list && \

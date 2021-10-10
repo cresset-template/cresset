@@ -8,25 +8,29 @@ difficult and bug-prone process.
 This repository is a highly modular template to build 
 any version of PyTorch from source on any version of CUDA.
 It provides an easy-to-use Dockerfile which can be integrated 
-into any Ubuntu-based image or project.
+into any Linux-based image or project.
 
 For researchers unfamiliar with Docker, 
 the generated wheel files can be extracted 
 to install PyTorch on their local environments.
 
+Windows users may also use this project via WSL. See instructions below.
+
 A `Makefile` is provided both as an interface for easy use and as 
 a tutorial for building custom images.    
 
 ## Quick Start
-This template assumes that the code is being run on a Linux host with 
+__*Users are free to customize the `train` stage of the `Dockerfile` as they please. 
+However, do not change the `build` stages unless absolutely necessary.*__
+
+This project is a template, and users are expected to customize it to fit their needs.
+
+This project assumes that the code is being run on a Linux host with 
 the necessary NVIDIA Drivers and a recent version of Docker pre-installed.
 If this is not the case, install these first.
 
 To build a training image, first edit the Dockerfile `train` stage to include 
-desired packages from `apt`/`conda`/`pip`.
-
-Users are free to customize the `train` stage of the `Dockerfile` to their needs. 
-However, do not change the `build` stages unless absolutely necessary.  
+desired packages from `apt`/`conda`/`pip`. 
 
 Then, visit https://developer.nvidia.com/cuda-gpus to find the
 Compute Capability (CC) of the target GPU device.
@@ -168,15 +172,29 @@ Also, different users may install different libraries in their training images.
 Their environment variables and other settings may also be different.
 
 ### Word of Caution
-The `BUILDKIT_INLINE_CACHE` must be given to an image to use it as a cache later. See 
+When using build images such as `pytorch_source:build_torch-v1.9.1` as a build cache 
+for creating new training images, the user must re-specify all build arguments 
+(variables specified by ARG and ENV using --build-arg) of all previous layers.
+
+Otherwise, the default values for these arguments will be given to the Dockerfile
+and a cache miss will occur because of the different input values.
+
+This will both waste time rebuilding previous layers and, more importantly,
+cause inconsistency in the training images due to environment mismatch.
+
+The `BUILDKIT_INLINE_CACHE` must also be given to an image to use it as a cache later. See 
 https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources
 for more information.
 
-Not doing so will both waste time rebuilding previous layers
-and cause inconsistency in the training images due to environment mismatch.
-
 ## Advanced Usage
-The `Makefile` provides the `build-torch-full` command for advanced usage.
+The `Makefile` provides the `*-full` commands for advanced usage.
+
+`make all-full CC=YOUR_GPU_CC TRAIN_NAME=train_cu102` will create 
+`pytorch_source:build_torch-v1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9` 
+and `pytorch_source:train_cu102` by default.
+
+These images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
+
 
 ### Specific CUDA Version
 Set `CUDA_VERSION`, `CUDNN_VERSION`, and `MAGMA_VERSION` to change CUDA versions.
@@ -185,15 +203,20 @@ Set `CUDA_VERSION`, `CUDNN_VERSION`, and `MAGMA_VERSION` to change CUDA versions
 This will create a build image that can be used as a cache 
 to create training images with the `build-train` command.
 
+Also, the extensive use of caching in the project means that 
+the second build is much faster than the first build.
+This may be advantageous if many images must be created for multiple PyTorch/CUDA versions.
+
 ### Specific Linux Distro
 CentOS and UBI images can be created with only minor edits to the `Dockerfile`.
 Read the `Dockerfile` for full instructions.
 
-Set `LINUX_DISTRO` and `DISTRO_VERSION` afterwards.
+Set `LINUX_DISTRO` and `DISTRO_VERSION` arguments afterwards.
 
 ### Windows
 Windows users may use template by updating to Windows 11 and installing 
 Windows Subsystem for Linux (WSL).
 WSL on Windows 11 gives a similar experience to using native Linux.
 
-This project has been tested on WSL on Windows 11 and has been found to function.
+This project has been tested on WSL on Windows 11 
+with the WSL CUDA driver and Docker Desktop for Windows.
