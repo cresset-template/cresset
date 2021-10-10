@@ -25,7 +25,6 @@ build-install:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		- < Dockerfile
 
-
 build-torch:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
@@ -39,26 +38,15 @@ build-torch:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		- < Dockerfile
 
-
-# TODO: Check if the `--build-arg BUILDKIT_INLINE_CACHE=1` really does allow using images as caches.
-# ARG variables given in `build-torch` (and other previous layers) must be given again here.
-# Otherwise, Docker will rebuild `build-torch` but with the default values for ARG variables.
-# This will both waste time and cause inconsistency in the training image.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--cache-from=pytorch_source:${TORCH_NAME} \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
-		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
-		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
-		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
-		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
 		- < Dockerfile
-
 
 # Build CUDA 10 image as an example.
 LINUX_DISTRO   = ubuntu

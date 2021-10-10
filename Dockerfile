@@ -67,8 +67,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=UTF-8
 
 ARG PYTHON_VERSION=3.8
-# Conda is always the latest version but uses the specified version of Python.
-RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+# Conda always uses the specified version of Python, regardless of Miniconda version.
+ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh
+RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
@@ -85,7 +86,8 @@ ARG MAGMA_VERSION=112
 # Maybe fix versions for these libraries.
 # Perhaps multiple conda installs are not the best solution but
 # Using multiple channels in one install would use older packages.
-RUN conda install -y \
+RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
+    conda install -y \
         astunparse \
         numpy \
         ninja \
@@ -105,8 +107,7 @@ RUN conda install -y \
         magma-cuda${MAGMA_VERSION} && \
     conda install -y -c conda-forge \
         libpng \
-        libjpeg-turbo && \
-    conda clean -ya
+        libjpeg-turbo
 
 WORKDIR /opt
 # Using --jobs 0 gives a reasonable default value for parallel recursion.
@@ -278,7 +279,6 @@ RUN groupadd -g $GID $GRP && \
 USER $USR
 
 COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
-#COPY --from=train-builds --chown=$GRP:$USR /tmp/dist /tmp/dist
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -294,20 +294,18 @@ ENV PYTHONPATH=$PROJECT_ROOT
 # Edit .bashrc file for environment settings.
 RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
 
-# Enable interoperability between conda and pip.
 RUN conda config --set pip_interop_enabled True
 
 # Get numpy from conda to utilize MKL.
 # Preserving conda cache by design.
-RUN --mount=type=cache,id=conda-train,target=/opt/conda/pkgs \
-    conda install -y \
-        numpy==1.20.3
+RUN conda install -y \
+        numpy==1.20.3 && \
+    conda clean -ya
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
 # Preserving pip cache by not using `--no-cache-dir` in pip.
-# TODO: Replacing `COPY` command with `bind` but unsure of side effects.
-RUN --mount=type=cache,target=$HOME/.cache/pip \
+RUN --mount=type=cache,target=${HOME}/.cache/pip \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
         /tmp/dist/*.whl \
