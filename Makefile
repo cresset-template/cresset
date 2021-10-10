@@ -38,11 +38,22 @@ build-torch:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		- < Dockerfile
 
+# Docker build arguments from all previous stages
+# must be specified again or otherwise the default values of
+# those arguments will be used as the inputs for the Dockerfile.
+# This will cause a cache miss, leading to recompilation with the default arguments.
+# This both wastes time and, more importantly, causes environment mismatch.
 build-train:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--cache-from=pytorch_source:${TORCH_NAME} \
 		--tag pytorch_source:${TRAIN_NAME} \
+		--tag pytorch_source:${TORCH_NAME} \
+		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
+		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
+		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
+		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
@@ -72,4 +83,24 @@ build-torch-full:
 		--build-arg MAGMA_VERSION=${MAGMA_VERSION} \
 		--build-arg PYTHON_VERSION=${PYTHON_VERSION} \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
+		- < Dockerfile
+
+build-train-full:
+	DOCKER_BUILDKIT=1 docker build \
+		--target train \
+		--cache-from=pytorch_source:build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION} \
+		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
+		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
+		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
+		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
+		--build-arg LINUX_DISTRO=${LINUX_DISTRO} \
+		--build-arg DISTRO_VERSION=${DISTRO_VERSION} \
+		--build-arg CUDA_VERSION=${CUDA_VERSION} \
+		--build-arg CUDNN_VERSION=${CUDNN_VERSION} \
+		--build-arg MAGMA_VERSION=${MAGMA_VERSION} \
+		--build-arg PYTHON_VERSION=${PYTHON_VERSION} \
+		--build-arg GID="$(shell id -g)" \
+		--build-arg UID="$(shell id -u)" \
+		--build-arg TZ=${TZ} \
 		- < Dockerfile
