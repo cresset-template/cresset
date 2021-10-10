@@ -305,7 +305,7 @@ RUN conda install -y \
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
 # Preserving pip cache by not using `--no-cache-dir` in pip.
-RUN --mount=type=cache,target=${HOME}/.cache/pip \
+RUN --mount=type=cache,target=/home/${USR}/.cache/pip \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
         /tmp/dist/*.whl \
