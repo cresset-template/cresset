@@ -111,9 +111,9 @@ RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
 
 WORKDIR /opt
 # Using --jobs 0 gives a reasonable default value for parallel recursion.
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/vision.git
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/text
+RUN git clone --recursive --jobs 0 https://github.com/pytorch/text.git
 RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
 
