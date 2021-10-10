@@ -297,7 +297,6 @@ RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
 RUN conda config --set pip_interop_enabled True
 
 # Get numpy from conda to utilize MKL.
-# Preserving conda cache by design.
 RUN conda install -y \
         numpy==1.20.3 && \
     conda clean -ya
