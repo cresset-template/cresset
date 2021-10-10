@@ -88,6 +88,7 @@ build-torch-full:
 build-train-full:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
+		--tag pytorch_source:${TRAIN_NAME} \
 		--cache-from=pytorch_source:build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION} \
 		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
