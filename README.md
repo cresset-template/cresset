@@ -25,7 +25,7 @@ However, do not change the `build` stages unless absolutely necessary.*__
 
 This project is a template, and users are expected to customize it to fit their needs.
 
-This project assumes that the code is being run on a Linux host with 
+The code is assumed to be running on a Linux host with 
 the necessary NVIDIA Drivers and a recent version of Docker pre-installed.
 If this is not the case, install these first.
 
