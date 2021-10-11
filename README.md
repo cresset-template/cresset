@@ -194,7 +194,9 @@ The `Makefile` provides the `*-full` commands for advanced usage.
 `pytorch_source:build_torch-v1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9` 
 and `pytorch_source:train_cu102` by default.
 
-These images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
+The example images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
+
+Also, *-clean commands are provided to check for reliance on caches from previous builds.
 
 
 ### Specific CUDA Version

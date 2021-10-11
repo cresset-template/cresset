@@ -14,7 +14,7 @@ TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 
-.PHONY: all build-install build-torch build-train build-torch-full all-full
+.PHONY: all build-install build-torch build-train build-torch-full all-full build-train-clean build-train-full-clean
 
 all: build-install build-torch build-train
 all-full: build-torch-full build-train-full
@@ -59,7 +59,7 @@ build-train:
 		--build-arg TZ=${TZ} \
 		- < Dockerfile
 
-# Build CUDA 10 image as an example.
+# Build CUDA 10 image by default.
 LINUX_DISTRO    = ubuntu
 DISTRO_VERSION  = 18.04
 CUDA_VERSION    = 10.2
@@ -107,9 +107,8 @@ build-train-full:
 		--build-arg TZ=${TZ} \
 		- < Dockerfile
 
-
 # The following builds are "clean" builds, i.e., builds without using the cache.
-# Their main purpose is for testing whether the commands work properly without cached runs.
+# Their main purpose is to test whether the commands work properly without cached runs.
 build-train-clean:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
@@ -128,8 +127,8 @@ build-train-clean:
 build-train-full-clean:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--tag pytorch_source:${TRAIN_NAME} \
 		--no-cache \
+		--tag pytorch_source:${TRAIN_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
