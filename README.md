@@ -1,5 +1,46 @@
-# A Universal PyTorch Source-Build Docker Template
-Template repository to build PyTorch __*from source*__ on any version of PyTorch/CUDA/cuDNN.
+# The Universal PyTorch Source-Build Docker Template
+
+## Preamble
+As of the time of writing, tremendous academic effort has gone into the design and implementation of 
+efficient neural networks to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
+Yet, in practice, most researchers are unaware of even the most basic acceleration techniques.
+
+Especially in academia, many do not even use Automatic Mixed Precision (AMP), 
+even though it can reduce memory requirements to 1/4 and increase speeds by x4~5.
+This is the case even though AMP can be enabled without much hassle using the 
+PyTorch Lightning or HuggingFace Accelerate libraries.
+
+Even novices who have only just dipped their toes into the murky waters of deep learning 
+know that more compute is a key ingredient for success.
+No matter how brilliant the researcher, 
+outperforming a rival with x10 more compute is no mean feat.
+
+This template was created with the aim of enabling researchers and engineers without much knowledge of 
+GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GPUs 
+__*using the same hardware and neural networks*.__ 
+
+If you are among those who could previously only wish for greater resources, this project may be of great utility.
+Using a source build of PyTorch with the latest version of CUDA, when combined with AMP, 
+can be expected to improve training times by x10. 
+
+I sincerely hope that my project will be of service to researchers and engineers in both academia and industry.
+Users who find my work beneficial are more than welcome to show their appreciation by starring this repository.
+
+
+## Warning
+__*Before using this template, first check whether you are actually using your GPU*__
+
+In most scenarios, slow training is caused by an inefficient ETL (Extract, Transform, Load) pipeline.
+Training is slow because the data is not getting to the GPU(s) fast enough, not because the GPU has slow compute.
+First run `watch nvidia-smi` to check whether GPU utilization is high enough.
+If GPU utilization is low or peaks sporadically, design an efficient ETL pipeline before using this template.
+Otherwise, faster compute will not help very much as it will not be the bottleneck.
+
+See https://www.tensorflow.org/guide/data_performance for a guide on designing an efficient ETL pipeline.
+
+
+## Introduction
+Template repository to build PyTorch __*from source*__ on __*any*__ version of PyTorch/CUDA/cuDNN.
 
 PyTorch built from source is much faster (as much as x4 times on some benchmarks) 
 than PyTorch installed from `pip`/`conda` but building from source is a 
@@ -17,9 +58,22 @@ to install PyTorch on their local environments.
 Windows users may also use this project via WSL. See instructions below.
 
 A `Makefile` is provided both as an interface for easy use and as 
-a tutorial for building custom images.    
+a tutorial for building custom images.
 
-## Quick Start
+The speed gains from this template come from the following:
+1. Using the latest version of CUDA and associated libraries (cuDNN, etc.).
+2. Using a source build made especially for the target machine with the latest software customizations
+instead of a build that must be compatible with different hardware and software environments.
+3. Using the latest version of PyTorch and subsidiary libraries. 
+Many users do not update their PyTorch
+version because of compatibility issues with their environment.
+
+Combined with techniques such as AMP and cuDNN benchmarking, 
+it may be possible to increase the computational throughput
+dramatically (e.g., x10) while using the same hardware.
+
+
+## Quickstart
 __*Users are free to customize the `train` stage of the `Dockerfile` as they please. 
 However, do not change the `build` stages unless absolutely necessary.*__
 
@@ -38,7 +92,8 @@ Compute Capability (CC) of the target GPU device.
 Finally, run `make all CC=TARGET_CC(s)`.
 
 Examples: (1) `make all CC="8.6"` for RTX 3090, 
-(2) `make all CC="7.5; 8.6"` for both RTX 2080Ti and RTX 3090 
+(2) `make all CC="7.5;8.6"` (no whitespace between CCs) 
+for both RTX 2080Ti and RTX 3090 
 (building for many GPU CCs will increase build time).
 
 This will result in an image, `pytorch_source:train`, which can be used for training.
@@ -62,14 +117,14 @@ improving both training and inference speeds dramatically,
 for any desired environment (`conda`, `pip`, etc.).
 
 ### Makefile Explanation
-The Makefile is designed to make using this package simple and modular.
+The `Makefile` is designed to make using this package simple and modular.
 
 The first image to be created is `pytorch_source:build_install`, 
-which contains all necessary packages for the build.
+which contains all packages necessary for the build.
 
 The second image is `pytorch_source:build_torch-v1.9.1` (by default), 
 which contains the wheels for PyTorch, TorchVision, TorchText, and TorchAudio
-with settings for PyTorch 1.9.1 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.2.2 and cuDNN 8.
+with settings for PyTorch 1.9.1 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.3.1 and cuDNN 8.
 
 The second image exists to cache the results of the build process.
 
@@ -77,7 +132,7 @@ If you do not wish to use Docker and would like to only extract
 the `.whl` wheel files for a pip install on your environment,
 the generated wheel files can be found in the `/tmp/dist` directory.
 
-Saving the build results also allows more convenient version switching in case
+Saving the build results also allows for more convenient version switching in case
 different PyTorch versions (different CUDA version, different library version, etc.) are needed.
 
 The final image is `pytorch_source:train`, which is the image to be used for actual training.
@@ -96,7 +151,7 @@ International users may find this section helpful.
 
 The `train` image has its timezone set by the `TZ` variable using the `tzdata` package.
 The default timezone is `Asia/Seoul` but this can be changed by specifying the `TZ` variable when calling `make`.
-Use [IANA](https://www.iana.org/time-zones) time zone names to specify the desired timezone.
+Use [IANA](https://www.iana.org/time-zones) timezone names to specify the desired timezone.
 
 Example: `make all CC="8.6" TZ=America/Los_Angeles` to use LA time on the training image.
 
@@ -194,9 +249,9 @@ The `Makefile` provides the `*-full` commands for advanced usage.
 `pytorch_source:build_torch-v1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9` 
 and `pytorch_source:train_cu102` by default.
 
-The example images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
+These images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
 
-Also, *-clean commands are provided to check for reliance on caches from previous builds.
+Also, the `*-clean` commands are provided to check for cache reliance on previous builds.
 
 
 ### Specific CUDA Version
@@ -223,3 +278,20 @@ WSL on Windows 11 gives a similar experience to using native Linux.
 
 This project has been tested on WSL on Windows 11 
 with the WSL CUDA driver and Docker Desktop for Windows.
+
+
+## Known Issues & TODOs
+1. Entering a container by `ssh` will remove all variables set by `ENV`. 
+This is because `sshd` starts a new environment, wiping out all previous variables.
+Using `docker`/`docker-compose` to start containers is strongly recommended.
+Use `ssh` only for network connections with containers 
+(e.g., allowing the user to view Tensorboard or Jupyter on their local system).
+
+2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
+has not been released on the `pytorch` anaconda channel yet.
+Users may attempt building with older versions of `magma-cuda` or try the version available on `conda-forge`.
+A source build of `magma` would be welcomed as a pull request.
+
+3. CentOS and UBI images have not been implemented yet.
+As they require only simple modifications, 
+pull requests implementing them would be very much welcome.

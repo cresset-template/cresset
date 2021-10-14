@@ -1,0 +1,28 @@
+services:
+  ssh:
+    image: pytorch_source:${TRAIN_NAME:-train}
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - pytorch_source:build_install
+        - pytorch_source:${TORCH_NAME:-'build_torch-v.1.9.1'}
+      args:
+        TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
+        GID: ${GID:-1000}  # Must be specified manually
+        UID: ${UID:-1000}  # Must be specified manually
+    volumes:
+      - $PWD:${PROJECT_ROOT:-/opt/project}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    ports:
+      - "${PORT:-8080}:22"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ '0' ]
+              capabilities: [ gpu ]
