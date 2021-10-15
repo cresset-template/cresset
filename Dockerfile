@@ -81,6 +81,8 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
 
 
 # Install everything required for build.
+# This layer may also be used as the base for a
+# separate docker image if cache misses are too much of a problem.
 FROM build-base AS build-install
 
 # Magma version must match CUDA version of build image.
@@ -214,10 +216,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 
 FROM ${BUILD_IMAGE} AS train-builds
-# Exists as a convenience layer to save all builds for training libraries.
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
+# Possibly separate this layer out as a base image in a separate Dockerfile.
+# That may be more convenient than restating build argument values every time.
+# The train layer must not have any dependencies other than this layer.
 
+COPY --from=build-install /opt/conda /opt/conda
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
 COPY --from=build-audio /tmp/dist /tmp/dist
@@ -281,7 +286,9 @@ RUN groupadd -g ${GID} ${GRP} && \
 
 USER ${USR}
 
-COPY --from=build-base --chown=${USR}:${GRP} /opt/conda /opt/conda
+# Enable colors on bash terminal. This is a personal preference.
+RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
+COPY --from=train-builds --chown=${USR}:${GRP} /opt/conda /opt/conda
 
 # Paths created by `--mount` are owned by root unless created beforehand.
 ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
@@ -310,7 +317,7 @@ RUN conda install -y \
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
-# Preserving pip cache by not using `--no-cache-dir` in pip.
+# Preserving pip cache by not using `--no-cache-dir`.
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
@@ -326,7 +333,6 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
         openpyxl==3.0.9 \
         scikit-learn==1.0 \
         wandb==0.12.4
-
 
 CMD ["/bin/bash"]
 

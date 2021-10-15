@@ -1,31 +1,37 @@
+# Requires the latest version of Docker Compose.
+# Docker Compose V2 is recommended.
+# `docker-compose.yaml` files cannot use shell outputs as their inputs.
+# An `.env` file may be used to specify variables instead.
+
 services:
-  train:
-    image: pytorch_source:${TRAIN_NAME:-train}
-    init: true
-    ipc: host  # Known security vulnerability.
-    stdin_open: true
-    tty: true
-    volumes:
+  train:  # Service name
+    image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
+    init: true  # Equivalent to `--init` flag in `docker run`.
+    ipc: host  # Known security vulnerability. Equivalent to `--ipc=host` in `docker run`.
+    stdin_open: true  # equivalent to `-i` flag in `docker run`.
+    tty: true  # Equivalent to `-t` flag in `docker run`.
+    volumes:  # Add volumes as necessary.
       - $PWD:${PROJECT_ROOT:-/opt/project}
-    build:
-      context: .
+    build:  # Options for building. Used when `--build` is called in `docker compose`.
+      context: .  # Not quite the same as the `make` command outputs, which have no context.
       dockerfile: Dockerfile
-      cache_from:
-        - pytorch_source:build_install
+      cache_from:  # Create the cache images beforehand with the Makefile.
+        - pytorch_source:${INSTALL_NAME:-build_install}
         - pytorch_source:${TORCH_NAME:-'build_torch-v.1.9.1'}
-      args:
+      args:  # Equivalent to `--build-arg`.
         TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
         GID: ${GID:-1000}  # Must be specified manually
         UID: ${UID:-1000}  # Must be specified manually
     working_dir: ${PROJECT_ROOT:-/opt/project}
-    ports:  # Only necessary for Tensorboard/Jupyter when VSCode is not used.
-      - "${PORT:-8080}:22"
-    environment:
+#    ports:  # Only necessary for Tensorboard/Jupyter.
+#      - "${PORT:-8080}:22"
+    environment:  # Environment variables for the container.
       TZ: Asia/Seoul
-    deploy:
+    deploy:  # API dependent on docker-compose version.
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ '0' ]  # Use only GPU 0.
               capabilities: [ gpu ]
+#              device_ids: [ '0' ]  # Use only GPU 0.
+
