@@ -34,7 +34,7 @@ __*Before using this template, first check whether you are actually using your G
 
 In most scenarios, slow training is caused by an inefficient Extract, Transform, Load (ETL) pipeline.
 Training is slow because the data is not getting to the GPU fast enough, not because the GPU is running slowly.
-First run `watch nvidia-smi` to check whether GPU utilization is high enough to justify compute optimizations.
+Run `watch nvidia-smi` to check whether GPU utilization is high enough to justify compute optimizations.
 If GPU utilization is low or peaks sporadically, design an efficient ETL pipeline before using this template.
 Otherwise, faster compute will not help very much as it will not be the bottleneck.
 
@@ -50,7 +50,7 @@ difficult and bug-prone process.
 
 This repository is a highly modular template to build 
 any version of PyTorch from source on any version of CUDA.
-It provides an easy-to-use Dockerfile which can be integrated 
+It provides an easy-to-use Dockerfile that can be integrated 
 into any Linux-based image or project.
 
 For researchers unfamiliar with Docker, 
@@ -230,7 +230,7 @@ TORCHAUDIO_VERSION_TAG=v0.9.1
 TRAIN_NAME=train_bob` 
 
 This way, Alice's image would have her UID/GID while Bob's image would have his UID/GID.
-This procedure is necessary because training images have their users set during build.
+This procedure is necessary because training images have their users set during the build.
 Also, different users may install different libraries in their training images.
 Their environment variables and other settings may also be different.
 
@@ -250,7 +250,7 @@ All arguments given to the `Dockerfile` during the build must be respecified.
 This includes default values set in the `Makefile` but not present in the `Dockerfile` such as the version tags.
 
 If for any reason, Docker starts to rebuild code that you have already built, 
-suspect that build arguments have been incorrectly. 
+suspect that build arguments have been given incorrectly. 
 
 See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#leverage-build-cache
 for more information.
@@ -287,10 +287,10 @@ This may be advantageous if many images must be created for multiple PyTorch/CUD
 CentOS and UBI images can be created with only minor edits to the `Dockerfile`.
 Read the `Dockerfile` for full instructions.
 
-Set `LINUX_DISTRO` and `DISTRO_VERSION` arguments afterwards.
+Set the `LINUX_DISTRO` and `DISTRO_VERSION` arguments afterwards.
 
 ### Windows
-Windows users may use template by updating to Windows 11 and installing 
+Windows users may use this template by updating to Windows 11 and installing 
 Windows Subsystem for Linux (WSL).
 WSL on Windows 11 gives a similar experience to using native Linux.
 
@@ -304,7 +304,7 @@ Docker containers are designed to be transient and best practice dictates that
 developers should create a new container for each run or command.
 In practice, this is very inconvenient for development, especially for deep learning applications, 
 where libraries must be constantly installed and code must be debugged.
-However, developing on local environments with `conda` or developing in individual containers risks
+However, developing in local environments with `conda` or developing in individual containers risks
 making the development environment unreproducible.
 
 To alleviate this problem, a `docker-compose.yaml` file is provided for easy management of containers.
@@ -328,7 +328,7 @@ users can edit the `Dockerfile`'s   `train` layer to install the necessary packa
 
 This will rebuild the image and start a new container, 
 but will not rebuild PyTorch if caches are set appropriately.
-The user thus need only wait for the additional downloads, 
+Users thus need only wait for the additional downloads, 
 which are also accelerated by caching and with fast mirror URLs.
 
 To remove the containers, use `docker compose down`.
