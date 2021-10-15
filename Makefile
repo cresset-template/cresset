@@ -10,7 +10,9 @@
 # 1. Remove all pre-existing pytorch_source:* images.
 # 2. (Optional) Run `docker system prune` to remove all docker caches.
 # 3. Run the *-clean commands for clean builds.
-# Please raise an issue only after you have made a reasonable attempt to solve your problem.
+# Please raise an issue only after making a reasonable attempt to solve the problem.
+# I would rather that the Issues page not be overwhelmed by trivial questions.
+# Reports of genuine bugs are more than welcome.
 
 CC                      = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 TRAIN_NAME              = train
