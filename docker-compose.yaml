@@ -7,7 +7,7 @@ services:
   train:  # Service name
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
     init: true  # Equivalent to `--init` flag in `docker run`.
-    ipc: host  # Known security vulnerability. Equivalent to `--ipc=host` in `docker run`.
+    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but allows shared memory.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     volumes:  # Add volumes as necessary.
@@ -18,14 +18,21 @@ services:
       cache_from:  # Create the cache images beforehand with the Makefile.
         - pytorch_source:${INSTALL_NAME:-build_install}
         - pytorch_source:${TORCH_NAME:-'build_torch-v.1.9.1'}
+      # All arguments given during the build with must be respecified
+      # in `args` to prevent a cache miss from occurring.
+      # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
         TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.9.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.10.1}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
         GID: ${GID:-1000}  # Must be specified manually
         UID: ${UID:-1000}  # Must be specified manually
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard/Jupyter.
 #      - "${PORT:-8080}:22"
-    environment:  # Environment variables for the container.
+    environment:  # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: Asia/Seoul
     deploy:  # API dependent on docker-compose version.
       resources:
@@ -34,4 +41,3 @@ services:
             - driver: nvidia
               capabilities: [ gpu ]
 #              device_ids: [ '0' ]  # Use only GPU 0.
-

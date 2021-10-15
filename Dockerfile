@@ -8,11 +8,15 @@
 # Do not make changes to the `build` layers unless absolutely necessary.
 # Users are free to customize the `train` and `deploy` layers as they please.
 
-# All `ARG` variables must be redefined for every stage.
+# All `ARG` variables must be redefined for every stage,
+# except for default values passing from the topmost `ARG`s to layers that redefine them.
 # `ENV` and `LABEL` variables are inherited only by child stages.
+# See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices
+# for best practices.
 
-# Style guide: variables specified by Docker are specified by ${ARGUMENT}
-# while variables not specified by ARG/ENV are specified by $ARGUMENT.
+# Style guide: variables specified in the Dockerfile are written as ${ARGUMENT}
+# while variables not specified by ARG/ENV are written as $ARGUMENT.
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
@@ -81,8 +85,6 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
 
 
 # Install everything required for build.
-# This layer may also be used as the base for a
-# separate docker image if cache misses are too much of a problem.
 FROM build-base AS build-install
 
 # Magma version must match CUDA version of build image.
@@ -218,8 +220,6 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM ${BUILD_IMAGE} AS train-builds
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
-# Possibly separate this layer out as a base image in a separate Dockerfile.
-# That may be more convenient than restating build argument values every time.
 # The train layer must not have any dependencies other than this layer.
 
 COPY --from=build-install /opt/conda /opt/conda

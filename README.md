@@ -245,6 +245,16 @@ and a cache miss will occur because of the different input values.
 This will both waste time rebuilding previous layers and, more importantly,
 cause inconsistency in the training images due to environment mismatch.
 
+This includes the `docker-compose.yaml` file as well. 
+All arguments given to the `Dockerfile` during the build must be respecified.
+This includes default values set in the `Makefile` but not present in the `Dockerfile` such as the version tags.
+
+If for any reason, Docker starts to rebuild code that you have already built, 
+suspect that build arguments have been incorrectly. 
+
+See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#leverage-build-cache
+for more information.
+
 The `BUILDKIT_INLINE_CACHE` must also be given to an image to use it as a cache later. See 
 https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources
 for more information.
@@ -292,9 +302,8 @@ with the WSL CUDA driver and Docker Desktop for Windows.
 
 Docker containers are designed to be transient and best practice dictates that 
 developers should create a new container for each run or command.
-
-In practice, this is very inconvenient for development, especially for deep learning applications.
-
+In practice, this is very inconvenient for development, especially for deep learning applications, 
+where libraries must be constantly installed and code must be debugged.
 However, developing on local environments with `conda` or developing in individual containers risks
 making the development environment unreproducible.
 
@@ -303,22 +312,24 @@ To alleviate this problem, a `docker-compose.yaml` file is provided for easy man
 Using Docker Compose V2 (see https://docs.docker.com/compose/cli-command),
 run the following two commands, where `train` is the default service name in `docker-compose.yaml`.
 
-`docker compose up -d train`
+1. `docker compose up -d train`
+2. `docker compose exec train /bin/bash`
 
-`docker compose exec train /bin/bash`
+This will open an interactive shell with settings specified by `docker-compose.yaml` and `.env`, 
+which is extremely convenient for managing reproducible development environments.
 
-This will open an interactive shell with settings specified by `docker-compose.yaml`.
+Variables can be saved in the `.env` file, which should be placed on project root.
+Variables such as the version tags and UID/GID values must be saved in `.env`
+to use Docker Compose without cache misses or errors.
 
-This is extremely convenient for managing reproducible development environments.
-
-If for example, a new `pip` or `apt` package must be installed for the project,
-users can edit the `Dockerfile` `train` layer to install the necessary package and run the following command:
+For example, if a new `pip` or `apt` package must be installed for the project,
+users can edit the `Dockerfile`'s   `train` layer to install the necessary package and run the following command:
 `docker compose up -d --build train`.
 
 This will rebuild the image and start a new container, 
-but will not rebuild PyTorch if caches are used appropriately.
+but will not rebuild PyTorch if caches are set appropriately.
 The user thus need only wait for the additional downloads, 
-which are also accelerated by caching and with fast mirrors.
+which are also accelerated by caching and with fast mirror URLs.
 
 To remove the containers, use `docker compose down`.
 
@@ -331,23 +342,16 @@ https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 ## Known Issues
 
-1. (TOP PRIORITY) Cache misses sometimes occur even when only including new packages on the train layers, 
-causing the previous build layers to rebuild despite their contents already being cached.
-This is suspected to be caused by the download files being different at different builds 
-but further investigation is necessary as `RUN` commands should not inspect cache contents.
-
-2. Entering a container by `ssh` will remove all variables set by `ENV`. 
+1. Entering a container by `ssh` will remove all variables set by `ENV`. 
 This is because `sshd` starts a new environment, wiping out all previous variables.
-Using `docker`/`docker-compose` to start containers is strongly recommended.
-Use `ssh` only for network connections with containers 
-(e.g., allowing the user to view Tensorboard or Jupyter on their local system).
+Using `docker`/`docker-compose` to enter containers is strongly recommended.
 
-3. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
+2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
 has not been released on the `pytorch` anaconda channel yet.
 Users may attempt building with older versions of `magma-cuda` or try the version available on `conda-forge`.
 A source build of `magma` would be welcomed as a pull request.
 
-4. Ubuntu 16.04 will not build. This is because the default `git` installed by `apt` on 
+3. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
 Ubuntu 16.04 does not support the `--jobs` flag. Also, PyTorch v1.9+ will not build on Ubuntu 16.
 However, as Ubuntu 16.04 has already reached EOL, the project will be left as is.
 
@@ -360,8 +364,5 @@ However, as Ubuntu 16.04 has already reached EOL, the project will be left as is
 As they require only simple modifications, 
 pull requests implementing them would be very much welcome.
 
-2. Translations into other languages are welcome. Please create a separate `LANG.README.md` file and create a PR.
-
-3. The build and train layers may be separated into separate Dockerfiles because of the constant cache misses
-that occur when they are placed in a single file. Using the previous image as a base image would solve the cache issue.
-However, this would create problems of its own and a workaround to prevent cache misses would be preferable.
+2. Translations into other languages are welcome. 
+Please create a separate `LANG.README.md` file and create a PR.
