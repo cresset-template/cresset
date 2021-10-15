@@ -19,10 +19,11 @@ This template was created with the aim of enabling researchers and engineers wit
 GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GPUs 
 __*using the same hardware and neural networks*.__ 
 
-If you are among those who previously could
-only pine for greater resources, this project may be of great utility.
-When using a source build of PyTorch with the latest version of CUDA, if combined with AMP, 
-it is not impossible to achieve training/inference times x10 faster than a naïve PyTorch environment. 
+If you are among those who before could only pine for a quicker end 
+to the hours and days spent gazing at Tensorboard as your models inched passed the epochs, 
+this project may be just the thing for you.
+When using a source build of PyTorch with the latest version of CUDA, combined with AMP, 
+one may achieve training/inference times x10 faster than a naïve PyTorch environment. 
 
 I sincerely hope that my project will be of service to practitioners in both academia and industry.
 Users who find my work beneficial are more than welcome to show their appreciation by starring this repository.
@@ -32,8 +33,8 @@ Users who find my work beneficial are more than welcome to show their appreciati
 __*Before using this template, first check whether you are actually using your GPU!*__
 
 In most scenarios, slow training is caused by an inefficient Extract, Transform, Load (ETL) pipeline.
-Training is slow because the data is not getting to the GPU fast enough, not because the GPU has slow compute.
-First run `watch nvidia-smi` to check whether GPU utilization is high enough.
+Training is slow because the data is not getting to the GPU fast enough, not because the GPU is running slowly.
+First run `watch nvidia-smi` to check whether GPU utilization is high enough to justify compute optimizations.
 If GPU utilization is low or peaks sporadically, design an efficient ETL pipeline before using this template.
 Otherwise, faster compute will not help very much as it will not be the bottleneck.
 
@@ -41,7 +42,7 @@ See https://www.tensorflow.org/guide/data_performance for a guide on designing a
 
 
 ## Introduction
-Template repository to build PyTorch __*from source*__ on __*any*__ version of PyTorch/CUDA/cuDNN.
+A Template repository to build PyTorch __*from source*__ on __*any*__ version of PyTorch/CUDA/cuDNN.
 
 PyTorch built from source is much faster (as much as x4 times on some benchmarks) 
 than PyTorch installed from `pip`/`conda` but building from source is a 
