@@ -1,7 +1,7 @@
 # The Docker Template for Universal PyTorch Source-Builds
 
 ## Preamble
-Tremendous academic effort has gone into the design and implementation of 
+A tremendous academic effort has gone into the design and implementation of 
 efficient neural networks in recent years to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
 Yet, as of the time of writing, most researchers are unaware of even the most basic acceleration techniques for deep learning on GPUs.
 
@@ -10,7 +10,7 @@ which can reduce memory requirements to 1/4 and increase speeds by x4~5.
 This is the case even though AMP can be enabled without much hassle using the 
 PyTorch Lightning or HuggingFace Accelerate libraries.
 
-Even the novice who have only just dipped their toes into the murky depths of 
+Even the novice who has only just dipped their toes into the murky depths of 
 deep learning knows that more compute is a key ingredient for success.
 No matter how brilliant the scientist, 
 outperforming a rival with x10 more compute is no mean feat.
@@ -20,7 +20,7 @@ GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GP
 __*using the same hardware and neural networks*.__ 
 
 If you are among those who before could only long for a quicker end 
-to the hours and days spent staring at Tensorboard as your models inched passed the epochs, 
+to the hours and days spent staring at Tensorboard as your models inched past the epochs, 
 this project may be just the thing for you.
 When using a source build of PyTorch with the latest version of CUDA, combined with AMP, 
 one may achieve training/inference times x10 faster than a naïve PyTorch environment. 
