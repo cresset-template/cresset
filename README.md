@@ -1,9 +1,9 @@
 # The Docker Template for Universal PyTorch Source-Builds
 
 ## Preamble
-A tremendous academic effort has gone into the design and implementation of 
-efficient neural networks in recent years to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
-Yet, as of the time of writing, most researchers are unaware of even the most basic acceleration techniques for deep learning on GPUs.
+Recent years have seen tremendous academic effort go into the design and implementation of 
+efficient neural networks to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
+Yet, as of the time of writing, most deep learning practitioners are unaware of even the most basic GPU acceleration techniques.
 
 Especially in academia, many do not even use Automatic Mixed Precision (AMP), 
 which can reduce memory requirements to 1/4 and increase speeds by x4~5.
