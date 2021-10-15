@@ -12,7 +12,7 @@
 # 3. Run the *-clean commands for clean builds.
 # Please raise an issue only after making a reasonable attempt to solve the problem.
 # I would rather that the Issues page not be inundated with trivial questions.
-# Reports of genuine bugs are more than welcome.
+# Reports of genuine bugs and well-formed proposals are more than welcome.
 
 CC                      = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 TRAIN_NAME              = train
