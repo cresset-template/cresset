@@ -1,10 +1,17 @@
 # Basic Makefile for starting projects.
-# For more sophisticated settings, please use the Dockerfile directly.
+# For more sophisticated settings, use the Dockerfile directly.
 # See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
 # Also assumes Linux shell for UID, GID.
 # See https://pytorch.org/docs/stable/cpp_extension.html
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `CC` in the `Makefile`.
+
+# NOTE: Before submitting a GitHub issue because of an error, try the following steps.
+# 1. Remove all pre-existing pytorch_source:* images.
+# 2. (Optional) Run `docker system prune` to remove all docker caches.
+# 3. Run the *-clean commands for clean builds.
+# Please raise an issue only after you have made a reasonable attempt to solve your problem.
+
 CC                      = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
