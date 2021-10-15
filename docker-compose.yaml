@@ -1,9 +1,12 @@
 services:
-  ssh:
+  train:
     image: pytorch_source:${TRAIN_NAME:-train}
-    command: /bin/bash
+    init: true
+    ipc: host  # Known security vulnerability.
     stdin_open: true
     tty: true
+    volumes:
+      - $PWD:${PROJECT_ROOT:-/opt/project}
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,15 +17,15 @@ services:
         TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
         GID: ${GID:-1000}  # Must be specified manually
         UID: ${UID:-1000}  # Must be specified manually
-    volumes:
-      - $PWD:${PROJECT_ROOT:-/opt/project}
     working_dir: ${PROJECT_ROOT:-/opt/project}
-    ports:
+    ports:  # Only necessary for Tensorboard/Jupyter when VSCode is not used.
       - "${PORT:-8080}:22"
+    environment:
+      TZ: Asia/Seoul
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ '0' ]
+              device_ids: [ '0' ]  # Use only GPU 0.
               capabilities: [ gpu ]

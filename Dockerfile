@@ -286,7 +286,6 @@ COPY --from=build-base --chown=${USR}:${GRP} /opt/conda /opt/conda
 # Paths created by `--mount` are owned by root unless created beforehand.
 ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
 WORKDIR ${PIP_DOWNLOAD_CACHE}
-WORKDIR /opt/conda/pkgs
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -316,12 +315,12 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
         /tmp/dist/*.whl \
-        tensorboard==2.7.0 \
         torch_tb_profiler==0.2.1 \
         jupyterlab==3.2.0 \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
         accelerate==0.5.1 \
+        pytorch-lightning==1.4.9 \
         seaborn==0.11.1 \
         pandas==1.3.1 \
         openpyxl==3.0.9 \

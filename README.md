@@ -1,27 +1,27 @@
 # The Universal PyTorch Source-Build Docker Template
 
 ## Preamble
-As of the time of writing, tremendous academic effort has gone into the design and implementation of 
-efficient neural networks to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
-Yet, in practice, most researchers are unaware of even the most basic acceleration techniques.
+Tremendous academic effort has gone into the design and implementation of 
+efficient neural networks in recent years to cope with the ever-increasing amount of data on ever-smaller and more efficient devices.
+Yet, as of the time of writing, most researchers are unaware of even the most basic acceleration techniques for deep learning on GPUs.
 
 Especially in academia, many do not even use Automatic Mixed Precision (AMP), 
 even though it can reduce memory requirements to 1/4 and increase speeds by x4~5.
 This is the case even though AMP can be enabled without much hassle using the 
 PyTorch Lightning or HuggingFace Accelerate libraries.
 
-Even novices who have only just dipped their toes into the murky waters of deep learning 
-know that more compute is a key ingredient for success.
-No matter how brilliant the researcher, 
+Even the novice who have only just dipped their toes into the murky waters of deep learning 
+knows that more compute is a key ingredient for success.
+No matter how brilliant one is, 
 outperforming a rival with x10 more compute is no mean feat.
 
 This template was created with the aim of enabling researchers and engineers without much knowledge of 
 GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GPUs 
 __*using the same hardware and neural networks*.__ 
 
-If you are among those who could previously only wish for greater resources, this project may be of great utility.
-Using a source build of PyTorch with the latest version of CUDA, when combined with AMP, 
-can be expected to improve training times by x10. 
+If you are among the many poor souls who could previously only pine for greater resources, this project may be of great utility.
+When using a source build of PyTorch with the latest version of CUDA, when combined with AMP, 
+it is not impossible to achieve training times x10 faster than previously. 
 
 I sincerely hope that my project will be of service to researchers and engineers in both academia and industry.
 Users who find my work beneficial are more than welcome to show their appreciation by starring this repository.
@@ -280,7 +280,8 @@ This project has been tested on WSL on Windows 11
 with the WSL CUDA driver and Docker Desktop for Windows.
 
 
-## Known Issues & TODOs
+## Known Issues
+
 1. Entering a container by `ssh` will remove all variables set by `ENV`. 
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker-compose` to start containers is strongly recommended.
@@ -292,6 +293,12 @@ has not been released on the `pytorch` anaconda channel yet.
 Users may attempt building with older versions of `magma-cuda` or try the version available on `conda-forge`.
 A source build of `magma` would be welcomed as a pull request.
 
-3. CentOS and UBI images have not been implemented yet.
+
+## Desiderata
+
+0. __*More Stars*__. If you are reading this, star this repository immediately. I am serious.
+
+
+1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 
 pull requests implementing them would be very much welcome.
