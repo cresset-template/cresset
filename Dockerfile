@@ -297,7 +297,7 @@ WORKDIR ${PIP_DOWNLOAD_CACHE}
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 
-# `$PROJECT_ROOT` belongs to `$USR` if created after `USER` has been set.
+# `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
 
