@@ -20,7 +20,7 @@ GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GP
 __*using the same hardware and neural networks*.__ 
 
 If you are among those who before could only long for a quicker end 
-to the hours and days spent gazing at Tensorboard as your models inched passed the epochs, 
+to the hours and days spent staring at Tensorboard as your models inched passed the epochs, 
 this project may be just the thing for you.
 When using a source build of PyTorch with the latest version of CUDA, combined with AMP, 
 one may achieve training/inference times x10 faster than a naïve PyTorch environment. 
