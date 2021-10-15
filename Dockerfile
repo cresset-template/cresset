@@ -6,7 +6,7 @@
 # However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
 # Do not make changes to the `build` layers unless absolutely necessary.
-# Users are free to customize the `train` and `devel` layers as they please.
+# Users are free to customize the `train` and `deploy` layers as they please.
 
 # All `ARG` variables must be redefined for every stage.
 # `ENV` and `LABEL` variables are inherited only by child stages.
