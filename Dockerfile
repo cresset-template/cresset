@@ -133,8 +133,8 @@ ARG PYTORCH_VERSION_TAG
 # The `+PTX` means that PTX should be built for that CC.
 # PyTorch will find the best CC for the host hardware even if
 # `TORCH_CUDA_ARCH_LIST` is not given explicitly
-# Default is set because of TorchVision and other subsidiary libraries.
-ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+# but TorchVision and other subsidiary libraries cannot.
+ARG TORCH_CUDA_ARCH_LIST
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 
 # Checkout to specific version and update submodules.
