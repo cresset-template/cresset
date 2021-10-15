@@ -11,10 +11,13 @@
 # All `ARG` variables must be redefined for every stage.
 # `ENV` and `LABEL` variables are inherited only by child stages.
 
+# Style guide: variables specified by Docker are specified by ${ARGUMENT}
+# while variables not specified by ARG/ENV are specified by $ARGUMENT.
+
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
-# Default image is nvidia/cuda:11.2.2-cudnn8-devel-ubuntu20.04.
+# Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 # Currently, only Ubuntu images are implemented.
-ARG CUDA_VERSION=11.2.2
+ARG CUDA_VERSION=11.3.1
 ARG CUDNN_VERSION=8
 ARG LINUX_DISTRO=ubuntu
 ARG DISTRO_VERSION=20.04
@@ -78,10 +81,12 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
 
 
 # Install everything required for build.
+# This layer may also be used as the base for a
+# separate docker image if cache misses are too much of a problem.
 FROM build-base AS build-install
 
 # Magma version must match CUDA version of build image.
-ARG MAGMA_VERSION=112
+ARG MAGMA_VERSION=113
 
 # Maybe fix versions for these libraries.
 # Perhaps multiple conda installs are not the best solution but
@@ -211,10 +216,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 
 FROM ${BUILD_IMAGE} AS train-builds
-# Exists as a convenience layer to save all builds for training libraries.
 # Gather PyTorch and subsidiary builds neceesary for training.
 # If other source builds are included later on, gather them here as well.
+# Possibly separate this layer out as a base image in a separate Dockerfile.
+# That may be more convenient than restating build argument values every time.
+# The train layer must not have any dependencies other than this layer.
 
+COPY --from=build-install /opt/conda /opt/conda
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-text /tmp/dist /tmp/dist
 COPY --from=build-audio /tmp/dist /tmp/dist
@@ -269,55 +277,62 @@ ARG UID
 ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
-# Create user with home directory and sudo permissions.
-# Default password is `ubuntu`.
-RUN groupadd -g $GID $GRP && \
-    useradd --shell /bin/bash --create-home -u $UID -g $GRP -p $(openssl passwd -1 $PASSWD) $USR && \
-    echo "$GRP ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    usermod -aG sudo $USR
+# Create user with home directory and password-free sudo permissions.
+# This may cause security issues. Use at your own risk.
+RUN groupadd -g ${GID} ${GRP} && \
+    useradd --shell /bin/bash --create-home -u ${UID} -g ${GRP} -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    echo "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    usermod -aG sudo ${USR}
 
-USER $USR
+USER ${USR}
 
-COPY --from=build-base --chown=$GRP:$USR /opt/conda /opt/conda
+# Enable colors on bash terminal. This is a personal preference.
+RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
+COPY --from=train-builds --chown=${USR}:${GRP} /opt/conda /opt/conda
+
+# Paths created by `--mount` are owned by root unless created beforehand.
+ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
+WORKDIR ${PIP_DOWNLOAD_CACHE}
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 
 # `$PROJECT_ROOT` belongs to `$USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
-WORKDIR $PROJECT_ROOT
+WORKDIR ${PROJECT_ROOT}
 
 # Path order conveys precedence.
-ENV PATH=$PROJECT_ROOT:/opt/conda/bin:$PATH
-ENV PYTHONPATH=$PROJECT_ROOT
+ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
+ENV PYTHONPATH=${PROJECT_ROOT}
 
 # Edit .bashrc file for environment settings.
-RUN echo "cd $PROJECT_ROOT" >> ~/.bashrc
+RUN echo "cd ${PROJECT_ROOT}" >> ~/.bashrc
 
 RUN conda config --set pip_interop_enabled True
 
-# Get numpy from conda to utilize MKL.
+# Install numpy from conda to use MKL.
 RUN conda install -y \
         numpy==1.20.3 && \
     conda clean -ya
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
-# Preserving pip cache by not using `--no-cache-dir` in pip.
-RUN --mount=type=cache,target=/home/${USR}/.cache/pip \
+# Preserving pip cache by not using `--no-cache-dir`.
+RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
         /tmp/dist/*.whl \
-        pytorch-lightning==1.4.5 \
-        captum==0.4.0 \
-        mlflow==1.20.2 \
-        tensorboard==2.5.0 \
-        tensorboard-plugin-wit==1.8.0 \
         torch_tb_profiler==0.2.1 \
+        jupyterlab==3.2.0 \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
+        accelerate==0.5.1 \
+        pytorch-lightning==1.4.9 \
         seaborn==0.11.1 \
-        albumentations==1.0.3
+        pandas==1.3.1 \
+        openpyxl==3.0.9 \
+        scikit-learn==1.0 \
+        wandb==0.12.4
 
 CMD ["/bin/bash"]
 
