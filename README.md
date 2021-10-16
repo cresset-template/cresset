@@ -10,7 +10,7 @@ which can reduce memory requirements to 1/4 and increase speeds by x4~5.
 This is the case even though AMP can be enabled without much hassle using the 
 PyTorch Lightning or HuggingFace Accelerate libraries.
 
-Even the novice who has only just dipped their toes into the murky depths of 
+Even the novice who has only just dipped their toes into the field of 
 deep learning knows that more compute is a key ingredient for success.
 No matter how brilliant the scientist, 
 outperforming a rival with x10 more compute is no mean feat.
