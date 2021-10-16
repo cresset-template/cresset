@@ -309,7 +309,7 @@ with the WSL CUDA driver and Docker Desktop for Windows.
 Docker containers are designed to be transient and best practice dictates that 
 developers should create a new container for each run or command.
 In practice, this is very inconvenient for development, especially for deep learning applications, 
-where libraries must be constantly installed and bugs are only evident at runtime.
+where new libraries must constantly be installed and bugs are only evident at runtime.
 However, developing in local environments with `conda` or in individual containers risks
 making the development environment unreproducible.
 
