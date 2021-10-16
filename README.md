@@ -359,7 +359,7 @@ A source build of `magma` would be welcomed as a pull request.
 
 3. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
 Ubuntu 16.04 does not support the `--jobs` flag. Add the `git-core` ppa to `apt` and install the latest version of git.
-Also, PyTorch v1.9+ will not build on Ubuntu 16. Lower the version tag to v1.8.2. to build.
+Also, PyTorch v1.9+ will not build on Ubuntu 16. Lower the version tag to v1.8.2 to build.
 However, as Ubuntu 16.04 has already reached EOL, the project will be left as is.
 
 
