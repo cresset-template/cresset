@@ -141,7 +141,7 @@ build-train-full:
 		--build-arg TZ=${TZ} \
 		- < Dockerfile
 
-# The following builds are `clean` builds, i.e., builds without using the cache.
+# The following builds are `clean` builds, i.e., builds that do not use caches from previous builds.
 # Their main purpose is to test whether the commands work properly without cached runs.
 build-train-clean:
 	DOCKER_BUILDKIT=1 docker build \
