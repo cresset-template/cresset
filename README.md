@@ -77,6 +77,8 @@ instead of a build that must be compatible with different hardware and software 
 3. Using the latest version of PyTorch and subsidiary libraries. 
 Many users do not update their PyTorch
 version because of compatibility issues with their pre-existing environment.
+4. Informing users on where to look for solutions to their speed problems 
+(this may be the most important factor).
 
 Combined with techniques such as AMP and cuDNN benchmarking, 
 computational throughput can be increased dramatically 
