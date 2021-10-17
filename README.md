@@ -113,8 +113,7 @@ Finally, run `make all CC=TARGET_CC(s)`.
 
 ### Examples 
 (1) `make all CC="8.6"` for RTX 3090, 
-(2) `make all CC="7.5;8.6"` (no whitespace between CCs) 
-for both RTX 2080Ti and RTX 3090 
+(2) `make all CC="7.5 8.6"` for both RTX 2080Ti and RTX 3090 
 (building for many GPU CCs will increase build time).
 
 This will result in an image, `pytorch_source:train`, which can be used for training.
