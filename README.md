@@ -8,7 +8,7 @@ Yet, as of the time of writing, most deep learning practitioners are unaware of 
 Especially in academia, many do not even use Automatic Mixed Precision (AMP), 
 which can reduce memory requirements to 1/4 and increase speeds by x4~5.
 This is the case even though AMP can be enabled without much hassle using the 
-PyTorch Lightning or HuggingFace Accelerate libraries.
+[HuggingFace Accelerate](https://github.com/huggingface/accelerate) or [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) libraries.
 
 Even the novice who has only just dipped their toes into the field of 
 deep learning knows that more compute is a key ingredient for success.
@@ -358,9 +358,9 @@ Users may attempt building with older versions of `magma-cuda` or try the versio
 A source build of `magma` would be welcomed as a pull request.
 
 3. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
-Ubuntu 16.04 does not support the `--jobs` flag. Add the `git-core` ppa to `apt` and install the latest version of git.
+Ubuntu 16.04 does not support the `--jobs` flag. Add the `git-core` PPA to `apt` and install the latest version of git.
 Also, PyTorch v1.9+ will not build on Ubuntu 16. Lower the version tag to v1.8.2 to build.
-However, as Ubuntu 16.04 has already reached EOL, the project will be left as is.
+However, the project will not be modified to accommodate Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 
 
 ## Desiderata
