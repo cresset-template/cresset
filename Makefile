@@ -14,7 +14,7 @@
 # I would rather that the Issues page not be inundated with trivial questions.
 # Reports of genuine bugs and well-formed proposals are more than welcome.
 
-CC                      = "5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
+CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.9.1
@@ -42,7 +42,7 @@ build-torch:
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--tag pytorch_source:${TORCH_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -63,7 +63,7 @@ build-train:
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--cache-from=pytorch_source:${TORCH_NAME} \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -105,7 +105,7 @@ build-torch-full:
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--tag pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -125,7 +125,7 @@ build-train-full:
 		--tag pytorch_source:${TRAIN_NAME} \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--cache-from=pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -148,7 +148,7 @@ build-train-clean:
 		--target train \
 		--no-cache \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -163,7 +163,7 @@ build-train-full-clean:
 		--target train \
 		--no-cache \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST=${CC} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
