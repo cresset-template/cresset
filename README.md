@@ -372,4 +372,4 @@ As they require only simple modifications,
 pull requests implementing them would be very much welcome.
 
 2. Translations into other languages are welcome. 
-Please create a separate `LANG.README.md` file and create a PR.
+Please make a separate `LANG.README.md` file and create a PR.
