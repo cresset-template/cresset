@@ -72,7 +72,7 @@ A `docker-compose.yaml` file is also provided for a simple interactive developme
 
 The speed gains from this template come from the following factors:
 1. Using the latest version of CUDA and associated libraries (cuDNN, cuBLAS, etc.).
-2. Using a source build made especially for the target machine with the latest software customizations
+2. Using a source build made specifically for the target machine with the latest software customizations
 instead of a build that must be compatible with different hardware and software environments.
 3. Using the latest version of PyTorch and subsidiary libraries. 
 Many users do not update their PyTorch
