@@ -305,9 +305,6 @@ WORKDIR ${PROJECT_ROOT}
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 
-# Edit .bashrc file for environment settings.
-RUN echo "cd ${PROJECT_ROOT}" >> ~/.bashrc
-
 RUN conda config --set pip_interop_enabled True
 
 # Install numpy from conda to use MKL.
