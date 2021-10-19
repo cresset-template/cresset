@@ -13,7 +13,8 @@ services:
     volumes:  # Add volumes as necessary.
       - $PWD:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
-      context: .  # Not quite the same as the `make` command outputs, which have no context.
+      target: train. # Specify build target.
+      context: .  # .dockerignore should remove all context, making this equivalent to `Makefile` results.
       dockerfile: Dockerfile
       cache_from:  # Create the cache images beforehand with the Makefile.
         - pytorch_source:${INSTALL_NAME:-build_install}

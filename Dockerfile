@@ -149,7 +149,7 @@ RUN if [ -n ${PYTORCH_VERSION_TAG} ]; then \
 
 # Build PyTorch. `USE_CUDA` and `USE_CUDNN` are made explicit just in case.
 RUN --mount=type=cache,target=/opt/ccache \
-    USE_CUDA=1 USE_CUDNN=1 \
+    USE_CUDA=1 USE_CUDNN=1 USE_ROCM=0 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
@@ -157,7 +157,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 # Install PyTorch for subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
-    USE_CUDA=1 USE_CUDNN=1 \
+    USE_CUDA=1 USE_CUDNN=1 USE_ROCM=0 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
