@@ -304,7 +304,21 @@ This project has been tested on WSL on Windows 11
 with the WSL CUDA driver and Docker Desktop for Windows.
 
 
-## Interactive Development with Docker Compose
+# Interactive Development with Docker Compose
+
+## _Raison D'être_
+The `docker-compose.yaml` file exists to allow researchers without experience in MLOps manage their development
+environments and provide reproducible experiments. 
+The aim is to free ordinary researchers from the burden of managing the Docker build and run processes, 
+encouraging the take-up of Docker and spreading best practice among those who already use it.
+I hope that using `docker-compose.yaml` files such as the one that I use here becomes standard practice among
+deep learning practitioners in both academia and industry. 
+In doing so, I hope to contribute to the improved reproducibility of deep learning research and spare many graduate
+students from the thankless work of setting up their environments each time they start a new project,
+only to see it crash when they try to run it again a few months later.
+
+# TODO: Write introduction on the situation and why Docker Compose is such a good solution when used properly, including details about the shell scripts that most Docker users use.
+
 Docker containers are designed to be transient and best practice dictates that 
 developers should create a new container for each run or command.
 In practice, this is very inconvenient for development, especially for deep learning applications, 
@@ -335,6 +349,9 @@ This will rebuild the image and start a new container,
 but will not rebuild PyTorch if caches are set appropriately.
 Users thus need only wait for the additional downloads, 
 which are also accelerated by caching and with fast mirror URLs.
+
+
+# TODO: Write about how the docker-compose.yaml file is general purpose and not dependent on anything about the build. Explain the NGC Dockerfile both as an example and an alternative development environment for those starting new projects with no dependencies.
 
 To remove the containers, use `docker compose down`.
 

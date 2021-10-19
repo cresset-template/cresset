@@ -6,10 +6,10 @@
 services:
   train:  # Service name
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
-    init: true  # Equivalent to `--init` flag in `docker run`.
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but allows shared memory.
-    stdin_open: true  # equivalent to `-i` flag in `docker run`.
     tty: true  # Equivalent to `-t` flag in `docker run`.
+    init: true  # Equivalent to `--init` flag in `docker run`.
+    stdin_open: true  # equivalent to `-i` flag in `docker run`.
     volumes:  # Add volumes as necessary.
       - $PWD:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
@@ -35,6 +35,7 @@ services:
 #      - "${PORT:-8080}:22"
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: Asia/Seoul
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
     deploy:  # API dependent on docker-compose version.
       resources:
         reservations:
@@ -42,3 +43,27 @@ services:
             - driver: nvidia
               capabilities: [ gpu ]
 #              device_ids: [ '0' ]  # Use only GPU 0.
+
+  # Perhaps placing two unrelated services in the same file
+  # is not best practice, but I did not wish to create another file.
+  ngc:
+    image: pytorch_source:ngc-${YEAR-21}.${MONTH-09}
+    ipc: host
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - $PWD:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: ngc
+      context: .
+      dockerfile: ngc.Dockerfile
+      args:
+        YEAR: ${YEAR:-21}
+        MONTH: ${MONTH:-09}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    environment:
+      TZ: Asia/Seoul
+      CUDA_DEVICE_ORDER: PCI_BUS_ID

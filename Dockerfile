@@ -83,6 +83,10 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
+# Change symbolic location of `ld` to `conda` version instead of system default.
+# This is supposed to a solution to the mysterious build failures with
+# `ninja: build stopped: subcommand failed` that only occur on some systems some of the time.
+RUN ln -sf /opt/conda/compiler_compat/ld /usr/bin/ld
 
 # Install everything required for build.
 FROM build-base AS build-install
@@ -288,9 +292,10 @@ USER ${USR}
 
 # Enable colors on bash terminal. This is a personal preference.
 RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
-COPY --from=train-builds --chown=${USR}:${GRP} /opt/conda /opt/conda
+COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
 # Paths created by `--mount` are owned by root unless created beforehand.
+# Expects home directory to be in the default location.
 ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
 WORKDIR ${PIP_DOWNLOAD_CACHE}
 
