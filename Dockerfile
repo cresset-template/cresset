@@ -147,7 +147,7 @@ RUN if [ -n ${PYTORCH_VERSION_TAG} ]; then \
     git submodule update --init --recursive --jobs 0; \
     fi
 
-# Build PyTorch. `USE_CUDA` and `USE_CUDNN` are made explicit just in case.
+# Build PyTorch. `USE_CUDA`, `USE_CUDNN`, and `USE_ROCM` are made explicit just in case.
 RUN --mount=type=cache,target=/opt/ccache \
     USE_CUDA=1 USE_CUDNN=1 USE_ROCM=0 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
