@@ -61,8 +61,8 @@ FROM build-base-${LINUX_DISTRO} AS build-base
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-# Conda packages have higher priority than system packages during build.
-ENV PATH=/opt/conda/bin:$PATH
+# Conda packages have lower priority than system packages during build.
+ENV PATH=$PATH:/opt/conda/bin
 
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
@@ -85,11 +85,6 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
-# Change symbolic location of `ld` to `conda` version instead of system default.
-# Located before `build-install` because some packages may require build.
-# This is possibly a solution to the PyTorch build failures with
-# `ninja: build stopped: subcommand failed` errors.
-RUN ln -sf /opt/conda/compiler_compat/ld /usr/bin/ld
 
 # Install everything required for build.
 FROM build-base AS build-install
@@ -293,7 +288,7 @@ RUN groupadd -g ${GID} ${GRP} && \
 
 USER ${USR}
 
-# Enable colors on bash terminal. This is a personal preference.
+# Enable colors on the bash terminal. This is a personal preference.
 RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
 COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
