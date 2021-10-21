@@ -6,10 +6,11 @@
 # However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
 # Do not make changes to the `build` layers unless absolutely necessary.
+# If another library needs to be built, add another build layer.
 # Users are free to customize the `train` and `deploy` layers as they please.
 
 # All `ARG` variables must be redefined for every stage,
-# except for default values passing from the topmost `ARG`s to layers that redefine them.
+# `ARG`s defined before `FROM` transfer their values to layers that redefine them.
 # `ENV` and `LABEL` variables are inherited only by child stages.
 # See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices
@@ -75,6 +76,7 @@ ENV PYTHONIOENCODING=UTF-8
 
 ARG PYTHON_VERSION=3.8
 # Conda always uses the specified version of Python, regardless of Miniconda version.
+# Use a different conda URL for different architectures. Default is x86_64.
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh
 RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     chmod +x ~/miniconda.sh && \
@@ -84,8 +86,9 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     conda clean -ya
 
 # Change symbolic location of `ld` to `conda` version instead of system default.
-# This is supposed to a solution to the mysterious build failures with
-# `ninja: build stopped: subcommand failed` that only occur on some systems some of the time.
+# Located before `build-install` because some packages may require build.
+# This is possibly a solution to the PyTorch build failures with
+# `ninja: build stopped: subcommand failed` errors.
 RUN ln -sf /opt/conda/compiler_compat/ld /usr/bin/ld
 
 # Install everything required for build.
@@ -94,7 +97,7 @@ FROM build-base AS build-install
 # Magma version must match CUDA version of build image.
 ARG MAGMA_VERSION=113
 
-# Maybe fix versions for these libraries.
+# Maybe fix versions for these libraries. Also maybe sort packages alphabetically.
 # Perhaps multiple conda installs are not the best solution but
 # Using multiple channels in one install would use older packages.
 RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
@@ -222,9 +225,9 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 
 FROM ${BUILD_IMAGE} AS train-builds
-# Gather PyTorch and subsidiary builds neceesary for training.
+# A convenience layer to gather PyTorch and subsidiary builds  required for training.
 # If other source builds are included later on, gather them here as well.
-# The train layer must not have any dependencies other than this layer.
+# The train layer should not have any dependencies other than this layer.
 
 COPY --from=build-install /opt/conda /opt/conda
 COPY --from=build-vision /tmp/dist /tmp/dist
