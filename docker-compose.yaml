@@ -13,7 +13,7 @@ services:
     volumes:  # Add volumes as necessary.
       - $PWD:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
-      target: train. # Specify build target.
+      target: train  # Specify build target.
       context: .  # `.dockerignore` should remove all context, making this equivalent to the `Makefile` results.
       dockerfile: Dockerfile
       cache_from:  # Useful if cache images have been made with the Makefile beforehand.
