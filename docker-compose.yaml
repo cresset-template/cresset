@@ -71,9 +71,9 @@ services:
     environment:
       TZ: ${TZ:-Asia/Seoul}
       CUDA_DEVICE_ORDER: PCI_BUS_ID
-      deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                capabilities: [ gpu ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
