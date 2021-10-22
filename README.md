@@ -439,7 +439,7 @@ https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 ## Compose as Best Practice
 
-I wish to emphasize that using Docker Compose is a general-purpose tool 
+I wish to emphasize that using Docker Compose in this manner is a general-purpose technique 
 that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
 has been used as the base image in `ngc.Dockerfile`.
