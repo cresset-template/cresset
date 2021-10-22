@@ -13,7 +13,7 @@ This is the case even though AMP can be enabled without much hassle using the
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) or 
 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) libraries.
 
-Even the novice who has only just dipped their toes into the depths of 
+Even the novice who has only just dipped their toes into the depths of the dark art of 
 deep learning knows that more compute is a key ingredient for success.
 No matter how brilliant the scientist, 
 outperforming a rival with x10 more compute is no mean feat.
