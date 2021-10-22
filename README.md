@@ -446,7 +446,7 @@ has been used as the base image in `ngc.Dockerfile`.
 The NVIDIA NGC PyTorch images contain many optimizations 
 for the latest GPU architectures and provides
 a multitude of pre-installed machine learning libraries. 
-For anyone starting a new project, and therefore no dependencies,
+For anyone starting a new project, and therefore with no dependencies,
 using the latest NGC image is strongly recommended.
 
 To use the NGC images, use the following commands:
