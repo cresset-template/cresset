@@ -459,23 +459,23 @@ The only difference with the previous `train` session is the session name.
 
 # Known Issues
 
-1. Entering a container by `ssh` will remove all variables set by `ENV`. 
+1. Entering a container by `ssh` will remove all variables set by `ENV`.
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker-compose` to enter containers is strongly recommended.
 
 2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
 has not been released on the `pytorch` anaconda channel yet.
 Users may attempt building with older versions of `magma-cuda` 
-3. or try the version available on `conda-forge`.
+or try the version available on `conda-forge`.
 A source build of `magma` would be welcomed as a pull request.
 
-4. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
+3. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
 Ubuntu 16.04 does not support the `--jobs` flag. 
-5. Add the `git-core` PPA to `apt` and install the latest version of git.
+Add the `git-core` PPA to `apt` and install the latest version of git.
 Also, PyTorch v1.9+ will not build on Ubuntu 16. 
-6. Lower the version tag to v1.8.2 to build.
+Lower the version tag to v1.8.2 to build.
 However, the project will not be modified to accommodate 
-7. Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
+Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 
 
 # Desiderata
