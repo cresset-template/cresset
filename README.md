@@ -13,8 +13,8 @@ This is the case even though AMP can be enabled without much hassle using the
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) or 
 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) libraries.
 
-Even the novice who has only just dipped their toes into the dark art of 
-deep learning knows that more compute is a key ingredient for success.
+Even the novice who has only just dipped their toes into the mysterious depths 
+of deep learning knows that more compute is a key ingredient for success.
 No matter how brilliant the scientist, 
 outperforming a rival with x10 more compute is no mean feat.
 
@@ -200,9 +200,11 @@ though the installation caches may make this unnecessary.
 __*PyTorch subsidiary libraries only work with matching versions of PyTorch.*__
 
 To change the version of PyTorch,
-set the `PYTORCH_VERSION_TAG`, `TORCHVISION_VERSION_TAG`, 
-`TORCHTEXT_VERSION_TAG`, and `TORCHAUDIO_VERSION_TAG` variables
-to matching versions.
+set the [`PYTORCH_VERSION_TAG`](https://github.com/pytorch/pytorch), 
+[`TORCHVISION_VERSION_TAG`](https://github.com/pytorch/vision), 
+[`TORCHTEXT_VERSION_TAG`](https://github.com/pytorch/text), and 
+[`TORCHAUDIO_VERSION_TAG`](https://github.com/pytorch/audio) 
+variables to matching versions.
 
 The `*_TAG` variables must be GitHub tags or branch names of those repositories.
 Visit the GitHub repositories of each library to find the appropriate tags.
@@ -334,8 +336,10 @@ with the WSL CUDA driver and Docker Desktop for Windows.
 # Interactive Development with Docker Compose
 
 ## _Raison D'être_
-The purpose of this section is to introduce a new paradigm for deep learning development. 
-I hope that this will eventually become best practice, 
+The purpose of this section is to introduce 
+a new paradigm for deep learning development. 
+I hope that using Docker Compose for deep learning projects
+will eventually become best practice, 
 improving the reproducibility of ML experiments 
 and freeing ordinary researchers from the burden 
 of managing their development environments.
@@ -347,29 +351,33 @@ and the code meant to run on it, unreproducible.
 This is a serious detriment to scientific progress that many readers of this article 
 will have experienced at first-hand.
 
-Docker containers are the standard method of providing reproducible programs 
+Docker containers are the standard method for
+providing reproducible programs 
 across different computing environments. 
 They create isolated environments where programs 
-can run without interference from the host or from each other.
+can run without interference from the host or from one another.
 See https://www.docker.com/resources/what-container for details.
 
 But in practice, Docker containers are often misused. 
-Docker containers are designed to be transient and best practice dictates that 
+Containers are meant to be transient and best practice dictates that 
 developers should create a new container from an image for each run.
-But this is very inconvenient for development, especially for deep learning applications, 
-where new libraries must constantly be installed and bugs are often only evident at runtime.
+But this is very inconvenient for development, 
+especially for deep learning applications, 
+where new libraries must constantly be installed and 
+bugs are often only evident at runtime.
 This leads many researchers to develop inside interactive containers.
-Those who use Docker will often have `run.sh` files with commands such as
-`docker run -v my_data:/data -p 8080:22 -t my_container my_image:latest /bin/bash`
+Docker users often have `run.sh` files with commands such as
+`docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`
 (does this look familiar to anyone?) and use SSH to connect to running containers.
-VSCode also provides a remote development mode that can be used to code inside containers.
+VSCode also provides a remote development mode that can be used 
+to code inside containers.
 
 The problem with this approach is that these interactive containers 
 become just as unreproducible as local development environments.
 A running container cannot connect to a new port or attach a new volume.
 But if the computing environment within the container was created over several months 
 of installs and builds, the only way to keep it 
-is to save it as an image and create a new container from it.
+is to save it as an image and create a new container from the saved image.
 After a few iterations of this process, 
 the resulting image becomes bloated and completely unreproducible.
 
@@ -377,24 +385,31 @@ To alleviate this problem, a `docker-compose.yaml`
 file is provided for easy management of containers.
 Docker Compose is part of Docker and is already 
 a popular tool for both development and production.
-For unknown reasons, it has not taken off in the deep learning community, 
+For unknown reasons, it has not taken off in the deep learning community yet, 
 though anyone who knows how to use Docker will find Compose fairly simple.
 This may be because Compose is often advertised as a multi-container solution,
 though it can also be used for single-container development just as well.
 
-The `docker-compose.yaml` file allows the user to specify settings for both build and run.
+The `docker-compose.yaml` file allows the user to specify settings 
+for both build and run.
 Connecting a new volume is as simple as removing the current container,
-adding a line in the `docker-compose.yaml` file, then creating a new container from the same image.
+adding a line in the `docker-compose.yaml`/`Dockerfile` file, 
+then creating a new container from the same image. 
+Build caches allow new builds to be created very quickly,
+solving another barrier for Docker adoption,
+the long initial build time.
 
 The instructions below allow interactive development on the terminal,
-making the transition to Docker and Docker Compose much smoother.
+making the transition from local development to 
+Docker and Docker Compose much smoother.
 
 With luck, the deep learning community will be able to 
 "_code once, train anywhere_" with this technique.
-But even if I fail in persuading the majority of users of the merits of my method,
+But even if I fail in persuading the majority of users 
+of the merits of my method,
 I may still spare many a hapless grad student from the 
 sisyphean labor of setting up their `conda` environment,
-only to have it crash and burn right before their submission is due.
+only to have it crash and burn right before their paper submission is due.
 
 
 ## Usage
@@ -412,19 +427,22 @@ removing the need to type in variables such as UID/GID values with each run.
 
 This is extremely convenient for managing reproducible development environments.
 For example, if a new `pip` or `apt` package must be installed for the project,
-users can simply edit the `train` layer of the `Dockerfile` by adding the package to the 
-`apt-get install` or `pip install` commands, then run the following command:
+users can simply edit the `train` layer of the 
+`Dockerfile` by adding the package to the 
+`apt-get install` or `pip install` commands, 
+then run the following command:
 
 `docker compose up -d --build train`.
 
 This will remove the current `train` container, rebuild the image, 
 and start a new `train` container.
-But it will not rebuild PyTorch (assuming no cache miss occurs).
+It will not, however, rebuild PyTorch (assuming no cache miss occurs).
 Users thus need only wait a few minutes for the additional downloads, 
 which are accelerated by caching and with fast mirror URLs.
 
-To stop and restart a service after editing the `Dockerfile` or `docker-compose.yaml` file,
-simply use `docker compose up -d train` again.
+To stop and restart a service after editing the 
+`Dockerfile` or `docker-compose.yaml` file,
+simply run `docker compose up -d train` again.
 
 To remove all Compose containers, use the following:
 
@@ -433,13 +451,14 @@ To remove all Compose containers, use the following:
 Users with remote servers may use Docker contexts
 (see https://docs.docker.com/engine/context/working-with-contexts)
 to access their containers from their local environments.
-For more information on Docker Compose, read the documentation
+For more information on Docker Compose, see the documentation
 https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 
 ## Compose as Best Practice
 
-I wish to emphasize that using Docker Compose in this manner is a general-purpose technique 
+I wish to emphasize that using Docker Compose in this manner 
+is a general-purpose technique 
 that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
 has been used as the base image in `ngc.Dockerfile`.
@@ -447,7 +466,7 @@ The NVIDIA NGC PyTorch images contain many optimizations
 for the latest GPU architectures and provides
 a multitude of pre-installed machine learning libraries. 
 For anyone starting a new project, and therefore with no dependencies,
-using the latest NGC image is strongly recommended.
+using the latest NGC image is recommended.
 
 To use the NGC images, use the following commands:
 
@@ -469,7 +488,8 @@ Users may attempt building with older versions of `magma-cuda`
 or try the version available on `conda-forge`.
 A source build of `magma` would be welcomed as a pull request.
 
-3. Ubuntu 16.04 build fails. This is because the default `git` installed by `apt` on 
+3. Ubuntu 16.04 build fails. 
+This is because the default `git` installed by `apt` on 
 Ubuntu 16.04 does not support the `--jobs` flag. 
 Add the `git-core` PPA to `apt` and install the latest version of git.
 Also, PyTorch v1.9+ will not build on Ubuntu 16. 

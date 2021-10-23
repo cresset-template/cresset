@@ -22,6 +22,7 @@
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 # Currently, only Ubuntu images are implemented.
+ARG USE_CUDA=1
 ARG CUDA_VERSION=11.3.1
 ARG CUDNN_VERSION=8
 ARG LINUX_DISTRO=ubuntu
@@ -128,6 +129,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git
 
 FROM build-install AS build-torch
 
+ARG USE_CUDA
 ARG PYTORCH_VERSION_TAG
 
 # See https://developer.nvidia.com/cuda-gpus for the official list of
@@ -151,7 +153,7 @@ RUN if [ -n ${PYTORCH_VERSION_TAG} ]; then \
 
 # Build PyTorch. `USE_CUDA`, `USE_CUDNN`, and `USE_ROCM` are made explicit just in case.
 RUN --mount=type=cache,target=/opt/ccache \
-    USE_CUDA=1 USE_CUDNN=1 USE_ROCM=0 \
+    USE_CUDA=${USE_CUDA} USE_CUDNN=${USE_CUDA} USE_ROCM=0 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
@@ -159,7 +161,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 # Install PyTorch for subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
-    USE_CUDA=1 USE_CUDNN=1 USE_ROCM=0 \
+    USE_CUDA=${USE_CUDA} USE_CUDNN=${USE_CUDA} USE_ROCM=0 \
     TORCH_NVCC_FLAGS=${TORCH_NVCC_FLAGS} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
@@ -168,6 +170,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 FROM build-torch AS build-vision
 
+ARG USE_CUDA
 ARG TORCHVISION_VERSION_TAG
 ARG TORCH_CUDA_ARCH_LIST
 # Build TorchVision from source to satisfy PyTorch versioning requirements.
@@ -182,7 +185,7 @@ RUN if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
     fi
 
 RUN --mount=type=cache,target=/opt/ccache \
-    FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+    FORCE_CUDA=${USE_CUDA} TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
 FROM build-torch AS build-text
@@ -203,6 +206,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 FROM build-torch AS build-audio
 
+ARG USE_CUDA
 ARG TORCHAUDIO_VERSION_TAG
 ARG TORCH_CUDA_ARCH_LIST
 
@@ -214,7 +218,7 @@ RUN if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
     fi
 
 RUN --mount=type=cache,target=/opt/ccache \
-    BUILD_SOX=1 USE_CUDA=1 \
+    BUILD_SOX=1 USE_CUDA=${USE_CUDA} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -282,7 +286,8 @@ ARG PASSWD=ubuntu
 # Create user with home directory and password-free sudo permissions.
 # This may cause security issues. Use at your own risk.
 RUN groupadd -g ${GID} ${GRP} && \
-    useradd --shell /bin/bash --create-home -u ${UID} -g ${GRP} -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    useradd --shell /bin/bash --create-home -u ${UID} -g ${GRP} \
+        -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
@@ -317,7 +322,7 @@ RUN conda install -y \
 
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
-# Preserving pip cache by not using `--no-cache-dir`.
+# Preserving pip cache by omitting `--no-cache-dir`.
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \

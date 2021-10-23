@@ -2,7 +2,7 @@
 # Visit https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
 # for an up-to-date list of all NVIDIA NGC PyTorch images.
 # Default values for `YEAR` and `MONTH` left empty on the Dockerfile by design
-# to ~~shove~~nudge users to try out the `docker-compose.yaml` file.
+# to ~~force~~encourage users to try out the `docker-compose.yaml` file.
 ARG YEAR
 ARG MONTH
 ARG NGC_IMAGE=nvcr.io/nvidia/pytorch:${YEAR}.${MONTH}-py3
@@ -70,7 +70,7 @@ ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 RUN conda config --set pip_interop_enabled True
 
-# Preserving pip cache by not using `--no-cache-dir`.
+# Preserving pip cache by omitting `--no-cache-dir`.
 RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
