@@ -13,7 +13,7 @@ This is the case even though AMP can be enabled without much hassle using the
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) or 
 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) libraries.
 
-Even the novice who has only just dipped their toes into the mysterious depths 
+Even the novice who has only just dipped their toes into the mysteries 
 of deep learning knows that more compute is a key ingredient for success.
 No matter how brilliant the scientist, 
 outperforming a rival with x10 more compute is no mean feat.
@@ -348,7 +348,8 @@ Developing in local environments with `conda` or `pip`
 is commonplace in the deep learning community.
 However, this risks making the development environment, 
 and the code meant to run on it, unreproducible.
-This is a serious detriment to scientific progress that many readers of this article 
+This is a serious detriment to scientific progress 
+that many readers of this article 
 will have experienced at first-hand.
 
 Docker containers are the standard method for
@@ -360,7 +361,7 @@ See https://www.docker.com/resources/what-container for details.
 
 But in practice, Docker containers are often misused. 
 Containers are meant to be transient and best practice dictates that 
-developers should create a new container from an image for each run.
+a new container be created for each run.
 But this is very inconvenient for development, 
 especially for deep learning applications, 
 where new libraries must constantly be installed and 
@@ -395,8 +396,8 @@ for both build and run.
 Connecting a new volume is as simple as removing the current container,
 adding a line in the `docker-compose.yaml`/`Dockerfile` file, 
 then creating a new container from the same image. 
-Build caches allow new builds to be created very quickly,
-solving another barrier for Docker adoption,
+Build caches allow new images to be built very quickly,
+removing another barrier to Docker adoption,
 the long initial build time.
 
 The instructions below allow interactive development on the terminal,
@@ -434,8 +435,8 @@ then run the following command:
 
 `docker compose up -d --build train`.
 
-This will remove the current `train` container, rebuild the image, 
-and start a new `train` container.
+This will remove the current `train` session, rebuild the image, 
+and start a new `train` session.
 It will not, however, rebuild PyTorch (assuming no cache miss occurs).
 Users thus need only wait a few minutes for the additional downloads, 
 which are accelerated by caching and with fast mirror URLs.
@@ -478,15 +479,15 @@ The only difference with the previous `train` session is the session name.
 
 # Known Issues
 
-1. Entering a container by `ssh` will remove all variables set by `ENV`.
+1. Connecting to a running container by `ssh` will remove all variables set by `ENV`.
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker-compose` to enter containers is strongly recommended.
 
 2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
-has not been released on the `pytorch` anaconda channel yet.
+has not been released on the `pytorch` anaconda channel.
 Users may attempt building with older versions of `magma-cuda` 
 or try the version available on `conda-forge`.
-A source build of `magma` would be welcomed as a pull request.
+A source build of `magma` would be welcome as a pull request.
 
 3. Ubuntu 16.04 build fails. 
 This is because the default `git` installed by `apt` on 

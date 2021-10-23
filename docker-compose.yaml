@@ -16,7 +16,7 @@ services:
       target: train  # Specify build target.
       context: .  # `.dockerignore` should remove all context, making this equivalent to the `Makefile` results.
       dockerfile: Dockerfile
-      cache_from:  # Useful if cache images have been made with the Makefile beforehand.
+      cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
         - pytorch_source:${INSTALL_NAME:-build_install}
         - pytorch_source:${TORCH_NAME:-'build_torch-v.1.9.1'}
       # All arguments given during the build with must be respecified
@@ -29,8 +29,8 @@ services:
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}  # Must be specified manually
-        UID: ${UID:-1000}  # Must be specified manually
+        GID: ${GID:-1000}  # Must be specified manually. Run `id -g` on the terminal to find your GID.
+        UID: ${UID:-1000}  # Must be specified manually. Run `id -u` on the terminal to find your UID.
         TZ: ${TZ:-Asia/Seoul}  # Used during the build.
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard/Jupyter.
