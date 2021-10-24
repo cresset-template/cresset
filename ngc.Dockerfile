@@ -42,6 +42,8 @@ RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
         tzdata && \
     rm -rf /var/lib/apt/lists/*
 
+# Remove pre-existing `conda` owned by root.
+# Do not download anything to `/opt/conda` before `conda` is restored.
 RUN rm -rf /opt/conda
 
 ARG GID
