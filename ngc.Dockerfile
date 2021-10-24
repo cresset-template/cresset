@@ -7,6 +7,7 @@ ARG YEAR
 ARG MONTH
 ARG NGC_IMAGE=nvcr.io/nvidia/pytorch:${YEAR}.${MONTH}-py3
 
+FROM ${NGC_IMAGE} AS base
 FROM ${NGC_IMAGE} AS ngc
 
 LABEL maintainer="veritas9872@gmail.com"
@@ -59,7 +60,7 @@ USER ${USR}
 RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
 
 # This wierd copy exists to change ownership of the `/opt/conda` directory from root to user.
-COPY --from=${NGC_IMAGE} --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --from=base --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
 WORKDIR ${PIP_DOWNLOAD_CACHE}
