@@ -42,6 +42,8 @@ RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
         tzdata && \
     rm -rf /var/lib/apt/lists/*
 
+RUN rm -rf /opt/conda
+
 ARG GID
 ARG UID
 ARG GRP=user
@@ -60,6 +62,7 @@ USER ${USR}
 RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
 
 # This wierd copy exists to change ownership of the `/opt/conda` directory from root to user.
+# The `base` layer exists solely because `--from` can only take literal values.
 COPY --from=base --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
