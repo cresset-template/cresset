@@ -420,6 +420,7 @@ Using Docker Compose V2 (see https://docs.docker.com/compose/cli-command),
 run the following two commands, where `train` is the default service name 
 in the provided `docker-compose.yaml` file.
 
+0. Read the `docker-compose.yaml` file and set variables to appropriate values (First time only).
 1. `docker compose up -d train`
 2. `docker compose exec train /bin/bash`
 
