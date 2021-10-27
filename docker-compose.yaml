@@ -1,12 +1,16 @@
 # Requires the latest version of Docker Compose.
 # Docker Compose V2 is recommended.
 # `docker-compose.yaml` files cannot use shell outputs as their inputs.
-# An `.env` file may be used to specify variables instead.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
 # for a guide on how to interpret the `docker-compose.yaml` file.
+# Variables are in ${VARIBALE:-DEFAULT_VALUE} format
+# to ensure that default values are given to the Dockerfile.
+# Users are recommended to use an `.env` file to set variables.
 
 services:
   train:  # Service name
+    env_file:
+      - ${ENV_FILE:-.env}
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but removes shared memory cap.
     tty: true  # Equivalent to `-t` flag in `docker run`.
@@ -51,7 +55,9 @@ services:
   # Perhaps placing two unrelated services in the same file
   # is not best practice, but I did not wish to create another file.
   ngc:
-    image: pytorch_source:ngc-${YEAR-21}.${MONTH-09}
+    env_file: 
+      - ${ENV_FILE:-.env}
+    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-09}
     ipc: host
     tty: true
     init: true
@@ -62,6 +68,8 @@ services:
       target: ngc
       context: .
       dockerfile: ngc.Dockerfile
+      cache_from: 
+        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-09}-py3
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         YEAR: ${YEAR:-21}

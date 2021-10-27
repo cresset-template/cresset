@@ -32,7 +32,10 @@ ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
-
+# Build stages exist to build PyTorch and subsidiary libraries.
+# They can be easily extended to include builds for other libraries.
+# They are not used in the final image, which only copies
+# the build outputs from the build stages.
 FROM ${BUILD_IMAGE} AS build-base-ubuntu
 
 # Change default settings to allow `apt` cache in Docker image.
@@ -236,8 +239,9 @@ COPY --from=build-audio /tmp/dist /tmp/dist
 
 FROM ${TRAIN_IMAGE} AS train
 ######### *Customize for your use case by editing from here* #########
-# The `train` image is designed to be separate from the `build` image.
-# Only build artifacts are copied over.
+# The `train` image is the actual images used for training.
+# It is designed to be separate from the `build` image,
+# with only the build artifacts copied over.
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -323,7 +327,7 @@ RUN conda install -y \
 # Not using a `requirements.txt` file by design as this would create an external dependency.
 # Also, the file would not be a true requirements file because of the source builds and conda installs.
 # Preserving pip cache by omitting `--no-cache-dir`.
-RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
+RUN --mount=type=cache,id=pip-train,target=${PIP_DOWNLOAD_CACHE} \
     --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install \
         /tmp/dist/*.whl \

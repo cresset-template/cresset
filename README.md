@@ -416,11 +416,15 @@ only to have it crash and burn right before their paper submission is due.
 
 
 ## Usage
+__*Docker images created by the `Makefile` 
+are fully compatible with the `docker-compose.yaml` file.
+There is no need to erase them to use Docker Compose.*__
+
 Using Docker Compose V2 (see https://docs.docker.com/compose/cli-command),
 run the following two commands, where `train` is the default service name 
 in the provided `docker-compose.yaml` file.
 
-0. Read the `docker-compose.yaml` file and set variables to appropriate values (First time only).
+0. Read `docker-compose.yaml` and set variables in the `.env` file (first time only).
 1. `docker compose up -d train`
 2. `docker compose exec train /bin/bash`
 
@@ -428,6 +432,7 @@ This will open an interactive shell with settings specified by the `train` servi
 in the `docker-compose.yaml` file. 
 Environment variables can be saved in a `.env` file placed on the project root,
 removing the need to type in variables such as UID/GID values with each run.
+To create a basic `.env` file, run `make env`.
 
 This is extremely convenient for managing reproducible development environments.
 For example, if a new `pip` or `apt` package must be installed for the project,
@@ -484,10 +489,10 @@ The only difference with the previous `train` session is the session name.
 
 1. Connecting to a running container by `ssh` will remove all variables set by `ENV`.
 This is because `sshd` starts a new environment, wiping out all previous variables.
-Using `docker`/`docker-compose` to enter containers is strongly recommended.
+Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
-has not been released on the `pytorch` anaconda channel.
+has not been released on the `pytorch` channel of anaconda.
 Users may attempt building with older versions of `magma-cuda` 
 or try the version available on `conda-forge`.
 A source build of `magma` would be welcome as a pull request.
