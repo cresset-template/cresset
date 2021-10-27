@@ -7,6 +7,7 @@
 # which is specified by `CC` in the `Makefile`.
 
 # NOTE: Before submitting a GitHub issue because of an error, try the following steps.
+# 0. Reboot your computer/server. If this is not possible, restart Docker.
 # 1. Remove all pre-existing pytorch_source:* images.
 # 2. (Optional) Run `docker system prune` to remove all docker caches.
 # 3. Run the *-clean commands for clean builds.
@@ -14,6 +15,9 @@
 # I would rather that the Issues page not be inundated with trivial questions.
 # Reports of genuine bugs and well-formed proposals are more than welcome.
 
+.PHONY: env all build-install build-torch build-train
+.PHONY: all-full build-install-full build-torch-full build-train-full
+.PHONY: build-train-clean build-train-full-clean
 
 # Create a .env file in PWD if it does not exist already.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
@@ -23,6 +27,7 @@ env:
 	test -s ${ENV_FILE} || echo "GID=$(shell id -g)\nUID=$(shell id -u)" >> ${ENV_FILE}
 
 
+# The following are the default builds for the make commands.
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
@@ -32,11 +37,6 @@ TORCHTEXT_VERSION_TAG   = v0.10.1
 TORCHAUDIO_VERSION_TAG  = v0.9.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
-
-.PHONY: env all build-install build-torch build-train
-.PHONY: all-full build-install-full build-torch-full build-train-full
-.PHONY: build-train-clean build-train-full-clean
-
 
 all: env build-install build-torch build-train
 
