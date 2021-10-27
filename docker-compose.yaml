@@ -7,6 +7,8 @@
 
 services:
   train:  # Service name
+    env_file: 
+      - $PWD/.env
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but removes shared memory cap.
     tty: true  # Equivalent to `-t` flag in `docker run`.
@@ -51,6 +53,8 @@ services:
   # Perhaps placing two unrelated services in the same file
   # is not best practice, but I did not wish to create another file.
   ngc:
+    env_file: 
+      - $PWD/.env
     image: pytorch_source:ngc-${YEAR-21}.${MONTH-09}
     ipc: host
     tty: true
