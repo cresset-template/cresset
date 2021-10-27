@@ -6,7 +6,7 @@
 # for a guide on how to interpret the `docker-compose.yaml` file.
 
 services:
-  train_:  # Service name
+  train:  # Service name
     env_file:
       - ${ENV_FILE:-.env}
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
