@@ -14,6 +14,15 @@
 # I would rather that the Issues page not be inundated with trivial questions.
 # Reports of genuine bugs and well-formed proposals are more than welcome.
 
+
+# Create a .env file in PWD if it does not exist already.
+# This will help prevent UID/GID bugs in `docker-compose.yaml`,
+# which unfortunately cannot use shell outputs in the file.
+ENV_FILE = .env
+env:
+	test -s ${ENV_FILE} || echo "GID=$(shell id -g)\nUID=$(shell id -u)" >> ${ENV_FILE}
+
+
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
@@ -24,11 +33,12 @@ TORCHAUDIO_VERSION_TAG  = v0.9.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
-.PHONY: all build-install build-torch build-train
+.PHONY: env all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
 .PHONY: build-train-clean build-train-full-clean
 
-all: build-install build-torch build-train
+
+all: env build-install build-torch build-train
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -85,7 +95,7 @@ MAGMA_VERSION     = 102  # Magma version must match CUDA version.
 TORCH_NAME_FULL   = build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 INSTALL_NAME_FULL = build_install-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 
-all-full: build-install-full build-torch-full build-train-full
+all-full: env build-install-full build-torch-full build-train-full
 
 build-install-full:
 	DOCKER_BUILDKIT=1 docker build \

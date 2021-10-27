@@ -6,9 +6,9 @@
 # for a guide on how to interpret the `docker-compose.yaml` file.
 
 services:
-  train:  # Service name
-    env_file: 
-      - $PWD/.env
+  train_:  # Service name
+    env_file:
+      - ${ENV_FILE:-.env}
     image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but removes shared memory cap.
     tty: true  # Equivalent to `-t` flag in `docker run`.
@@ -54,8 +54,8 @@ services:
   # is not best practice, but I did not wish to create another file.
   ngc:
     env_file: 
-      - $PWD/.env
-    image: pytorch_source:ngc-${YEAR-21}.${MONTH-09}
+      - ${ENV_FILE:-.env}
+    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-09}
     ipc: host
     tty: true
     init: true
@@ -66,6 +66,8 @@ services:
       target: ngc
       context: .
       dockerfile: ngc.Dockerfile
+      cache_from: 
+        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-09}-py3
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         YEAR: ${YEAR:-21}
