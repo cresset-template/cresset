@@ -8,7 +8,7 @@
 특히 학계에서는 메모리 요구 사항을 1/4로 줄이고,
 속도를 4~5배 높일 수 있는 AMP(Automatic Mixed Precision)조차 사용하지 않는 경우가 많습니다.
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) 또는 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)를 사용하여 큰 번거로움 없이 AMP를 활성화할 수 있음에도 마찬가지입니다.
-T특히 Accelerate 라이브러리는 몇 줄의 코드만으로 기존 PyTorch 프로젝트에 통합할 수 있습니다.
+특히 Accelerate 라이브러리는 몇 줄의 코드만으로 기존 PyTorch 프로젝트에 통합할 수 있습니다.
 
 딥 러닝의 신비에 발을 담그기 시작한 초보자라도 더 많은 컴퓨팅이 성공의 핵심 요소라는 것을 알고 있습니다.
 과학자가 아무리 똑똑하더라도 10배 더 많은 컴퓨팅으로 경쟁자를 능가하는 것은 결코 대단한 일이 아닙니다.
@@ -21,7 +21,7 @@ PyTorch 소스 빌드가 포함된 Docker 이미지는 이미 공식 [PyTorch Do
 여기에 제시된 프로젝트는 다릅니다.
 사용자가 설치한 라이브러리를 제외하고 작업할 추가 라이브러리가 없습니다.
 빌드에서 생성된 휠은 Docker 사용법을 배울 필요 없이 모든 환경에서 사용하기 위해 추출할 수 있습니다.
-(이 프로젝트의 두 번째 부분에서는 Docker를 훨씬 쉽게 사용할 수 있도록 `docker-compose.yaml` 파일도 제공합니다.)
+ (이 프로젝트의 두 번째 부분에서는 Docker를 훨씬 쉽게 사용할 수 있도록 `docker-compose.yaml` 파일도 제공합니다.)
 
 만약 당신이 더 빨리 끝내고 싶어하는 사람이라면 Tensor board를 응시하면서 오랜 시간을 견디는것이 끝났습니다.
 이 프로젝트가 바로 정답일 수 있습니다.
