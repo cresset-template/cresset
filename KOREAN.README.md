@@ -41,7 +41,7 @@ GPU 사용률이 컴퓨팅 최적화를 할 만큼 충분히 높은지 확인하
 GPU 사용률이 낮거나 돌발적으로 최고조에 달하는 경우, 이 템플릿을 사용하기 전에 효율적인 ETL 파이프라인을 설계하세요.
 그렇지 않으면, 더 빠른 컴퓨팅이 병목 현상이 되지 않으므로 별로 도움이 되지 않습니다.
 
-효율적인 ETL 파이프라인 설계에 대한 가이드는 https://www.tensorflow.org/guide/data_performance를 참조하세요.
+효율적인 ETL 파이프라인 설계에 대한 가이드는 https://www.tensorflow.org/guide/data_performance 를 참조하세요.
 
 [NVIDIA DALI](https://github.com/NVIDIA/DALI) 라이브러리 또한 도움이 될 수도 있습니다. 
 The [DALI PyTorch plugin](https://docs.nvidia.com/deeplearning/dali/user-guide/docs/plugins/pytorch_tutorials.html)
