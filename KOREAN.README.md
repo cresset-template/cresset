@@ -49,17 +49,13 @@ The [DALI PyTorch plugin](https://docs.nvidia.com/deeplearning/dali/user-guide/d
 
 
 ## Introduction
-A Template repository to build PyTorch __*from source*__ on __*any*__ version of PyTorch/CUDA/cuDNN.
+PyTorch/CUDA/cuDNN의 __*모든 버전*__ 에서의 __*소스로부터*__ PyTorch를 빌드하기 위한 템플릿 리포지토리.
 
-PyTorch built from source is much faster 
-(as much as x4 times on some benchmarks, though x2 is more typical) 
-than PyTorch installed from `pip`/`conda` but building from source is an 
-arduous and bug-prone process.
+소스에서 빌드한 PyTorch는 `pip`/`conda`에서 설치된 PyTorch보다 훨씬 빠르지만(일부 벤치마크에서는 x4배, x2가 더 일반적입니다.
+소스에서 빌드하는 것은 힘들고 버그가 발생하기 쉬운 프로세스입니다.
 
-This repository is a highly modular template to build 
-any version of PyTorch from source on any version of CUDA.
-It provides an easy-to-use Dockerfile that can be integrated 
-into any Linux-based image or project.
+이 리포지토리는 모든 버전의 CUDA에서 의 소스로부터 모든 버전의 PyTorch를 빌드하기 위한 고도로 모듈화된 템플릿입니다.
+ILinux 기반 이미지 또는 프로젝트에 통합할 수 있는 사용하기 쉬운 Dockerfile을 제공합니다.
 
 For researchers unfamiliar with Docker, 
 the generated wheel files can be extracted 
