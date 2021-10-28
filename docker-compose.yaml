@@ -6,6 +6,7 @@
 # Variables are in ${VARIBALE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
 # Users are recommended to use an `.env` file to set variables.
+# Run `make env` to create a basic `.env` file with the UID and GID variables.
 
 services:
   train:  # Service name
@@ -35,8 +36,8 @@ services:
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}  # Must be specified manually. Run `id -g` on the terminal to find your GID.
-        UID: ${UID:-1000}  # Must be specified manually. Run `id -u` on the terminal to find your UID.
+        GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that this value is set properly.
+        UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that this value is set properly.
         TZ: ${TZ:-Asia/Seoul}  # Used during the build.
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard/Jupyter.
