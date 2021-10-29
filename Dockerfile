@@ -260,14 +260,18 @@ ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Speedups in `apt` and `pip` installs for Korean users. Change URLs for other locations.
-# http://archive.ubuntu.com/ubuntu/ is specific to nvidia/cuda CUDA Ubuntu images.
+# http://archive.ubuntu.com/ubuntu is specific to nvidia/cuda CUDA Ubuntu images.
 # Check `/etc/apt/sources.list` of your base image to find your Ubuntu URL.
 # Download optimization is located here but not in the install image for 2 reasons.
 # 1. Installation images should be modular and should not be affected by the timezone.
 # 2. Installation is very short compared to build but a speedup is desirable if a build is already cached.
+ARG DEB_OLD=http://archive.ubuntu.com
+ARG DEB_NEW=http://mirror.kakao.com
+ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+ARG TRUSTED_HOST=mirror.kakao.com
 RUN if [ $TZ = Asia/Seoul ]; then \
-    sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list && \
-    printf "[global]\nindex-url=http://mirror.kakao.com/pypi/simple\ntrusted-host=mirror.kakao.com\n" \
+    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
     >> /etc/pip.conf; \
     fi
 

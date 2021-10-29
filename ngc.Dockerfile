@@ -25,9 +25,13 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
 
+ARG DEB_OLD=http://archive.ubuntu.com
+ARG DEB_NEW=http://mirror.kakao.com
+ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+ARG TRUSTED_HOST=mirror.kakao.com
 RUN if [ $TZ = Asia/Seoul ]; then \
-    sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list && \
-    printf "[global]\nindex-url=http://mirror.kakao.com/pypi/simple\ntrusted-host=mirror.kakao.com\n" \
+    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
     >> /etc/pip.conf; \
     fi
 

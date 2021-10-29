@@ -12,12 +12,12 @@ services:
   train:  # Service name
     env_file:
       - ${ENV_FILE:-.env}
-    image: pytorch_source:${TRAIN_NAME:-train}  # Image to use
+    image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but removes shared memory cap.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
-    volumes:  # Add volumes as necessary.
+    volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
       - $PWD:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       target: train  # Specify build target.
@@ -42,6 +42,7 @@ services:
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard/Jupyter.
 #      - "${PORT:-8080}:22"
+    user: ${UID:-1000}:${GID:-1000}
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: ${TZ:-Asia/Seoul}  # Used during run.
       CUDA_DEVICE_ORDER: PCI_BUS_ID
@@ -79,6 +80,7 @@ services:
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
     working_dir: ${PROJECT_ROOT:-/opt/project}
+    user: ${UID:-1000}:${GID:-1000}
     environment:
       TZ: ${TZ:-Asia/Seoul}
       CUDA_DEVICE_ORDER: PCI_BUS_ID

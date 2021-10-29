@@ -188,7 +188,7 @@ timezone names to specify the desired timezone.
 
 Example: `make all CC="8.6" TZ=America/Los_Angeles` uses L.A. time on the training image.
 
-NOTE: Only the training image has timezone settings. 
+N.B. Only the training image has timezone settings. 
 The installation and build images do not use timezone information.
 
 In addition, the training image has `apt` and `pip` 
@@ -451,9 +451,9 @@ which are accelerated by caching and with fast mirror URLs.
 
 To stop and restart a service after editing the 
 `Dockerfile` or `docker-compose.yaml` file,
-simply run `docker compose up -d train` again.
+simply run `docker compose up -d --build train` again.
 
-To remove all Compose containers, use the following:
+To stop services and remove containers, use the following:
 
 `docker compose down`.
 
