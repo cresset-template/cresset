@@ -8,12 +8,12 @@
 
 
 ## TL;DR
-__*This repository provides a template for building any 
-PyTorch version on any CUDA version that can be plugged into any project on any CUDA GPU.
+__*This repository provides a template for building pip wheel binaries for any 
+PyTorch version on any CUDA version. These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.
 PyTorch built from source in this way can be x10 faster than naïve PyTorch.*__
 
 __*Also, a new paradigm for deep learning development using Docker and Docker Compose is proposed.
-Hopefully, this method will become best practice for both academia and industry.*__
+Hopefully, this method will become best practice in both academia and industry.*__
 
 
 ## Preamble
