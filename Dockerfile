@@ -66,6 +66,8 @@ LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 # Conda packages have lower priority than system packages during build.
+# Build failures may be caused if conda packages higher priority,
+# though this is a hypothesis that still needs verification.
 ENV PATH=$PATH:/opt/conda/bin
 
 RUN /usr/sbin/update-ccache-symlinks
