@@ -119,32 +119,28 @@ https://pytorch.org/docs/stable/cpp_extension.html 를 참조하세요.
 
 
 ### Makefile Explanation
-The `Makefile` is designed to make using this package simple and modular.
+`Makefile` 은 이 패키지를 간단하고 모듈화하여 사용할 수 있도록 설계되었습니다.
 
-The first image to be created is `pytorch_source:build_install`, 
-which contains all packages necessary for the build.
-The installation image is created separately to cache downloads.
+생성될 첫 번째 이미지는 빌드에 필요한 모든 패키지가 포함된 `pytorch_source:build_install`입니다.
+설치 이미지는 다운로드를 캐시하기 위해 별도로 생성됩니다.
 
-The second image is `pytorch_source:build_torch-v1.9.1` (by default), 
-which contains the wheels for PyTorch, TorchVision, TorchText, and TorchAudio
-with settings for PyTorch 1.9.1 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.3.1 and cuDNN 8.
-The second image exists to cache the results of the build process.
+두 번째 이미지는 `pytorch_source:build_torch-v1.9.1`(기본값)입니다.
+여기에는 Python 3.8, CUDA 11.3.1 그리고 cuDNN 8이 포함된 
+Ubuntu 20.04 LTS의 PyTorch 1.9.1 설정과 함께 PyTorch, TorchVision, TorchText 및 TorchAudio용 휠이 포함되어 있습니다.
+두 번째 이미지는 빌드 프로세스의 결과를 캐시하기 위해 존재합니다.
 
-If you do not wish to use Docker and would like to only extract 
-the `.whl` wheel files for a pip install on your environment,
-the generated wheel files can be found in the `/tmp/dist` directory.
+Docker를 사용하지 않고 환경에 pip 설치를 위한 `.whl` 휠 파일만 추출하려는 경우,
+생성된 휠 파일은 `/tmp/dist` 디렉토리에서 찾을 수 있습니다.
 
-Saving the build results also allows for more convenient version switching in case
-different PyTorch versions (different CUDA version, different library version, etc.) are needed.
+빌드 결과를 저장하면 다른 PyTorch 버전(다른 CUDA 버전, 다른 라이브러리 버전 등)이 필요한 경우보다 편리한 버전 전환이 가능합니다.
 
-The final image is `pytorch_source:train`, which is the image to be used for actual training.
-It relies on the previous stages only for the build artifacts (wheels, etc.) and nothing else.
-This makes it very simple to create different training images optimized for different environments and GPU devices.
+최종 이미지는 실제 학습에 사용할 이미지인 `pytorch_source:train`입니다.
+빌드 아티팩트(휠 등)에 대해서만 이전 단계에 의존하고 다른 것은 전혀 사용하지 않습니다.
+이를 통해 다양한 환경 및 GPU 장치에 최적화된 다양한 훈련 이미지를 매우 간단하게 생성할 수 있습니다.
 
-Because PyTorch has already been built, 
-the training image only needs to download the 
-remaining `apt`/`conda`/`pip` packages. 
-Caching is also implemented to speed up even this process.
+PyTorch가 이미 빌드되었기 때문에,
+학습 이미지는 나머지 `apt`/`conda`/`pip` 패키지만 다운로드하면 됩니다.
+이 프로세스의 속도를 높이기 위해 캐싱도 구현됩니다.
 
 
 ### Timezone Settings
