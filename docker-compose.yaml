@@ -10,10 +10,11 @@
 
 services:
   train:  # Service name
-    env_file:
-      - ${ENV_FILE:-.env}
-    image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use
-    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Known security vulnerability but removes shared memory cap.
+    env_file:  # Explicitly specifying the file causes an error if it does not exist.
+      - ${ENV_FILE:-.env}  # Forcing users to create a `.env` file before using compose, thus preventing errors.
+    image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use.
+    # Known security vulnerability but removes shared memory cap. Disable this for WSL.
+    ipc: host  # Equivalent to `--ipc=host` in `docker run`.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
@@ -36,15 +37,15 @@ services:
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that this value is set properly.
-        UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that this value is set properly.
+        GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that it is set properly in `.env`.
+        UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that it is set properly in `.env`.
         TZ: ${TZ:-Asia/Seoul}  # Used during the build.
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard/Jupyter.
 #      - "${PORT:-8080}:22"
     user: ${UID:-1000}:${GID:-1000}
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
-      TZ: ${TZ:-Asia/Seoul}  # Used during run.
+      TZ: ${TZ:-Asia/Seoul}  # Used during runtime.
       CUDA_DEVICE_ORDER: PCI_BUS_ID
     deploy:  # API dependent on compose version.
       resources:

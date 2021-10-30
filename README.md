@@ -485,17 +485,35 @@ To use the NGC images, use the following commands:
 The only difference with the previous `train` session is the session name.
 
 
+## Using Compose with PyCharm and VSCode
+
+The Docker Compose container environment can be used with popular Python IDEs, not just in the terminal.
+PyCharm and Visual Studio Code, both very popular in the deep learning community,
+are compatible with Docker Compose.
+
+0. If you are using a remote server, first create a Docker 
+[context](https://docs.docker.com/engine/context/working-with-contexts)
+to connect your local Docker with the remote Docker.
+
+1. **PyCharm** (Professional only): Docker Compose is available natively as a Python interpreter.
+See [tutorial](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
+Note that PyCharm Professional is available at no cost to anyone with a valid university e-mail address.
+
+3. **VSCode**: Install the Remote Development extension pack. 
+See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
+
 # Known Issues
 
 1. Connecting to a running container by `ssh` will remove all variables set by `ENV`.
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
+2. Building on CUDA 11.4.x or greater is not available as of October 2021 because `magma-cuda114`
 has not been released on the `pytorch` channel of anaconda.
 Users may attempt building with older versions of `magma-cuda` 
 or try the version available on `conda-forge`.
 A source build of `magma` would be welcome as a pull request.
+Note that the NVIDIA NGC images use an in-house build of `magma`.
 
 3. Ubuntu 16.04 build fails. 
 This is because the default `git` installed by `apt` on 
@@ -506,6 +524,8 @@ Lower the version tag to v1.8.2 to build.
 However, the project will not be modified to accommodate 
 Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 
+4. Docker Compose does not run on WSL.
+Disable `ipc: host`. WSL cannot use this option.
 
 # Desiderata
 
