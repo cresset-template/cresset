@@ -1,4 +1,4 @@
-# The Docker Template for Universal PyTorch Source-Builds
+# The Docker Template for PyTorch Source-Builds
 
 ## Preamble
 Recent years have seen tremendous academic effort go into the design and implementation of 
