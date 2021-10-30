@@ -19,14 +19,14 @@
 .PHONY: all-full build-install-full build-torch-full build-train-full
 .PHONY: build-train-clean build-train-full-clean
 
-# Create a .env file in PWD if it does not exist already.
+# Create a .env file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
 ENV_FILE = .env
 env:
 	test -s ${ENV_FILE} || echo "GID=$(shell id -g)\nUID=$(shell id -u)" >> ${ENV_FILE}
 
-# Create a .dockerignore file in PWD if it does not exist already.
+# Create a .dockerignore file in PWD if it does not exist already or is empty.
 # The created .dockerignore file will make Docker ignore all context during build.
 DI_FILE = .dockerignore
 di:
