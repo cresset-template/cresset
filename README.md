@@ -5,6 +5,17 @@
 [![GitHub forks](https://img.shields.io/github/forks/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/network)
 [![GitHub license](https://img.shields.io/github/license/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template)
 [![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)](https://twitter.com/intent/tweet?text=Extraordinary!:&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)
+
+
+## TL;DR
+__*This repository provides a template for building any 
+PyTorch version on any CUDA version that can be plugged into any project on any CUDA GPU.
+PyTorch built from source in this way can be x10 faster than naïve PyTorch.*__
+
+__*Also, a new paradigm for deep learning development using Docker and Docker Compose is proposed.
+Hopefully, this method will become best practice for both academia and industry.*__
+
+
 ## Preamble
 Recent years have seen tremendous academic effort go into the design and implementation of 
 efficient neural networks to cope with the ever-increasing amount 
@@ -47,7 +58,7 @@ If you are among those who could but only yearn for a quicker end to
 the long hours endured staring at Tensorboard as your models inched past the epochs, 
 this project may be just the thing.
 When using a source build of PyTorch with the latest version of CUDA, combined with AMP, 
-one may achieve training/inference times x10 faster than a naïve PyTorch environment. 
+one may achieve training/inference times __*x10 faster than a naïve PyTorch environment*__. 
 
 I sincerely hope that my project will be of service to practitioners in both academia and industry.
 Users who find my work beneficial are more than welcome to show their appreciation by starring this repository.
@@ -490,7 +501,7 @@ To use the NGC images, use the following commands:
 The only difference with the previous `train` session is the session name.
 
 
-## Using Compose with PyCharm and VSCode
+### Using Compose with PyCharm and VSCode
 
 The Docker Compose container environment can be used with popular Python IDEs, not just in the terminal.
 PyCharm and Visual Studio Code, both very popular in the deep learning community,
@@ -502,7 +513,7 @@ to connect your local Docker with the remote Docker.
 
 1. **PyCharm** (Professional only): Docker Compose is available natively as a Python interpreter.
 See [tutorial](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
-Note that PyCharm Professional is available at no cost to anyone with a valid university e-mail address.
+Note that PyCharm Professional is available free of charge to anyone with a valid university e-mail address.
 
 3. **VSCode**: Install the Remote Development extension pack. 
 See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
