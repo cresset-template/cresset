@@ -144,29 +144,25 @@ PyTorch가 이미 빌드되었기 때문에,
 
 
 ### Timezone Settings
-International users may find this section helpful.
+해외 사용자는 이 섹션이 도움이 될 수 있습니다.
 
-The `train` image has its timezone set by the 
-`TZ` variable using the `tzdata` package.
-The default timezone is `Asia/Seoul` but this can be changed by 
-specifying the `TZ` variable when calling `make`.
-Use [IANA](https://www.iana.org/time-zones) 
-timezone names to specify the desired timezone.
+`학습` 이미지에는 `tzdata` 패키지를 사용하여 `TZ` 변수에 의해 설정된 시간대가 있습니다.
+기본 시간대는 `Asia/Seoul` 이지만 `make` 호출 시 `TZ` 변수를 지정하여 변경할 수 있습니다.
+[IANA](https://www.iana.org/time-zones) 시간대 이름을 사용하여 원하는 시간대를 지정합니다.
 
-Example: `make all CC="8.6" TZ=America/Los_Angeles` uses L.A. time on the training image.
+예시: `make all CC="8.6" TZ=America/Los_Angeles` 는 학습 이미지에서 L.A.시간을 사용합니다.
 
-NOTE: Only the training image has timezone settings. 
-The installation and build images do not use timezone information.
+참고: 학습 이미지에만 시간대 설정이 있습니다.
+설치 및 이미지 빌드는 시간대 정보를 사용하지 않습니다.
 
-In addition, the training image has `apt` and `pip` 
-installation URLs updated for Korean users.
-If you wish to speed up your installs, 
-please find URLs optimized for your location, 
-though the installation caches may make this unnecessary.
+또한, 학습 이미지에는 한국어 사용자를 위해 업데이트된 'apt' 및 'pip' 설치 URL이 있습니다.
+설치 속도를 높이려면,
+설치 캐시로 인해 불필요할 수 있지만,
+해당 위치에 최적화된 URL을 찾으십시오.
 
 
 ## Specific PyTorch Version
-__*PyTorch subsidiary libraries only work with matching versions of PyTorch.*__
+__*PyTorch 보조 라이브러리는 일치하는 PyTorch 버전에서만 작동합니다.*__
 
 To change the version of PyTorch,
 set the [`PYTORCH_VERSION_TAG`](https://github.com/pytorch/pytorch), 
