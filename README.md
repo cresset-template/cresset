@@ -543,6 +543,12 @@ Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 4. Docker Compose does not run on WSL.
 Disable `ipc: host`. WSL cannot use this option.
 
+5. CUDA Driver Compatibility. If `torch.cuda.is_available()` returns `UserWarning: CUDA initialization:...`,
+Then either upgrade the host CUDA driver or downgrade the CUDA version for the image.
+Check the [compatibility matrix](https://docs.nvidia.com/deploy/cuda-compatibility/index.html#use-the-right-compat-package)
+to check if the host CUDA driver is compatible with the desired version of CUDA.
+
+
 # Desiderata
 
 0. **MORE STARS**. If you are reading this, star this repository immediately. I'm serious.
