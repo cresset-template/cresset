@@ -63,15 +63,11 @@ RUN --mount=type=cache,id=apt-cache-build,target=/var/cache/apt \
 FROM build-base-${LINUX_DISTRO} AS build-base
 
 LABEL maintainer="veritas9872@gmail.com"
-ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
-# Conda packages have lower priority than system packages during build.
-# Build failures may be caused if conda packages higher priority,
-# though this is a hypothesis that still needs verification.
-ENV PATH=$PATH:/opt/conda/bin
-
-RUN /usr/sbin/update-ccache-symlinks
-RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
+# Conda packages have higher priority than system packages during build.
+ENV PATH=/opt/conda/bin:$PATH
 
 # Python won’t try to write .pyc or .pyo files on the import of source modules.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -91,6 +87,11 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
+# Include `conda` in dynamic linking. Setting $LD_LIBRARY_PATH directly is bad practice.
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+
+RUN /usr/sbin/update-ccache-symlinks
+RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
 # Install everything required for build.
 FROM build-base AS build-install
@@ -229,7 +230,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 
 FROM ${BUILD_IMAGE} AS train-builds
-# A convenience layer to gather PyTorch and subsidiary builds  required for training.
+# A convenience layer to gather PyTorch and subsidiary builds required for training.
 # If other source builds are included later on, gather them here as well.
 # The train layer should not have any dependencies other than this layer.
 
@@ -243,9 +244,10 @@ FROM ${TRAIN_IMAGE} AS train
 ######### *Customize for your use case by editing from here* #########
 # The `train` image is the actual images used for training.
 # It is designed to be separate from the `build` image,
-# with only the build artifacts copied over.
+# with only the build artifacts (e.g., pip wheels) copied over.
 LABEL maintainer="veritas9872@gmail.com"
-ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
 # Set as `ARG` values to reduce the image footprint but not affect resulting images.

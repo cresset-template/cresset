@@ -480,6 +480,16 @@ For more information on Docker Compose, see the documentation
 https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 
+### Tip
+
+The build created during a `docker compose up ...` command can be safely
+saved as Docker images using the corresponding `make` command.
+Simply give the same build options used during the `docker compose` build to the `make` build.
+As the build will already be cached, the images will be created very quickly.
+These images can be used as cache images using the `cache_from` option in the `docker-compose.yaml` file.
+This is useful because the build cache may be cleared by the system automatically due to memory issues.
+
+
 ## Compose as Best Practice
 
 I wish to emphasize that using Docker Compose in this manner 
