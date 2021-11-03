@@ -450,6 +450,13 @@ Environment variables can be saved in a `.env` file placed on the project root,
 removing the need to type in variables such as UID/GID values with each run.
 To create a basic `.env` file, run `make env`.
 
+An example `.env` file is shown below.
+```
+UID=1000
+GID=1000
+CC=8.6
+```
+
 This is extremely convenient for managing reproducible development environments.
 For example, if a new `pip` or `apt` package must be installed for the project,
 users can simply edit the `train` layer of the 
