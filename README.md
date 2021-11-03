@@ -4,13 +4,14 @@
 [![GitHub issues](https://img.shields.io/github/issues/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/issues)
 [![GitHub forks](https://img.shields.io/github/forks/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/network)
 [![GitHub license](https://img.shields.io/github/license/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/LICENSE)
-[![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)](https://twitter.com/intent/tweet?text=Extraordinary!:&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)
+[![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)
 
 
 ## TL;DR
-__*This repository provides a template for building pip wheel binaries for any 
-PyTorch version on any CUDA version. These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.
-PyTorch built from source in this way can be x10 faster than naïve PyTorch.*__
+__*PyTorch built from source can be more than x4 faster than a naïve PyTorch install.
+This repository provides a template for building PyTorch pip wheel binaries from source 
+for any PyTorch version on any CUDA version on any environment. 
+These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.*__
 
 __*Also, a new paradigm for deep learning development using Docker and Docker Compose is proposed.
 Hopefully, this method will become best practice in both academia and industry.*__
@@ -448,9 +449,9 @@ This will open an interactive shell with settings specified by the `train` servi
 in the `docker-compose.yaml` file. 
 Environment variables can be saved in a `.env` file placed on the project root,
 removing the need to type in variables such as UID/GID values with each run.
-To create a basic `.env` file, run `make env`.
+To create a basic `.env` file with the UID and GID, run `make env`.
 
-Example `.env` file:
+Example `.env` file for RTX 3090 GPUs:
 ```
 UID=1000
 GID=1000
@@ -560,9 +561,8 @@ Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 4. Docker Compose does not run on WSL.
 Disable `ipc: host`. WSL cannot use this option.
 
-5. CUDA Driver Compatibility. 
-If `torch.cuda.is_available()` returns `UserWarning: CUDA initialization:...`,
-this indicates that the CUDA driver on the host is incompatible with the CUDA version on the Docker image.
+5. `torch.cuda.is_available()` returns `... UserWarning: CUDA initialization:...` error or image will simply not start.
+This indicates that the CUDA driver on the host is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
 Check the [compatibility matrix](https://docs.nvidia.com/deploy/cuda-compatibility/index.html#use-the-right-compat-package)
 to see if the host CUDA driver is compatible with the desired version of CUDA.
