@@ -387,7 +387,7 @@ bugs are often only evident at runtime.
 This leads many researchers to develop inside interactive containers.
 Docker users often have `run.sh` files with commands such as
 `docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`
-(does this look familiar to anyone?) and use SSH to connect to running containers.
+(look familiar, anyone?) and use SSH to connect to running containers.
 VSCode also provides a remote development mode that can be used 
 to code inside containers.
 
@@ -450,7 +450,7 @@ Environment variables can be saved in a `.env` file placed on the project root,
 removing the need to type in variables such as UID/GID values with each run.
 To create a basic `.env` file, run `make env`.
 
-An example `.env` file is shown below.
+Example `.env` file:
 ```
 UID=1000
 GID=1000
