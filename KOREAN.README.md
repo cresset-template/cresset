@@ -164,17 +164,17 @@ PyTorch가 이미 빌드되었기 때문에,
 ## Specific PyTorch Version
 __*PyTorch 보조 라이브러리는 일치하는 PyTorch 버전에서만 작동합니다.*__
 
-To change the version of PyTorch,
-set the [`PYTORCH_VERSION_TAG`](https://github.com/pytorch/pytorch), 
+파이토치 버전을 바꾸기 위해,
+[`PYTORCH_VERSION_TAG`](https://github.com/pytorch/pytorch), 
 [`TORCHVISION_VERSION_TAG`](https://github.com/pytorch/vision), 
-[`TORCHTEXT_VERSION_TAG`](https://github.com/pytorch/text), and 
+[`TORCHTEXT_VERSION_TAG`](https://github.com/pytorch/text), 및
 [`TORCHAUDIO_VERSION_TAG`](https://github.com/pytorch/audio) 
-variables to matching versions.
+를 변수에 일치하는 버전으로 설정해야합니다.
 
-The `*_TAG` variables must be GitHub tags or branch names of those repositories.
-Visit the GitHub repositories of each library to find the appropriate tags.
+`*_TAG` 변수는 해당 저장소의 GitHub 태그 또는 브랜치 이름이어야 합니다.
+각 라이브러리의 GitHub 레포지토리를 방문하여 적절한 태그를 찾으세요.
 
-Example: To build on an RTX 3090 GPU with PyTorch 1.9.1, use the following command:
+예시: PyTorch 1.9.1로 RTX 3090 GPU를 구축하려면 다음 명령을 사용하세요.
 
 `make all CC="8.6" 
 PYTORCH_VERSION_TAG=v1.9.1 
@@ -182,29 +182,23 @@ TORCHVISION_VERSION_TAG=v0.10.1
 TORCHTEXT_VERSION_TAG=v0.10.1
 TORCHAUDIO_VERSION_TAG=v0.9.1`.
 
-The resulting image, `pytorch_source:train`, can be used 
-for training with PyTorch 1.9.1 on GPUs with Compute Capability 8.6.
+결과 이미지 `pytorch_source:train`은 Compute Capability 8.6이 있는 GPU에서 PyTorch 1.9.1로 학습하는 데 사용할 수 있습니다.
 
 
 ## Multiple Training Images
-To use multiple training images on the same host, 
-give a different name to `TRAIN_NAME`, 
-which has a default value of `train`.
+동일한 호스트에서 여러 학습 이미지를 사용하려면 `TRAIN_NAME`에 다른 이름을 지정하세요.
+기본값은 `train`입니다.
 
-New training images can be created without having to rebuild PyTorch
-if the same build image is used for different training images.
-Creating new training images takes only a few minutes at most.
+동일한 빌드 이미지가 다른 학습 이미지에 사용되는 경우 PyTorch를 다시 빌드하지 않고도 새 학습 이미지를 생성할 수 있습니다.
+새 학습 이미지를 만드는 데는 기껏해야 몇 분 밖에 걸리지 않습니다.
 
-This is useful for the following use cases.
-1. Allowing different users, who have different UID/GIDs, 
-to use separate training images.
-2. Using different versions of the final training image with 
-different library installations and configurations.
-3. Using this template for multiple PyTorch projects,
-each with different libraries and settings.
+다음 사용 사례에 유용합니다.
+1. 다른 UID/GID를 가진 다른 사용자가 별도의 학습 이미지를 사용하도록 허용할 때
+2. 다른 라이브러리 설치 및 구성으로 최종 학습 이미지의 다른 버전을 사용할 때
+3. 각기 다른 라이브러리와 설정이 있는 여러 PyTorch 프로젝트에 이 템플릿을 사용할 때
 
-For example, if `pytorch_source:build_torch-v1.9.1` has already been built,
-Alice and Bob would use the following commands to create separate images.
+예를 들어 `pytorch_source:build_torch-v1.9.1`이 이미 빌드된 경우,
+Alice와 Bob은 다음 명령을 사용하여 별도의 이미지를 만듭니다.
 
 Alice:
 `make build-train 
@@ -226,117 +220,97 @@ TORCHTEXT_VERSION_TAG=v0.10.1
 TORCHAUDIO_VERSION_TAG=v0.9.1
 TRAIN_NAME=train_bob` 
 
-This way, Alice's image would have her UID/GID while Bob's image would have his UID/GID.
-This procedure is necessary because training images have their users set during the build.
-Also, different users may install different libraries in their training images.
-Their environment variables and other settings may also be different.
+이런 식으로 Alice의 이미지에는 그녀의 UID/GID가 있고 Bob의 이미지에는 그의 UID/GID가 있습니다.
+학습 이미지에는 빌드 중에 사용자가 설정되어 있기 때문에 이 절차가 필요합니다.
+또한. 다른 사용자는 학습 이미지에 다른 라이브러리를 설치할 수 있습니다.
+환경 변수 및 기타 설정도 다를 수도 있습니다.
 
 
 ### Word of Caution
-When using build images such as `pytorch_source:build_torch-v1.9.1` as a build cache 
-for creating new training images, the user must re-specify all build arguments 
-(variables specified by ARG and ENV using --build-arg) of all previous layers.
+ 새 학습 이미지를 생성하기 위한 빌드 캐시로써 `pytorch_source:build_torch-v1.9.1`과 같은 빌드 이미지를 사용할때, 
+사용자는 모든 이전 레이어의 모든 빌드 인수(--build-arg를 사용하여 ARG 및 ENV에서 지정한 변수)를 다시 지정해야 합니다.
 
-Otherwise, the default values for these arguments will be given to the Dockerfile
-and a cache miss will occur because of the different input values.
+그렇지 않으면 이러한 인수의 기본값이 `Dockerfile`에 제공되고 다른 입력 값으로 인해 캐시 누락이 발생합니다.
 
-This will both waste time rebuilding previous layers and, more importantly,
-cause inconsistency in the training images due to environment mismatch.
+이는 이전 레이어를 재구축하는 데 시간을 낭비하고,
+더 중요하게는 환경 불일치로 인해 학습 이미지의 불일치를 유발합니다.
 
-This includes the `docker-compose.yaml` file as well. 
-All arguments given to the `Dockerfile` during the build must be respecified.
-This includes default values present in the `Makefile` 
-but not present in the `Dockerfile` such as the version tags.
+여기에는 `docker-compose.yaml` 파일도 포함됩니다.
+빌드 중에 `Dockerfile`에 제공된 모든 인수를 다시 지정해야 합니다.
+여기에는 `Makefile`에는 있지만 버전 태그와 같이 `Dockerfile`에는 없는 기본값이 포함됩니다.
 
-__*If Docker starts to rebuild layers that you have already built, 
-suspect that build arguments have been given incorrectly.*__ 
+__*Docker가 이미 빌드한 레이어를 다시 빌드하기 시작하면 빌드 인수가 잘못 지정되었는지 의심하세요.*__ 
 
-See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#leverage-build-cache
-for more information.
+자세한 내용은 https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#leverage-build-cache
+를 참고하세요.
 
-The `BUILDKIT_INLINE_CACHE` must also be given to an image to use it as a cache later. See 
-https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources
-for more information.
+나중에 캐시로 사용하려면 `BUILDKIT_INLINE_CACHE`도 이미지에 부여해야 합니다. 
+자세한 내용은 https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources
+를 참고하세요.
 
 
 ## Advanced Usage
-The `Makefile` provides the `*-full` commands for advanced usage.
+`Makefile`은 고급 사용을 위한 `*-full` 명령을 제공합니다.
 
-`make all-full CC=YOUR_GPU_CC TRAIN_NAME=train_cu102` will create 
+`make all-full CC=YOUR_GPU_CC TRAIN_NAME=train_cu102` 는 기본적으로 
 `pytorch_source:build_install-ubuntu18.04-cuda10.2-cudnn8-py3.9`,
 `pytorch_source:build_torch-v1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9`, 
-and `pytorch_source:train_cu102` by default.
+밑 `pytorch_source:train_cu102` 를 생성할 것입니다.
 
-These images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.
+이 이미지는 GTX 1080Ti와 같은 CUDA 10 장치의 교육/배포에 사용할 수 있습니다.
 
-Also, the `*-clean` commands are provided to check for cache reliance on previous builds.
+또한 `*-clean` 명령은 이전 빌드에 대한 캐시 의존도를 확인하기 위해 제공됩니다.
 
 
 ### Specific CUDA Version
-Set `CUDA_VERSION`, `CUDNN_VERSION`, and `MAGMA_VERSION` to change CUDA versions.
-`PYTHON_VERSION` may also be changed if necessary.
+CUDA 버전을 변경하려면 `CUDA_VERSION`, `CUDNN_VERSION`, `MAGMA_VERSION`을 설정하세요.
+필요한 경우 `PYTHON_VERSION`도 변경할 수 있습니다.
 
-This will create a build image that can be used as a cache 
-to create training images with the `build-train` command.
+그러면 `build-train` 명령으로 학습 이미지를 생성하기 위한 캐시로 사용할 수 있는 빌드 이미지가 생성됩니다.
 
-Also, the extensive use of caching in the project means that 
-the second build is much faster than the first build.
-This may be advantageous if many images must be created for multiple PyTorch/CUDA versions.
+또한 프로젝트에서 캐싱을 광범위하게 사용한다는 것은 두 번째 빌드가 첫 번째 빌드보다 훨씬 빠릅니다.
+이는 여러 PyTorch/CUDA 버전에 대해 많은 이미지를 생성해야 하는 경우에 유리할 수 있습니다.
 
 ### Specific Linux Distro
-CentOS and UBI images can be created with only minor edits to the `Dockerfile`.
-Read the `Dockerfile` for full instructions.
+CentOS 및 UBI 이미지는 `Dockerfile`을 약간만 수정하면 만들 수 있습니다.
+전체 지침은 `Dockerfile`을 참고하세요.
 
-Set the `LINUX_DISTRO` and `DISTRO_VERSION` arguments afterwards.
+나중에 `LINUX_DISTRO` 및 `DISTRO_VERSION` 인수를 설정합니다.
 
 ### Windows
-Windows users may use this template by updating to Windows 11 and installing 
-Windows Subsystem for Linux (WSL).
-WSL on Windows 11 gives a similar experience to using native Linux.
+Windows 사용자는 Windows 11로 업데이트하고,
+Linux용 Windows 하위 시스템(WSL)을 설치하여 이 템플릿을 사용할 수 있습니다.
+Windows 11의 WSL은 기본 Linux를 사용하는 것과 유사한 경험을 제공합니다.
 
-This project has been tested on WSL on Windows 11 
-with the WSL CUDA driver and Docker Desktop for Windows.
+이 프로젝트는 WSL CUDA 드라이버 및 Windows용 Docker Desktop을 사용하여 Windows 11의 WSL에서 테스트되었습니다.
 
 
 # Interactive Development with Docker Compose
 
 ## _Raison D'être_
-The purpose of this section is to introduce 
-a new paradigm for deep learning development. 
-I hope that using Docker Compose for deep learning projects
-will eventually become best practice, 
-improving the reproducibility of ML experiments 
-and freeing ordinary researchers from the burden 
-of managing their development environments.
+이 섹션의 목적은 딥러닝 개발을 위한 새로운 패러다임을 소개하는 것입니다.
+딥 러닝 프로젝트에 Docker Compose를 사용하는 것이
+결국 모범 사례가 되어 ML 실험의 재현성을 높이고,
+일반 연구원이 개발 환경을 관리해야 하는 부담에서 해방되기를 바랍니다.
 
-Developing in local environments with `conda` or `pip` 
-is commonplace in the deep learning community.
-However, this risks making the development environment, 
-and the code meant to run on it, unreproducible.
-This is a serious detriment to scientific progress 
-that many readers of this article 
-will have experienced at first-hand.
+딥 러닝 커뮤니티에서는 `conda` 또는 `pip`를 사용하여 로컬 환경에서 개발하는 것이 일반적입니다.
+그러나 이것은 개발 환경과 그 환경에서 실행될 코드를 재현할 수 없게 만들 위험이 있습니다.
+이것은 이 기사의 많은 독자들이 직접 경험하게 될 과학적 진보에 대한 심각한 해악입니다.
 
-Docker containers are the standard method for
-providing reproducible programs 
-across different computing environments. 
-They create isolated environments where programs 
-can run without interference from the host or from one another.
-See https://www.docker.com/resources/what-container for details.
+Docker 컨테이너는 다양한 컴퓨팅 환경에서 재현 가능한 프로그램을 제공하기 위한 표준 방법입니다.
+호스트 또는 서로의 간섭 없이 프로그램을 실행할 수 있는 격리된 환경을 만듭니다.
+자세한것은 https://www.docker.com/resources/what-container 참고하세요.
 
-But in practice, Docker containers are often misused. 
-Containers are meant to be transient and best practice dictates that 
-a new container be created for each run.
-But this is very inconvenient for development, 
-especially for deep learning applications, 
-where new libraries must constantly be installed and 
-bugs are often only evident at runtime.
-This leads many researchers to develop inside interactive containers.
-Docker users often have `run.sh` files with commands such as
-`docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`
-(does this look familiar to anyone?) and use SSH to connect to running containers.
-VSCode also provides a remote development mode that can be used 
-to code inside containers.
+그러나 실제로, Docker 컨테이너는 종종 오용됩니다.
+컨테이너는 일시적이며 모범 사례에 따르면 각 실행에 대해 새 컨테이너를 만들어야 합니다.
+그러나 이것은 개발, 
+특히 새로운 라이브러리를 지속적으로 설치해야 하고,
+버그가 종종 런타임 시에만 나타나는 딥 러닝 애플리케이션의 경우 매우 불편합니다.
+이것은 많은 연구자들이 대화형 컨테이너 내부에서 개발하도록 이끕니다.
+Docker 사용자는 종종 
+`docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`와 같은 
+명령이 포함된 `run.sh` 파일을 가지고 있으며, SSH를 사용하여 실행 중인 컨테이너에 연결합니다.
+VSCode는 컨테이너 내부에서 코딩하는 데 사용할 수 있는 원격 개발 모드도 제공합니다.
 
 The problem with this approach is that these interactive containers 
 become just as unreproducible as local development environments.
