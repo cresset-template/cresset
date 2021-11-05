@@ -312,147 +312,122 @@ Docker 사용자는 종종
 명령이 포함된 `run.sh` 파일을 가지고 있으며, SSH를 사용하여 실행 중인 컨테이너에 연결합니다.
 VSCode는 컨테이너 내부에서 코딩하는 데 사용할 수 있는 원격 개발 모드도 제공합니다.
 
-The problem with this approach is that these interactive containers 
-become just as unreproducible as local development environments.
-A running container cannot connect to a new port or attach a new volume.
-But if the computing environment within the container was created over several months 
-of installs and builds, the only way to keep it 
-is to save it as an image and create a new container from the saved image.
-After a few iterations of this process, 
-the resulting image becomes bloated and completely unreproducible.
+이 접근 방식의 문제는 이러한 대화형 컨테이너가 로컬 개발 환경만큼 재현할 수 없게 된다는 것입니다.
+실행 중인 컨테이너는 새 포트에 연결하거나 새 볼륨을 연결할 수 없습니다.
+그러나 컨테이너 내의 컴퓨팅 환경이 설치 및 빌드의 몇 개월에 걸쳐 생성된 경우,
+이를 유지하는 유일한 방법은 이미지로 저장하고,
+저장된 이미지에서 새 컨테이너를 생성하는 것입니다.
+이 프로세스를 몇 번 반복하면 결과 이미지가 부풀어 오르고 완전히 재현할 수 없게 됩니다.
+이 문제를 완화하기 위해 컨테이너를 쉽게 관리할 수 있도록 `docker-compose.yaml` 파일을 제공합니다.
+Docker Compose는 Docker의 일부이며 이미 개발 및 프로덕션 모두에서 널리 사용되는 도구입니다.
+알 수 없는 이유로, 아직 딥 러닝 커뮤니티에서 시작되지는 않았지만,
+Docker 사용 방법을 아는 사람이라면 Compose가 상당히 간단하다는 것을 알게 될 것입니다.
+이는 Compose가 단일 컨테이너 개발에도 사용될 수 있지만,
+종종 다중 컨테이너 솔루션으로 알려지기 때문일 수 있습니다.
 
-To alleviate this problem, a `docker-compose.yaml` 
-file is provided for easy management of containers.
-Docker Compose is part of Docker and is already 
-a popular tool for both development and production.
-For unknown reasons, it has not taken off in the deep learning community yet, 
-though anyone who knows how to use Docker will find Compose fairly simple.
-This may be because Compose is often advertised as a multi-container solution,
-though it can also be used for single-container development just as well.
+`docker-compose.yaml` 파일을 사용하면 사용자가 빌드 및 실행에 대한 설정을 지정할 수 있습니다.
+새 볼륨을 연결하는 것은 현재 컨테이너를 제거하고,
+`docker-compose.yaml`/`Dockerfile` 파일에 한 줄을 추가한 다음,
+동일한 이미지에서 새 컨테이너를 만드는 것처럼 간단합니다.
+빌드 캐시를 사용하면 새 이미지를 매우 빠르게 빌드할 수 있으므로,
+Docker 채택에 대한 또 다른 장벽인 긴 초기 빌드 시간이 제거됩니다.
 
-The `docker-compose.yaml` file allows the user to specify settings 
-for both build and run.
-Connecting a new volume is as simple as removing the current container,
-adding a line in the `docker-compose.yaml`/`Dockerfile` file, 
-then creating a new container from the same image. 
-Build caches allow new images to be built very quickly,
-removing another barrier to Docker adoption,
-the long initial build time.
+아래 지침은 터미널에서 대화형 개발을 허용하므로,
+로컬 개발에서 Docker 및 Docker Compose로 훨씬 더 원활하게 전환할 수 있습니다.
 
-The instructions below allow interactive development on the terminal,
-making the transition from local development to 
-Docker and Docker Compose much smoother.
+운 좋게도 딥 러닝 커뮤니티는 이 기술을 사용하여
+"_code once, train anywhere_"할 수 있습니다.
+하지만 내가 다수의 사람들에게 나의 방법의 장점을 설명하는것에 실패하더라도, 
+`conda` 환경을 조직하는 헛된 노동으로부터, 불행한 대학원생들의 서류 제출이 끝나기 직전에 부수고 태워버리면서, 살려줄수 있습니다.
+그들의 서류 제출이 끝나기 직전에 부수고 태워버리면서,
 
-With luck, the deep learning community will be able to 
-"_code once, train anywhere_" with this technique.
-But even if I fail in persuading the majority of users 
-of the merits of my method,
-I may still spare many a hapless grad student from the 
-sisyphean labor of setting up their `conda` environment,
-only to have it crash and burn right before their paper submission is due.
 
 
 ## Usage
-__*Docker images created by the `Makefile` 
-are fully compatible with the `docker-compose.yaml` file.
-There is no need to erase them to use Docker Compose.*__
+__*`Makefile`로 생성된 Docker 이미지는 `docker-compose.yaml` 파일과 완벽하게 호환됩니다.
+Docker Compose를 사용하기 위해 지울 필요가 없습니다.*__
 
-Using Docker Compose V2 (see https://docs.docker.com/compose/cli-command),
-run the following two commands, where `train` is the default service name 
-in the provided `docker-compose.yaml` file.
+Docker Compose V2(https://docs.docker.com/compose/cli-command 참고)를 사용하여 다음 두 명령을 실행합니다.
+여기서 `train`은 제공된 `docker-compose.yaml` 파일의 기본 서비스 이름입니다.
 
-0. Read `docker-compose.yaml` and set variables in the `.env` file (first time only).
+0. `docker-compose.yaml`을 읽고 `.env` 파일에 변수를 설정합니다(처음에만 해당).
 1. `docker compose up -d train`
 2. `docker compose exec train /bin/bash`
 
-This will open an interactive shell with settings specified by the `train` service 
-in the `docker-compose.yaml` file. 
-Environment variables can be saved in a `.env` file placed on the project root,
-removing the need to type in variables such as UID/GID values with each run.
-To create a basic `.env` file, run `make env`.
+그러면 `docker-compose.yaml` 파일의 `train` 서비스에서 지정한 설정으로 대화형 셸이 열립니다.
+환경 변수는 프로젝트 루트에 있는 `.env` 파일에 저장할 수 있으므로,
+실행할 때마다 UID/GID 값과 같은 변수를 입력할 필요가 없습니다.
+기본 `.env` 파일을 생성하려면 `make env`를 실행하세요.
 
-This is extremely convenient for managing reproducible development environments.
-For example, if a new `pip` or `apt` package must be installed for the project,
-users can simply edit the `train` layer of the 
-`Dockerfile` by adding the package to the 
-`apt-get install` or `pip install` commands, 
-then run the following command:
+이는 재현 가능한 개발 환경을 관리하는 데 매우 편리합니다.
+예를 들어 프로젝트에 대해 새 `pip` 또는 `apt` 패키지를 설치해야 하는 경우, 
+사용자는 `apt-get install` 또는 `pip install` 명령에 패키지를 추가하여,
+`Dockerfile`의 `train` 레이어를 간단히 편집한 후 다음 명령을 실행할 수 있습니다.
 
 `docker compose up -d --build train`.
 
-This will remove the current `train` session, rebuild the image, 
-and start a new `train` session.
-It will not, however, rebuild PyTorch (assuming no cache miss occurs).
-Users thus need only wait a few minutes for the additional downloads, 
-which are accelerated by caching and with fast mirror URLs.
+이것은 현재 `train` 세션을 제거하고, 이미지를 다시 빌드하고, 새로운 `train` 세션을 시작합니다.
+그러나 PyTorch를 다시 빌드하지 않습니다(캐시 누락이 발생하지 않는다고 가정).
+따라서 사용자는 캐싱 및 빠른 미러 URL로 가속화되는 추가 다운로드를 위해 몇 분 정도만 기다리면 됩니다.
 
-To stop and restart a service after editing the 
-`Dockerfile` or `docker-compose.yaml` file,
-simply run `docker compose up -d train` again.
+`Dockerfile` 또는 `docker-compose.yaml` 파일을 편집한 후 서비스를 중지했다가,
+다시 시작하려면 `docker compose up -d train`을 다시 실행하기만 하면 됩니다.
 
-To remove all Compose containers, use the following:
+모든 Compose 컨테이너를 제거하려면 다음을 사용하세요.
 
 `docker compose down`.
-
-Users with remote servers may use Docker contexts
-(see https://docs.docker.com/engine/context/working-with-contexts)
-to access their containers from their local environments.
-For more information on Docker Compose, see the documentation
+원격 서버가 있는 사용자는 Docker 컨텍스트
+(https://docs.docker.com/engine/context/working-with-contexts 참조)
+를 사용하여 로컬 환경에서 컨테이너에 액세스할 수 있습니다.
+Docker Compose에 대한 자세한 내용은 설명서를 참조하세요.
 https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 
 ## Compose as Best Practice
 
-I wish to emphasize that using Docker Compose in this manner 
-is a general-purpose technique 
-that does not depend on anything about this project.
-As an example, an image from the NVIDIA NGC PyTorch repository 
-has been used as the base image in `ngc.Dockerfile`.
-The NVIDIA NGC PyTorch images contain many optimizations 
-for the latest GPU architectures and provides
-a multitude of pre-installed machine learning libraries. 
-For anyone starting a new project, and therefore with no dependencies,
-using the latest NGC image is recommended.
+이런 방식으로 Docker Compose를 사용하는 것은 이 프로젝트에 의존하지 않는 범용 기술이라는 점을 강조하고 싶습니다.
+예를 들어 NVIDIA NGC PyTorch 레포지토리의 이미지가 `ngc.Dockerfile`의 기본 이미지로 사용되었습니다.
+NVIDIA NGC PyTorch 이미지에는 최신 GPU 아키텍처에 대한 많은 최적화가 포함되어 있으며,
+사전 설치된 다수의 기계 학습 라이브러리를 제공합니다.
+새 프로젝트를 시작하여 종속성이 없는 사람에게는 최신 NGC 이미지를 사용하는 것이 좋습니다.
 
-To use the NGC images, use the following commands:
+NGC 이미지를 사용하려면 다음 명령을 사용하세요.
 
 1. `docker compose up -d ngc`
 2. `docker compose exec ngc /bin/bash`
 
-The only difference with the previous `train` session is the session name.
+이전 `train` 세션과의 유일한 차이점은 세션 이름입니다.
 
 
 # Known Issues
 
-1. Connecting to a running container by `ssh` will remove all variables set by `ENV`.
-This is because `sshd` starts a new environment, wiping out all previous variables.
-Using `docker`/`docker compose` to enter containers is strongly recommended.
+1. `ssh`로 실행 중인 컨테이너에 연결하면 `ENV`에서 설정한 모든 변수가 제거됩니다.
+이는 `sshd`가 새로운 환경을 시작하여 이전의 모든 변수를 지우기 때문입니다.
+컨테이너를 입력하기 위해 `docker`/`docker compose`를 사용하는 것이 좋습니다.
 
-2. Building on CUDA 11.4.x is not available as of October 2021 because `magma-cuda114`
-has not been released on the `pytorch` channel of anaconda.
-Users may attempt building with older versions of `magma-cuda` 
-or try the version available on `conda-forge`.
-A source build of `magma` would be welcome as a pull request.
+2. CUDA 11.4.x 기반 빌드는 2021년 10월 현재 사용할 수 없습니다.
+`magma-cuda114`가 아나콘다의 `pytorch` 채널에 출시되지 않았기 때문입니다.
+사용자는 `magma-cuda`의 이전 버전으로 빌드를 시도하거나,
+`conda-forge`에서 사용 가능한 버전을 시도할 수 있습니다.
+'magma'의 소스 빌드는 PR로 환영받을 것입니다.
 
 3. Ubuntu 16.04 build fails. 
-This is because the default `git` installed by `apt` on 
-Ubuntu 16.04 does not support the `--jobs` flag. 
-Add the `git-core` PPA to `apt` and install the latest version of git.
-Also, PyTorch v1.9+ will not build on Ubuntu 16. 
-Lower the version tag to v1.8.2 to build.
-However, the project will not be modified to accommodate 
-Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
+이는 Ubuntu 16.04에서 `apt`가 설치한 기본 `git`이 `--jobs` 플래그를 지원하지 않기 때문입니다.
+`git-core` PPA를 `apt`에 추가하고 최신 버전의 git을 설치합니다.
+또한 PyTorch v1.9+는 Ubuntu 16에서 빌드되지 않습니다.
+빌드하려면 버전 태그를 v1.8.2로 낮추세요.
+그러나 Xenial Xerus가 이미 EOL에 도달했으므로,
+프로젝트는 Ubuntu 16.04 빌드를 수용하도록 수정되지 않습니다.
 
 
 # Desiderata
 
-0. **MORE STARS**. If you are reading this, star this repository immediately. I'm serious.
+0. **MORE STARS**. 이 글을 읽고 있다면 즉시 이 저장소에 별표를 표시하세요. 난 진지합니다.
 
-1. CentOS and UBI images have not been implemented yet.
-As they require only simple modifications, 
-pull requests implementing them would be very much welcome.
+1. CentOS 및 UBI 이미지는 아직 구현되지 않았습니다.
+간단한 수정만 필요하므로 이를 구현하는 PR 매우 환영할 것입니다.
 
-2. Translations into other languages are welcome. 
-Please make a separate `LANG.README.md` file and create a PR.
+2. 다른 언어로의 번역을 환영합니다.
+별도의 'LANG.README.md' 파일을 만들어 PR을 생성해 주세요.
 
-3. Please feel free to share this project! I wish you good luck and happy coding!
+3. 이 프로젝트를 자유롭게 공유하십시오! 나는 당신에게 행운과 행복한 코딩을 기원합니다!
