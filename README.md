@@ -405,7 +405,7 @@ However, bad practices such as those mentioned above mean that
 much coffee is spilled turning research code into something that is production-ready.
 Often, even the original developers cannot retrain the same model after a few months.
 Many firms thus have entire teams dedicated to model translation,
-a drain on resources that increases time-to-market considerably.
+a drain on resources that delays time-to-market considerably.
 
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
