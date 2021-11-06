@@ -549,7 +549,7 @@ that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
 has been used as the base image in `ngc.Dockerfile`.
 The NVIDIA NGC PyTorch images contain many optimizations 
-for the latest GPU architectures and provides
+for the latest GPU architectures and provide
 a multitude of pre-installed machine learning libraries. 
 For anyone starting a new project, and therefore with no dependencies,
 using the latest NGC image is recommended.
