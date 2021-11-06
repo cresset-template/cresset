@@ -574,8 +574,7 @@ to connect your local Docker with the remote Docker.
 
 1. **PyCharm** (Professional only): Docker Compose is available natively as a Python interpreter.
 See [tutorial](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
-
-N.B. PyCharm Professional is available free of charge to anyone with a valid university e-mail address.
+Note that PyCharm Professional is available free of charge to anyone with a valid university e-mail address.
 
 2. **VSCode**: Install the Remote Development extension pack. 
 See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
