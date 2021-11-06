@@ -114,7 +114,7 @@ services:
   ngc:  # NGC image service.
     env_file: 
       - ${ENV_FILE:-.env}
-    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-09}
+    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-10}
     ipc: host
     tty: true
     init: true
@@ -126,11 +126,11 @@ services:
       context: .
       dockerfile: ngc.Dockerfile
       cache_from: 
-        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-09}-py3
+        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-10}-py3
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         YEAR: ${YEAR:-21}
-        MONTH: ${MONTH:-09}
+        MONTH: ${MONTH:-10}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
