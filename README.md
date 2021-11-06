@@ -465,7 +465,7 @@ in the provided `docker-compose.yaml` file.
 This will open an interactive shell with settings specified by the `train` service 
 in the `docker-compose.yaml` file. 
 Environment variables can be saved in a `.env` file placed on the project root,
-removing the need to type in variables such as UID/GID values with each run.
+allowing different projects to have their own variables.
 To create a basic `.env` file with the UID and GID, run `make env`.
 
 Example `.env` file for RTX 3090 GPUs:
