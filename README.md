@@ -374,8 +374,8 @@ can run without interference from the host or from one another.
 See https://www.docker.com/resources/what-container for details.
 
 But in practice, Docker containers are often misused. 
-Containers are meant to be transient and best practice dictates that 
-a new container be created for each run.
+Containers are meant to be transient.
+Best practice dictates that a new container be created for each run.
 But this is very inconvenient for development, 
 especially for deep learning applications, 
 where new libraries must constantly be installed and 
