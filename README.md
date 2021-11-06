@@ -116,7 +116,7 @@ version because of compatibility issues with their pre-existing environment.
 
 Combined with techniques such as AMP and cuDNN benchmarking, 
 computational throughput can be increased dramatically 
-(e.g., x10) __*on the same hardware*__.
+(possibly x10) __*on the same hardware*__.
 
 Even if you do not wish to use Docker in your project,
 you may still find this template useful.
@@ -514,6 +514,9 @@ mkdir -p ~/.docker/cli-plugins/
 curl -SL https://github.com/docker/compose/releases/download/v2.1.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
 ```
+
+The instructions above are for Linux hosts.
+WSL users should instead enable "Use Docker Compose V2" on Docker Desktop for Windows.
 
 2. Run `make env` on the terminal to create a basic `.env` file. 
 Then read the `docker-compose.yaml` file to fill in extra variables for each user.
