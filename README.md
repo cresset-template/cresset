@@ -355,11 +355,8 @@ with the WSL CUDA driver and Docker Desktop for Windows.
 ## _Raison D'être_
 The purpose of this section is to introduce 
 a new paradigm for deep learning development. 
-I hope that using Docker Compose for deep learning projects
-will eventually become best practice, 
-improving the reproducibility of ML experiments 
-and relieving ordinary researchers from the burden 
-of managing their development environments.
+I hope that, eventually, using Docker Compose for 
+deep learning projects will become best practice.
 
 Developing in local environments with `conda` or `pip` 
 is commonplace in the deep learning community.
@@ -387,8 +384,7 @@ This leads many researchers to develop inside interactive containers.
 Docker users often have `run.sh` files with commands such as
 `docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`
 (look familiar, anyone?) and use SSH to connect to running containers.
-VSCode also provides a remote development mode that can be used 
-to code inside containers.
+VSCode also provides a remote development mode to code inside containers.
 
 The problem with this approach is that these interactive containers 
 become just as unreproducible as local development environments.
@@ -406,16 +402,14 @@ has gained enormous popularity of late as many practitioners have come to realiz
 importance of continuously maintaining ML systems long after the initial development phase ends.
 
 However, bad practices such as those mentioned above mean that
-far too much coffee has been spilled converting research code into something production-ready.
-Indeed, many companies have entire teams dedicated to the cleanup process.
-Often, even the original developers cannot retrain the same model after a few months, even on the same machine.
-This is a drain on resources that increases time-to-market considerably.
+much coffee is spilled turning research code into something production-ready.
+Often, even the original developers cannot retrain the same model after a few months.
+Many firms thus have entire teams dedicated to model translation,
+a drain on resources that increases time-to-market considerably.
 
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
 Using Docker and Docker Compose, the entire training environment can be reproduced.
-Docker Compose is natively integrated with Docker and is already
-a popular tool for both development and production.
 Compose has not taken off in the deep learning community yet,
 possibly because it is usually advertised as a multi-container solution,
 though it can be used for single-container development just as well.
@@ -438,10 +432,10 @@ See https://docs.docker.com/engine/swarm for documentation.
 Though less capable than Kubernetes, swarm mode has a much gentler learning curve,
 thus requiring fewer experienced (read expensive) engineers to utilize.
 Also, at the risk of deflating some egos, 
-I would like to point out that the vast majority of services will never become "planet scale AI".
-A single server will suffice for many projects, no matter what the CEO has been pitching to investors.
-Even if large scale deployments eventually do become necessary,
-using Docker from the very beginning will decrease the burden of deployment. 
+I would like to point out that the vast majority of services never go "planet scale",
+whatever the CEO has been pitching to investors.
+Even if large scale deployments do become necessary,
+using Docker from the very beginning will decrease time-to-market.
 
 With luck, the deep learning community will be able to 
 "_code once, train anywhere_" with the technique I propose here.
