@@ -405,7 +405,7 @@ However, bad practices such as those mentioned above mean that
 much coffee is spilled turning research code into something that is production-ready.
 Often, even the original developers cannot retrain the same model after a few months.
 Many firms thus have entire teams dedicated to model translation,
-a drain on resources that delays time-to-market considerably.
+a huge expenditure of resources.
 
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
@@ -430,12 +430,15 @@ Docker Compose can also be used directly for deployment with swarm mode,
 which is an excellent solution for small-scale deployments (one physical server with up to 8 GPUs).
 See https://docs.docker.com/engine/swarm for documentation.
 Though less capable than Kubernetes, swarm mode has a much gentler learning curve,
-thus requiring fewer experienced (read expensive) engineers to utilize.
+requiring less experienced (read expensive) engineers to utilize.
 Also, at the risk of deflating some egos, 
 I would like to point out that the vast majority of services never go "planet scale",
 whatever the CEO has been pitching to investors.
-Even if large scale deployments do become necessary,
-using Docker from the very beginning will decrease time-to-market.
+Even if large-scale deployments do become necessary,
+using Docker from the very beginning will accelerate the development process and
+make MLOps adoption much simpler.
+Accelerating time-to-market by streamlining the development process
+is a competitive edge for any firm, whether startup or tech titan.
 
 With luck, the deep learning community will be able to 
 "_code once, train anywhere_" with the technique I propose here.
@@ -485,13 +488,13 @@ This will remove the current `train` session, rebuild the image,
 and start a new `train` session.
 It will not, however, rebuild PyTorch (assuming no cache miss occurs).
 Users thus need only wait a few minutes for the additional downloads, 
-which are accelerated by caching and with fast mirror URLs.
+which are accelerated by caching and fast mirror URLs.
 
 To stop and restart a service after editing the 
 `Dockerfile` or `docker-compose.yaml` file,
 simply run `docker compose up -d --build train` again.
 
-To stop services and remove containers, use the following:
+To stop services and remove containers, use the following command:
 
 `docker compose down`.
 
@@ -502,7 +505,7 @@ For more information on Docker Compose, see the documentation
 https://github.com/compose-spec/compose-spec/blob/master/spec.md.
 
 
-### Detailed Initial Setup
+### Initial Setup in Detail
 
 If this is your first time using this project, follow these steps:
 
@@ -519,7 +522,7 @@ The instructions above are for Linux hosts.
 WSL users should instead enable "Use Docker Compose V2" on Docker Desktop for Windows.
 
 2. Run `make env` on the terminal to create a basic `.env` file. 
-Then read the `docker-compose.yaml` file to fill in extra variables for each user.
+Then read the `docker-compose.yaml` file to fill in extra variables.
 Also edit `docker-compose.yaml` as necessary for your project.
 
 3. Run `docker compose up -d --build train` or `docker compose up -d --build full`.
@@ -571,9 +574,10 @@ to connect your local Docker with the remote Docker.
 
 1. **PyCharm** (Professional only): Docker Compose is available natively as a Python interpreter.
 See [tutorial](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
-Note that PyCharm Professional is available free of charge to anyone with a valid university e-mail address.
 
-3. **VSCode**: Install the Remote Development extension pack. 
+N.B. PyCharm Professional is available free of charge to anyone with a valid university e-mail address.
+
+2. **VSCode**: Install the Remote Development extension pack. 
 See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
 
 
@@ -583,7 +587,7 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. Building on CUDA 11.4.x or greater is not available as of October 2021 because `magma-cuda114`
+2. Building on CUDA 11.4.x or greater is not available as of November 2021 because `magma-cuda114`
 has not been released on the `pytorch` channel of anaconda.
 Users may attempt building with older versions of `magma-cuda` 
 or try the version available on `conda-forge`.
@@ -620,4 +624,10 @@ pull requests implementing them would be very much welcome.
 2. Translations into other languages are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.
 
-3. Please feel free to share this project! I wish you good luck and happy coding!
+3. A method to build `magma` from source.
+Although the code for building the `magma` package is available at
+https://github.com/pytorch/builder/tree/main/magma,
+it is only updated several months after a new CUDA version is released.
+A source build on the image would be welcome.
+
+4. Please feel free to share this project! I wish you good luck and happy coding!
