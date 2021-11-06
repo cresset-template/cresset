@@ -559,7 +559,7 @@ To use the NGC images, use the following commands:
 1. `docker compose up -d ngc`
 2. `docker compose exec ngc /bin/bash`
 
-The only difference with the previous `train` session is the session name.
+The only difference with the previous example is the session name.
 
 
 ### Using Compose with PyCharm and VSCode
