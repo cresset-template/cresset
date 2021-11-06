@@ -413,13 +413,12 @@ This is a drain on resources that increases time-to-market considerably.
 
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
-Docker Compose is natively integrated with Docker and is already 
-a popular tool for both development and production.
-Compose has not taken off in the deep learning community yet, 
-possibly because it is usually advertised as a multi-container solution,
-though it can also be used for single-container development just as well.
-
 Using Docker and Docker Compose, the entire training environment can be reproduced.
+Docker Compose is natively integrated with Docker and is already
+a popular tool for both development and production.
+Compose has not taken off in the deep learning community yet,
+possibly because it is usually advertised as a multi-container solution,
+though it can be used for single-container development just as well.
 
 A `docker-compose.yaml` file is provided for easy management of containers.
 **Using the provided `docker-compose.yaml` file will create an interactive environment,
@@ -439,8 +438,8 @@ See https://docs.docker.com/engine/swarm for documentation.
 Though less capable than Kubernetes, swarm mode has a much gentler learning curve,
 thus requiring fewer experienced (read expensive) engineers to utilize.
 Also, at the risk of deflating some egos, 
-I would like to point out that the vast majority of services will never reach "planet scale",
-and a single server may be all that the service needs for deployment.
+I would like to point out that the vast majority of services will never become "planet scale AI".
+A single server will suffice for many projects, no matter what the CEO has been pitching to investors.
 Even if large scale deployments eventually do become necessary,
 using Docker from the very beginning will decrease the burden of deployment. 
 
