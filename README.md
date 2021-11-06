@@ -402,7 +402,7 @@ has gained enormous popularity of late as many practitioners have come to realiz
 importance of continuously maintaining ML systems long after the initial development phase ends.
 
 However, bad practices such as those mentioned above mean that
-much coffee is spilled turning research code into something production-ready.
+much coffee is spilled turning research code into something that is production-ready.
 Often, even the original developers cannot retrain the same model after a few months.
 Many firms thus have entire teams dedicated to model translation,
 a drain on resources that increases time-to-market considerably.
