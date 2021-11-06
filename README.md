@@ -41,7 +41,7 @@ This template was created with the aim of enabling researchers and engineers wit
 GPUs, CUDA, Docker, etc. to squeeze every last drop of performance from their GPUs 
 __*using the same hardware and neural networks*.__ 
 
-Though Docker images with PyTorch source builds are already available in 
+Although Docker images with PyTorch source builds are already available in 
 the official [PyTorch Docker Hub](https://hub.docker.com/r/pytorch/pytorch) repository and 
 the [NVIDIA NGC](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch) repository,
 these images have a multitude of other packages installed with them, 
