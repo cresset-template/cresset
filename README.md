@@ -427,7 +427,7 @@ Build caches allow new images to be built very quickly,
 removing another barrier to Docker adoption, the long initial build time.
 
 Docker Compose can also be used directly for deployment with swarm mode, 
-which is an excellent solution for small-scale deployments with perhaps one physical server with up to 8 GPUs.
+which is an excellent solution for small-scale deployments (one physical server with up to 8 GPUs).
 See https://docs.docker.com/engine/swarm for documentation.
 Though less capable than Kubernetes, swarm mode has a much gentler learning curve,
 thus requiring fewer experienced (read expensive) engineers to utilize.
