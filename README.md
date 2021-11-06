@@ -29,7 +29,7 @@ which can reduce memory requirements to 1/4 and increase speeds by x4~5.
 This is the case even though AMP can be enabled without much hassle using the 
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) or 
 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) libraries.
-The Accelerate library, in particular can be integrated into any pre-existing 
+The Accelerate library in particular can be integrated into any pre-existing 
 PyTorch project with only a few lines of code.
 
 Even the novice who has only just dipped their toes into the mysteries 
