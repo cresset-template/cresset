@@ -8,7 +8,7 @@
 
 
 ## TL;DR
-__*PyTorch built from source can be more than x4 faster than a naïve PyTorch install.
+__*PyTorch built from source can be x4 faster than a naïve PyTorch install.
 This repository provides a template for building PyTorch pip wheel binaries from source 
 for any PyTorch version on any CUDA version on any environment. 
 These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.*__
