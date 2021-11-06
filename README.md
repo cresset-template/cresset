@@ -306,7 +306,7 @@ suspect that build arguments have been given incorrectly.*__
 See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#leverage-build-cache
 for more information.
 
-The `BUILDKIT_INLINE_CACHE` must also be given to an image to use it as a cache later. See 
+Users must set `BUILDKIT_INLINE_CACHE=1` during the image build to use it as a cache later. See 
 https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources
 for more information.
 
