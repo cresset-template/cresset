@@ -414,7 +414,7 @@ Many firms thus have entire teams dedicated to model translation, a huge expendi
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
 Using Docker and Docker Compose, the entire training environment can be reproduced.
-Compose has not caught on in the deep learning community yet,
+Compose has not yet caught on in the deep learning community,
 possibly because it is usually advertised as a multi-container solution,
 though it can be used for single-container development just as well.
 
