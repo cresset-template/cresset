@@ -84,6 +84,9 @@ provides an API for efficient ETL pipelines in PyTorch.
 ## Introduction
 A Template repository to build PyTorch __*from source*__ on __*any*__ version of PyTorch/CUDA/cuDNN.
 
+To use this template, press the green `Use this template` button on the top.
+This is more convenient than forking this repository.
+
 PyTorch built from source is much faster 
 (as much as x4 times on some benchmarks, though x2 is more typical) 
 than PyTorch installed from `pip`/`conda` but building from source is an 
@@ -126,9 +129,6 @@ you may still find this template useful.
 This project can thus be used to generate custom wheel files, 
 improving both training and inference speeds dramatically
 for any desired environment (`conda`, `pip`, etc.).
-
-To use this template, press the green `Use this template` button on the top.
-This is more convenient than forking this repository.
 
 
 ## Quickstart
