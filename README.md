@@ -393,7 +393,9 @@ But if the computing environment within the container was created over several m
 of installs and builds, the only way to keep it 
 is to save it as an image and create a new container from the saved image.
 After a few iterations of this process, 
-the resulting image becomes bloated and completely unreproducible.
+the resulting image becomes bloated and 
+just as unreproducible as the local environments
+that they were meant to replace.
 
 Problems become even more evident when preparing for deployment.
 MLOps, defined as a set of practices that aims to deploy and maintain 
