@@ -13,7 +13,7 @@ This repository provides a template for building PyTorch pip wheel binaries from
 for any PyTorch version on any CUDA version on any environment. 
 These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.*__
 
-__*Also, a new paradigm for deep learning development using Docker and Docker Compose is proposed.
+__*A new paradigm for deep learning development using Docker Compose for basic MLOps is also proposed.
 Hopefully, this method will become best practice in both academia and industry.*__
 
 
@@ -346,7 +346,7 @@ Windows users may use this template by updating to Windows 11 and installing
 Windows Subsystem for Linux (WSL).
 WSL on Windows 11 gives a similar experience to using native Linux.
 
-This project has been tested on WSL on Windows 11 
+This project has been tested on Windows 11 WSL
 with the WSL CUDA driver and Docker Desktop for Windows.
 
 
@@ -376,7 +376,7 @@ See https://www.docker.com/resources/what-container for details.
 But in practice, Docker containers are often misused. 
 Containers are meant to be transient.
 Best practice dictates that a new container be created for each run.
-But this is very inconvenient for development, 
+This, however, is very inconvenient for development, 
 especially for deep learning applications, 
 where new libraries must constantly be installed and 
 bugs are often only evident at runtime.
@@ -404,8 +404,7 @@ importance of continuously maintaining ML systems long after the initial develop
 However, bad practices such as those mentioned above mean that
 much coffee is spilled turning research code into something that is production-ready.
 Often, even the original developers cannot retrain the same model after a few months.
-Many firms thus have entire teams dedicated to model translation,
-a huge expenditure.
+Many firms thus have entire teams dedicated to model translation, a huge expenditure.
 
 To alleviate these problems, 
 I propose the use of Docker Compose as a basic MLOps solution for both development and production.
@@ -432,13 +431,13 @@ See https://docs.docker.com/engine/swarm for documentation.
 Though less capable than Kubernetes, swarm mode has a much gentler learning curve,
 requiring less experienced (read expensive) engineers to utilize.
 Also, at the risk of deflating some egos, 
-I would like to point out that the vast majority of services never go "planet scale",
+I wish to point out that the vast majority of services never go "planet scale",
 whatever the CEO has been pitching to investors.
 Even if large-scale deployments do become necessary,
 using Docker from the very beginning will accelerate the development process and
 make MLOps adoption much simpler.
 Accelerating time-to-market by streamlining the development process
-is a competitive edge for any firm, whether startup or tech titan.
+is a competitive edge for any firm, whether lean startup or tech titan.
 
 With luck, the deep learning community will be able to 
 "_code once, train anywhere_" with the technique I propose here.
@@ -543,8 +542,7 @@ If no cache miss occurs, this will take only a few minutes.
 
 ## Compose as Best Practice
 
-I wish to emphasize that using Docker Compose in this manner 
-is a general-purpose technique 
+I emphasize that using Docker Compose like this is a general-purpose technique 
 that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
 has been used as the base image in `ngc.Dockerfile`.
@@ -623,10 +621,10 @@ pull requests implementing them would be very much welcome.
 2. Translations into other languages are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.
 
-3. A method to build `magma` from source.
+3. A method to build `magma` from source would be greatly appreciated.
 Although the code for building the `magma` package is available at
 https://github.com/pytorch/builder/tree/main/magma,
 it is only updated several months after a new CUDA version is released.
-A source build on the image would be welcome.
+A source build as a layer on the image would be welcome.
 
 4. Please feel free to share this project! I wish you good luck and happy coding!
