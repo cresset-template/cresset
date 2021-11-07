@@ -13,7 +13,7 @@ This repository provides a template for building PyTorch pip wheel binaries from
 for any PyTorch version on any CUDA version on any environment. 
 These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.*__
 
-__*A new paradigm for deep learning development using Docker Compose for basic MLOps is also proposed.
+__*A new paradigm for deep learning development using Docker Compose as an MLOps tool is also proposed.
 Hopefully, this method will become best practice in both academia and industry.*__
 
 
