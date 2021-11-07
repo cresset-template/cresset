@@ -127,6 +127,9 @@ This project can thus be used to generate custom wheel files,
 improving both training and inference speeds dramatically
 for any desired environment (`conda`, `pip`, etc.).
 
+To use this template, press the green `Use this template` button on the top.
+This is more convenient than forking this repository.
+
 
 ## Quickstart
 __*Users are free to customize the `train` stage of the `Dockerfile` as they please. 
