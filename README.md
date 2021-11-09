@@ -364,7 +364,7 @@ deep learning projects will become best practice.
 
 Developing in local environments with `conda` or `pip` 
 is commonplace in the deep learning community.
-However, this risks making the development environment, 
+However, this risks rendering the development environment, 
 and the code meant to run on it, unreproducible.
 This is a serious detriment to scientific progress
 that many readers of this article 
@@ -447,7 +447,7 @@ Accelerating time-to-market by streamlining the development process
 is a competitive edge for any firm, whether lean startup or tech titan.
 
 With luck, the technique I propose here will enable 
-the deep learning community to "_code once, train anywhere_".
+the deep learning community to "_write once, train anywhere_".
 But even if I fail in persuading the majority of users 
 of the merits of my method,
 I may still spare many a hapless grad student from the 
