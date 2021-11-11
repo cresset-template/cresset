@@ -51,7 +51,7 @@ The [DALI PyTorch plugin](https://docs.nvidia.com/deeplearning/dali/user-guide/d
 ## Introduction
 PyTorch/CUDA/cuDNN의 __*모든 버전*__ 에서의 __*소스로부터*__ PyTorch를 빌드하기 위한 템플릿 레포지토리.
 
-소스에서 빌드한 PyTorch는 `pip`/`conda`에서 설치된 PyTorch보다 훨씬 빠르지만(일부 벤치마크에서는 x4배, x2가 더 일반적입니다.
+소스에서 빌드한 PyTorch는 `pip`/`conda`에서 설치된 PyTorch보다 훨씬 빠르지만(일부 벤치마크에서는 x4배, x2가 더 일반적입니다.)
 소스에서 빌드하는 것은 힘들고 버그가 발생하기 쉬운 프로세스입니다.
 
 이 레포지토리는 모든 버전의 CUDA에서 의 소스로부터 모든 버전의 PyTorch를 빌드하기 위한 고도로 모듈화된 템플릿입니다.
