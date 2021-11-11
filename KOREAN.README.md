@@ -5,7 +5,7 @@
 효율적인 신경망을 설계하고 구현하는 데 엄청난 학문적 노력이 투입되었습니다.
 그러나 이 글을 쓰는 시점에서 대부분의 딥 러닝 실무자들은 가장 기본적인 GPU 가속 기술조차 모르고 있습니다.
 
-특히 학계에서는 메모리 요구 사항을 1/4로 줄이고,
+특히 학에서는 메모리 요구 사항을 1/4로 줄이고,
 속도를 4~5배 높일 수 있는 AMP(Automatic Mixed Precision)조차 사용하지 않는 경우가 많습니다.
 [HuggingFace Accelerate](https://github.com/huggingface/accelerate) 또는 [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)를 사용하여 큰 번거로움 없이 AMP를 활성화할 수 있음에도 마찬가지입니다.
 특히 Accelerate 라이브러리는 몇 줄의 코드만으로 기존 PyTorch 프로젝트에 통합할 수 있습니다.
