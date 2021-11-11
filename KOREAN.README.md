@@ -98,7 +98,7 @@ __*사용자는 `Dockerfile`의 `train` 단계를 원하는 대로 자유롭게 
 학습 이미지를 빌드하려면,
 먼저 `apt`/`conda`/`pip`에서 원하는 패키지를 포함하도록 Dockerfile `train` 단계를 편집합니다.
 
-그런 다음 https://developer.nvidia.com/cuda-gpus를 방문하여
+그런 다음 https://developer.nvidia.com/cuda-gpus 를 방문하여
 대상 GPU 장치의 컴퓨팅 기능(CC)을 찾으세요.
 
 마지막으로, `make all CC=TARGET_CC(s)`를 실행하세요.
