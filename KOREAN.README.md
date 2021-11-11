@@ -15,7 +15,7 @@
 
 이 템플릿은 GPU, CUDA, Docker 등에 대한 지식이 많지 않은 연구원과 엔지니어가 __*동일한 하드웨어와 신경망을 사용하여*__ GPU의 성능을 최대한 끌어낼 수 있도록 하기 위해 만들어졌습니다.
 
-PyTorch 소스 빌드가 포함된 Docker 이미지는 이미 공식 [PyTorch Docker Hub](https://hub.docker.com/r/pytorch/pytorch)리포지토리와 [NVIDIA NGC](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch) 리포지토리에서 사용할 수 있지만 이러한 이미지에는 다른 패키지가 많이 설치되어 있어 기존 프로젝트에 통합하기 어렵습니다.
+PyTorch 소스 빌드가 포함된 Docker 이미지는 이미 공식 [PyTorch Docker Hub](https://hub.docker.com/r/pytorch/pytorch)레포지토리와 [NVIDIA NGC](https://ngc.nvidia.com/catalog/containers/nvidia:pytorch) 레포지토리에서 사용할 수 있지만 이러한 이미지에는 다른 패키지가 많이 설치되어 있어 기존 프로젝트에 통합하기 어렵습니다.
 또한 많은 실무자는 Docker 이미지보다 로컬 환경을 사용하는 것을 선호합니다.
 
 여기에 제시된 프로젝트는 다릅니다.
@@ -49,12 +49,12 @@ The [DALI PyTorch plugin](https://docs.nvidia.com/deeplearning/dali/user-guide/d
 
 
 ## Introduction
-PyTorch/CUDA/cuDNN의 __*모든 버전*__ 에서의 __*소스로부터*__ PyTorch를 빌드하기 위한 템플릿 리포지토리.
+PyTorch/CUDA/cuDNN의 __*모든 버전*__ 에서의 __*소스로부터*__ PyTorch를 빌드하기 위한 템플릿 레포지토리.
 
 소스에서 빌드한 PyTorch는 `pip`/`conda`에서 설치된 PyTorch보다 훨씬 빠르지만(일부 벤치마크에서는 x4배, x2가 더 일반적입니다.
 소스에서 빌드하는 것은 힘들고 버그가 발생하기 쉬운 프로세스입니다.
 
-이 리포지토리는 모든 버전의 CUDA에서 의 소스로부터 모든 버전의 PyTorch를 빌드하기 위한 고도로 모듈화된 템플릿입니다.
+이 레포지토리는 모든 버전의 CUDA에서 의 소스로부터 모든 버전의 PyTorch를 빌드하기 위한 고도로 모듈화된 템플릿입니다.
 Linux 기반 이미지 또는 프로젝트에 통합할 수 있는 사용하기 쉬운 Dockerfile을 제공합니다.
 
 Docker에 익숙하지 않은 연구원을 위해 생성된 휠 파일을 추출하여 로컬 환경에 PyTorch를 설치할 수 있습니다.
