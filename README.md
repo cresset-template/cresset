@@ -605,8 +605,7 @@ or try the version available on `conda-forge`.
 A source build of `magma` would be welcome as a pull request.
 The NVIDIA NGC images use NVIDIA's in-house build of `magma`.
 
-3. Ubuntu 16.04 build fails. 
-This is because the default `git` installed by `apt` on 
+3. Ubuntu 16.04 build fails because the default `git` installed by `apt` on 
 Ubuntu 16.04 does not support the `--jobs` flag. 
 Add the `git-core` PPA to `apt` and install the latest version of git.
 Also, PyTorch v1.9+ will not build on Ubuntu 16. 
@@ -614,19 +613,19 @@ Lower the version tag to v1.8.2 to build.
 However, this project will not be modified to accommodate 
 Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 
-4. Docker Compose does not run on WSL.
-Disable `ipc: host`. WSL cannot use this option.
+4. If Docker Compose does not run on WSL, disable `ipc: host`. WSL cannot use this option.
 
-5. `torch.cuda.is_available()` returns `... UserWarning: CUDA initialization:...` error or the image will simply not start.
-This indicates that the CUDA driver on the host is incompatible with the CUDA version on the Docker image.
+5. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
+or the image will simply not start if the CUDA driver on the host is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
 Check the [compatibility matrix](https://docs.nvidia.com/deploy/cuda-compatibility/index.html#use-the-right-compat-package)
 to see if the host CUDA driver is compatible with the desired version of CUDA.
+Also check if the CUDA driver has been configured correctly on the host.
 
 
 # Desiderata
 
-0. **MORE STARS**. If you are reading this, star this repository immediately. I'm serious.
+0. **MORE STARS**. If you are reading this, please star this repository immediately. I'm serious.
 
 1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 
