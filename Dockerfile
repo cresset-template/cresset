@@ -93,6 +93,7 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
+
 # Install everything required for build.
 FROM build-base AS build-install
 
@@ -194,6 +195,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     FORCE_CUDA=${USE_CUDA} TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist
 
+
 FROM build-torch AS build-text
 
 ARG TORCHTEXT_VERSION_TAG
@@ -242,7 +244,7 @@ COPY --from=build-audio /tmp/dist /tmp/dist
 
 FROM ${TRAIN_IMAGE} AS train
 ######### *Customize for your use case by editing from here* #########
-# The `train` image is the actual images used for training.
+# The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
 # with only the build artifacts (e.g., pip wheels) copied over.
 LABEL maintainer="veritas9872@gmail.com"
