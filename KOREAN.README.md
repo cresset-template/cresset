@@ -1,6 +1,6 @@
 # 범용 PyTorch 소스 빌드 Docker 템플릿
 
-Credit: @dlwnsgud8406
+Credit: [@dlwnsgud8406](https://github.com/dlwnsgud8406)
 
 ## Preamble
 최근 몇 년 동안 더 작고 효율적인 장치에서 계속 증가하는 데이터 양에 대처하기 위해
