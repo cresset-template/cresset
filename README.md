@@ -6,6 +6,9 @@
 [![GitHub license](https://img.shields.io/github/license/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/LICENSE)
 [![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)
 
+**Translations:
+[한국어](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/KOREAN.README.md)**
+
 
 ## TL;DR
 __*PyTorch built from source can be x4 faster than a naïve PyTorch install.
@@ -13,7 +16,8 @@ This repository provides a template for building PyTorch pip wheel binaries from
 for any PyTorch version on any CUDA version on any environment. 
 These can be used in any project environment, including on local `conda` environments, on any CUDA GPU.*__
 
-__*A new MLOps paradigm for deep learning development using Docker Compose is also proposed.
+__*A new MLOps paradigm for deep learning development using Docker Compose is also proposed
+[here](https://github.com/veritas9872/PyTorch-Universal-Docker-Template#interactive-development--mlops-with-docker-compose).
 Hopefully, this method will become best practice in both academia and industry.*__
 
 
@@ -105,8 +109,10 @@ See instructions below.
 
 A `Makefile` is provided both as an interface for easy use and as 
 a tutorial for building custom images.
-A `docker-compose.yaml` file is also provided as a basic MLOps system.
-It provies an interactive development experience using Docker.
+A `docker-compose.yaml` file is also provided as a simple MLOps system.
+It provides an interactive development experience using Docker.
+See [here](https://github.com/veritas9872/PyTorch-Universal-Docker-Template#initial-setup-in-detail)
+to get started with Docker Compose on your system.
 
 The speed gains from this template come from the following factors:
 1. Using the latest version of CUDA and associated libraries (cuDNN, cuBLAS, etc.).
@@ -628,8 +634,8 @@ Also check if the CUDA driver has been configured correctly on the host.
 
 # Desiderata
 
-0. **MORE STARS**. _No contribution without recognition!_
-If you are reading this, please star this repository immediately. I'm serious.
+0. **MORE STARS**. If you are reading this, please star this repository immediately.
+**_No Contribution Without Admiration!_**
 
 1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 
@@ -637,6 +643,7 @@ pull requests implementing them would be very much welcome.
 
 2. Translations into other languages are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.
+Updates to existing translations are also welcome.
 
 3. A method to build `magma` from source would be greatly appreciated.
 Although the code for building the `magma` package is available at

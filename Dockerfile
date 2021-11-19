@@ -347,7 +347,7 @@ RUN --mount=type=cache,id=pip-train,target=${PIP_DOWNLOAD_CACHE} \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0 \
         accelerate==0.5.1 \
-        pytorch-lightning==1.4.9 \
+        pytorch-lightning==1.5.2 \
         seaborn==0.11.1 \
         pandas==1.3.1 \
         openpyxl==3.0.9 \
