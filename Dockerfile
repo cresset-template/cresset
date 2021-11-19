@@ -275,10 +275,11 @@ ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
+# Remove any pre-existing global `pip` configurations.
 RUN if [ $TZ = Asia/Seoul ]; then \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-    >> /etc/pip.conf; \
+    > /etc/pip.conf; \
     fi
 
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
