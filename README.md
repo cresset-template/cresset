@@ -521,9 +521,12 @@ Example command: `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up
 
 If this is your first time using this project, follow these steps:
 
-1. Install Docker Compose V2 for Linux as described in https://docs.docker.com/compose/cli-command/#install-on-linux. 
-Installation does **not** require `root` permissions. Check the version and architecture tags in the URL before installing. 
+1. Install Docker Compose V2 for Linux as described in https://docs.docker.com/compose/cli-command/#install-on-linux.
+Visit the website for the latest installation information.
+Installation does **not** require `root` permissions. 
+Please check the version and architecture tags in the URL before installing. 
 The following commands will install Docker Compose V2 (v2.1.0, Linux x86_64) for a single user.
+
 ```
 mkdir -p ~/.docker/cli-plugins/
 curl -SL https://github.com/docker/compose/releases/download/v2.1.0/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
@@ -625,7 +628,8 @@ Also check if the CUDA driver has been configured correctly on the host.
 
 # Desiderata
 
-0. **MORE STARS**. If you are reading this, please star this repository immediately. I'm serious.
+0. **MORE STARS**. _No contribution without recognition!_
+If you are reading this, please star this repository immediately. I'm serious.
 
 1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 

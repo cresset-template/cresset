@@ -13,8 +13,8 @@ services:
     env_file:  # Explicitly specifying the file causes an error if it does not exist.
       - ${ENV_FILE:-.env}  # Forcing users to create a `.env` file before using compose, thus preventing errors.
     image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use.
-    # Known security vulnerability but removes shared memory cap. Disable this for WSL.
-    ipc: host  # Equivalent to `--ipc=host` in `docker run`.
+    # `ipc: host` is a known security vulnerability, but it removes the shared memory cap.
+    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.

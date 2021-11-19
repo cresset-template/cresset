@@ -32,7 +32,7 @@ ARG TRUSTED_HOST=mirror.kakao.com
 RUN if [ $TZ = Asia/Seoul ]; then \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-    >> /etc/pip.conf; \
+    > /etc/pip.conf; \
     fi
 
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
