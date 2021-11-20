@@ -181,7 +181,7 @@ The installation image is created separately to cache downloads.
 
 The second image is `pytorch_source:build_torch-v1.10.0` (by default), 
 which contains the wheels for PyTorch, TorchVision, TorchText, and TorchAudio
-with settings for PyTorch 1.9.1 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.3.1 and cuDNN 8.
+with settings for PyTorch 1.10.0 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.3.1 and cuDNN 8.
 The second image exists to cache the results of the build process.
 
 If you do not wish to use Docker and would like to only extract 
