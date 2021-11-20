@@ -34,16 +34,16 @@ services:
       dockerfile: Dockerfile
       cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
         - pytorch_source:${INSTALL_NAME:-build_install}
-        - pytorch_source:${TORCH_NAME:-'build_torch-v.1.9.1'}
+        - pytorch_source:${TORCH_NAME:-'build_torch-v1.10.0'}
       # All arguments given during the build with must be respecified
       # in `args` to prevent a cache miss from occurring.
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
         TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.9.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.10.1}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.1}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.0-rc3}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that it is set properly in `.env`.
         UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that it is set properly in `.env`.
@@ -98,10 +98,10 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
         TORCH_CUDA_ARCH_LIST: ${CC:-'5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX'}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.9.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.10.1}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.10.1}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.9.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.1}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.0-rc3}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
