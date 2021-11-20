@@ -179,7 +179,7 @@ The first image to be created is `pytorch_source:build_install`,
 which contains all packages necessary for the build.
 The installation image is created separately to cache downloads.
 
-The second image is `pytorch_source:build_torch-v1.9.1` (by default), 
+The second image is `pytorch_source:build_torch-v1.10.0` (by default), 
 which contains the wheels for PyTorch, TorchVision, TorchText, and TorchAudio
 with settings for PyTorch 1.9.1 on Ubuntu 20.04 LTS with Python 3.8, CUDA 11.3.1 and cuDNN 8.
 The second image exists to cache the results of the build process.
@@ -326,7 +326,7 @@ The `Makefile` provides the `*-full` commands for advanced usage.
 
 `make all-full CC=YOUR_GPU_CC TRAIN_NAME=train_cu102` will create 
 `pytorch_source:build_install-ubuntu18.04-cuda10.2-cudnn8-py3.9`,
-`pytorch_source:build_torch-v1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9`, 
+`pytorch_source:build_torch-v1.10.0-ubuntu18.04-cuda10.2-cudnn8-py3.9`, 
 and `pytorch_source:train_cu102` by default.
 
 These images can be used for training/deployment on CUDA 10 devices such as the GTX 1080Ti.

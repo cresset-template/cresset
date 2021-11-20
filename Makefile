@@ -36,10 +36,10 @@ di:
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
-PYTORCH_VERSION_TAG     = v1.9.1
-TORCHVISION_VERSION_TAG = v0.10.1
-TORCHTEXT_VERSION_TAG   = v0.10.1
-TORCHAUDIO_VERSION_TAG  = v0.9.1
+PYTORCH_VERSION_TAG     = v1.10.0
+TORCHVISION_VERSION_TAG = v0.11.1
+TORCHTEXT_VERSION_TAG   = v0.11.0-rc3
+TORCHAUDIO_VERSION_TAG  = v0.10.0
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
