@@ -15,7 +15,9 @@ services:
     # Remember to use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
-    image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use.
+    # If no image with the specified image name exists,
+    # a new image with that name will be created.
+    image: pytorch_source:${TRAIN_NAME:-train}
     # `ipc: host` is a known security vulnerability, but it removes the shared memory cap.
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
     tty: true  # Equivalent to `-t` flag in `docker run`.
