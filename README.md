@@ -398,7 +398,8 @@ VSCode also provides a remote development mode to code inside containers.
 
 The problem with this approach is that these interactive containers 
 become as unreproducible as local development environments.
-A running container cannot connect to a new port or attach a new volume.
+A running container cannot connect to a new port or attach a new
+[volume](https://docs.docker.com/storage/volumes/).
 But if the computing environment within the container was created over several months 
 of installs and builds, the only way to keep it 
 is to save the container as an image and create a new container from the saved image.
@@ -635,7 +636,7 @@ Also check if the CUDA driver has been configured correctly on the host.
 # Desiderata
 
 0. **MORE STARS**. If you are reading this, please star this repository immediately.
-**_No Contribution Without Admiration!_**
+**_No Contribution Without Acclamation!_**
 
 1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 

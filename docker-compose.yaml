@@ -10,14 +10,20 @@
 
 services:
   train:  # Service name. Change the name as necessary for each project.
-    env_file:  # Explicitly specifying the file causes an error if it does not exist.
+    env_file:  # Explicitly specifying the `.env` file causes an error if it does not exist.
       - ${ENV_FILE:-.env}  # Forcing users to create a `.env` file before using compose, thus preventing errors.
+    # Remember to use different image names for different users and projects.
+    # Otherwise, images will be repeatedly removed and recreated.
+    # The removed images will remain cached, however.
     image: pytorch_source:${TRAIN_NAME:-train}  # Image name to use.
     # `ipc: host` is a known security vulnerability, but it removes the shared memory cap.
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
+    # Docker volumes are the preferred method for connecting to the host filesystem.
+    # Setting `HOST_PATH:CONTAINER_PATH` allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
+    # See https://docs.docker.com/storage/volumes for details.
     volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
       - $PWD:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
@@ -77,8 +83,8 @@ services:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        # Note that `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
-        # different variable names from the default installation.
+        # Note that the `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
+        # different variable names from the `train` service.
         # This may cause a cache miss if set incorrectly.
         - pytorch_source:${INSTALL_NAME_FULL:-'build_install-ubuntu18.04-cuda10.2-cudnn8-py3.9'}
         - pytorch_source:${TORCH_NAME_FULL:-'build_torch-v.1.9.1-ubuntu18.04-cuda10.2-cudnn8-py3.9'}
