@@ -636,7 +636,7 @@ Also check if the CUDA driver has been configured correctly on the host.
 # Desiderata
 
 0. **MORE STARS**. If you are reading this, please star this repository immediately.
-**_No Contribution Without Acclamation!_**
+**_No Contribution Without Admiration!_**
 
 1. CentOS and UBI images have not been implemented yet.
 As they require only simple modifications, 
