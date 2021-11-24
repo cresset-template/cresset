@@ -514,8 +514,10 @@ To stop services and remove containers, use the following command:
 Users with remote servers may use Docker contexts
 (see https://docs.docker.com/engine/context/working-with-contexts)
 to access their containers from their local environments.
-For more information on Docker Compose, see the documentation
+For more information on Docker Compose, see
 https://github.com/compose-spec/compose-spec/blob/master/spec.md.
+For more information on Docker Compose CLI commands, see
+https://docs.docker.com/compose/reference.
 
 N.B. If the build fails with an error message that `BuildKit` is required,
 add `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1` in front of the command.
