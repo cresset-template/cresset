@@ -50,7 +50,7 @@ services:
         TZ: ${TZ:-Asia/Seoul}  # Used during the build.
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Only necessary for Tensorboard, Jupyter, etc. Also not necessary if the VSCode terminal is being used.
-#      - "${PORT:-8080}:22"
+#      - ${PORT:-8080}:22
     user: ${UID:-1000}:${GID:-1000}
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: ${TZ:-Asia/Seoul}  # Used during runtime.
