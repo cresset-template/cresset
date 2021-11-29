@@ -7,10 +7,12 @@
 # which is specified by `CC` in the `Makefile`.
 
 # N.B. Before submitting a GitHub issue because of an error, try the following steps.
-# 0. Reboot your computer/server. If this is not possible, restart Docker.
-# 1. Remove all pre-existing pytorch_source:* images.
-# 2. (Optional) Run `docker system prune` to remove all docker caches.
-# 3. Run the *-clean commands for clean builds.
+# 1. Read the `Known Issues` section at the bottom of the `README`.
+# 2. Search for your error message on Google.
+# 3. Reboot your computer/server. If this is not possible, restart Docker.
+# 4. Remove all pre-existing pytorch_source:* images.
+# 5. (Optional) Run `docker system prune` to remove all docker caches.
+# 6. Run the *-clean commands for clean builds.
 # Please raise an issue only after making a reasonable attempt to solve the problem.
 # I would rather that the Issues page not be inundated with trivial questions.
 # Reports of genuine bugs and well-formed proposals are more than welcome.
