@@ -362,7 +362,7 @@ with the WSL CUDA driver and Docker Desktop for Windows.
 
 # Interactive Development & MLOps with Docker Compose
 
-## _Raison D'être_
+## _Raison d'Être_
 The purpose of this section is to introduce 
 a new paradigm for deep learning development. 
 I hope that, eventually, using Docker Compose for 
