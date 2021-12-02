@@ -392,7 +392,7 @@ where new libraries must constantly be installed and
 bugs are often only evident at runtime.
 This leads many researchers to develop inside interactive containers.
 Docker users often have `run.sh` files with commands such as
-`docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest /bin/bash`
+`docker run -v my_data:/mnt/data -p 8080:22 -t my_container my_image:latest zsh`
 (look familiar, anyone?) and use SSH to connect to running containers.
 VSCode also provides a remote development mode to code inside containers.
 
@@ -473,7 +473,7 @@ in the provided `docker-compose.yaml` file.
 
 0. Read `docker-compose.yaml` and set variables in the `.env` file (first time only).
 1. `docker compose up -d train`
-2. `docker compose exec train /bin/bash`
+2. `docker compose exec train zsh`
 
 This will open an interactive shell with settings specified by the `train` service 
 in the `docker-compose.yaml` file. 
@@ -563,7 +563,7 @@ run the `make` build with the same settings as the `docker-compose.yaml` and `.e
 This will save the build cache as images, preventing them from being cleared by the system later on.
 If no cache miss occurs, this will take only a few minutes.
 
-5. Run `docker compose exec SERVICE_NAME /bin/bash` and start coding.
+5. Run `docker compose exec SERVICE_NAME zsh` and start coding.
 
 
 ## Compose as Best Practice
@@ -581,7 +581,7 @@ using the latest NGC image is recommended.
 To use the NGC images, use the following commands:
 
 1. `docker compose up -d ngc`
-2. `docker compose exec ngc /bin/bash`
+2. `docker compose exec ngc zsh`
 
 The only difference with the previous example is the session name.
 

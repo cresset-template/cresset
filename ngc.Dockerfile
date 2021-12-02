@@ -58,14 +58,15 @@ ARG PASSWD=ubuntu
 
 # This may cause security issues. Use at your own risk.
 RUN groupadd -g ${GID} ${GRP} && \
-    useradd --shell /bin/bash --create-home -u ${UID} -g ${GRP} -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
 USER ${USR}
 
-# Enable colors on bash terminal. This is a personal preference.
-RUN sed -i 's/#force_color_prompt=yes/force_color_prompt=yes/' $HOME/.bashrc
+RUN echo export PS1='%B%F{green}%n%f:%F{blue}%~%f%b$ ' >> ~/.zshrc
+RUN echo export PS1='\[\e]0;\u: \w\a\]${debian_chroot:+($debian_chroot)}\
+\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ ' >> ~/.bashrc
 
 # This wierd copy exists to change ownership of the `/opt/conda` directory from root to user.
 # The `base` layer exists solely because `--from` can only take literal values.
@@ -86,4 +87,4 @@ RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
         hydra-core==1.1.0 \
         hydra_colorlog==1.1.0
 
-CMD ["/bin/bash"]
+CMD ["/bin/zsh"]
