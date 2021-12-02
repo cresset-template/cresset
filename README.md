@@ -631,7 +631,7 @@ Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
 5. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
 or the image will simply not start if the CUDA driver on the host is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
-Check the [compatibility matrix](https://docs.nvidia.com/deploy/cuda-compatibility/index.html#use-the-right-compat-package)
+Check the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 to see if the host CUDA driver is compatible with the desired version of CUDA.
 Also check if the CUDA driver has been configured correctly on the host.
 
