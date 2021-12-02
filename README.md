@@ -610,8 +610,9 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. Building on CUDA 11.4.x or greater is not available as of November 2021 because `magma-cuda114`
+2. Building on CUDA 11.4.x is not available as of December 2021 because `magma-cuda114`
 has not been released on the `pytorch` channel of anaconda.
+Bizarrely, magma-cuda115 is available.
 Users may attempt building with older versions of `magma-cuda` 
 or try the version available on `conda-forge`.
 A source build of `magma` would be welcome as a pull request.
