@@ -618,8 +618,9 @@ A source build of `magma` would be welcome as a pull request.
 The NVIDIA NGC images use NVIDIA's in-house build of `magma`.
 
 3. Ubuntu 16.04 build fails because the default `git` installed by `apt` on 
-Ubuntu 16.04 does not support the `--jobs` flag. 
-Add the `git-core` PPA to `apt` and install the latest version of git.
+Ubuntu 16.04 does not support the `--jobs` flag.
+Remove the `--jobs 0` flag from the `git clone` commands to make it work.
+Alternatively, the user may add the `git-core` PPA to `apt` and install the latest version of git.
 Also, PyTorch v1.9+ will not build on Ubuntu 16. 
 Lower the version tag to v1.8.2 to build.
 However, this project will not be modified to accommodate 
