@@ -11,7 +11,8 @@ FROM ${NGC_IMAGE} AS base
 FROM ${NGC_IMAGE} AS ngc
 
 LABEL maintainer="veritas9872@gmail.com"
-ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
 # Set as `ARG` values to reduce the image footprint but not affect resulting images.
@@ -19,7 +20,7 @@ ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
     > /etc/apt/apt.conf.d/keep-cache
 
 ENV TZ=Asia/Seoul
@@ -38,12 +39,14 @@ RUN if [ $TZ = Asia/Seoul ]; then \
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
     --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
+        curl \
         git \
-        sudo \
         nano \
-        tmux \
         openssh-server \
-        tzdata && \
+        sudo \
+        tmux \
+        tzdata \
+        zsh && \
     rm -rf /var/lib/apt/lists/*
 
 # Remove pre-existing `conda` owned by root.
@@ -58,22 +61,22 @@ ARG PASSWD=ubuntu
 
 # This may cause security issues. Use at your own risk.
 RUN groupadd -g ${GID} ${GRP} && \
-    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    echo "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
+        -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    printf "%s ALL=(ALL) NOPASSWD:ALL" ${GRP} >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
 USER ${USR}
-
-RUN echo export PS1='%B%F{green}%n%f:%F{blue}%~%f%b$ ' >> ~/.zshrc
-RUN echo export PS1='\[\e]0;\u: \w\a\]${debian_chroot:+($debian_chroot)}\
-\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ ' >> ~/.bashrc
 
 # This wierd copy exists to change ownership of the `/opt/conda` directory from root to user.
 # The `base` layer exists solely because `--from` can only take literal values.
 COPY --from=base --chown=${UID}:${GID} /opt/conda /opt/conda
 
-ENV PIP_DOWNLOAD_CACHE=/home/${USR}/.cache/pip
-WORKDIR ${PIP_DOWNLOAD_CACHE}
+ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
+
+WORKDIR $HOME/.zsh
+RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
+RUN printf "fpath+=%s/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" $HOME >> $HOME/.zshrc
 
 ARG PROJECT_ROOT=/opt/project
 WORKDIR ${PROJECT_ROOT}
@@ -81,10 +84,12 @@ ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 RUN conda config --set pip_interop_enabled True
 
+COPY --chown=${UID}:${GID} ngc.requirements.txt /tmp/ngc.requirements.txt
+
 # Preserving pip cache by omitting `--no-cache-dir`.
-RUN --mount=type=cache,target=${PIP_DOWNLOAD_CACHE} \
+RUN --mount=type=cache,id=pip-ngc,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
     python -m pip install \
-        hydra-core==1.1.0 \
-        hydra_colorlog==1.1.0
+      -r /tmp/ngc.requirements.txt && \
+    rm /tmp/ngc.requirements.txt
 
 CMD ["/bin/zsh"]

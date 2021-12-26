@@ -1,47 +1,37 @@
 # Basic Makefile for starting projects.
 # For more sophisticated settings, use the Dockerfile directly.
 # See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
-# Also assumes Linux shell for UID, GID.
+# Also assumes host Linux shell for UID, GID.
 # See https://pytorch.org/docs/stable/cpp_extension.html
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `CC` in the `Makefile`.
-
-# N.B. Before submitting a GitHub issue because of an error, try the following steps.
-# 1. Read the `Known Issues` section at the bottom of the `README`.
-# 2. Search for your error message on Google.
-# 3. Reboot your computer/server. If this is not possible, restart Docker.
-# 4. Remove all pre-existing pytorch_source:* images.
-# 5. (Optional) Run `docker system prune` to remove all docker caches.
-# 6. Run the *-clean commands for clean builds.
-# Please raise an issue only after making a reasonable attempt to solve the problem.
-# I would rather that the Issues page not be inundated with trivial questions.
-# Reports of genuine bugs and well-formed proposals are more than welcome.
 
 .PHONY: env di all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
 .PHONY: build-train-clean build-train-full-clean
 
-# Create a .env file in PWD if it does not exist already or is empty.
+# Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
+# Note that the `Makefile` does not use the `.env` file.
 ENV_FILE = .env
 env:
 	test -s ${ENV_FILE} || echo "GID=$(shell id -g)\nUID=$(shell id -u)" >> ${ENV_FILE}
 
-# Create a .dockerignore file in PWD if it does not exist already or is empty.
-# The created .dockerignore file will make Docker ignore all context during build.
+# Create a `.dockerignore` file in PWD if it does not exist already or is empty.
+# The `.dockerignore` file ignore all context except for requirements during build.
 DI_FILE = .dockerignore
 di:
-	test -s ${DI_FILE} || echo "**" >> ${DI_FILE}
+	test -s ${DI_FILE} || echo "**\n!**/*requirements*.txt" >> ${DI_FILE}
 
 # The following are the default builds for the make commands.
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
-PYTORCH_VERSION_TAG     = v1.10.0
-TORCHVISION_VERSION_TAG = v0.11.1
-TORCHTEXT_VERSION_TAG   = v0.11.0-rc3
-TORCHAUDIO_VERSION_TAG  = v0.10.0
+PYTORCH_VERSION_TAG     = v1.10.1
+TORCHVISION_VERSION_TAG = v0.11.2
+TORCHTEXT_VERSION_TAG   = v0.11.1
+TORCHAUDIO_VERSION_TAG  = v0.10.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
@@ -52,7 +42,7 @@ build-install:
 		--target build-install \
 		--tag pytorch_source:${INSTALL_NAME} \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		- < Dockerfile
+		-f Dockerfile .
 
 build-torch:
 	DOCKER_BUILDKIT=1 docker build \
@@ -65,7 +55,7 @@ build-torch:
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
 		--build-arg TORCHAUDIO_VERSION_TAG=${TORCHAUDIO_VERSION_TAG} \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		- < Dockerfile
+		-f Dockerfile .
 
 # Docker build arguments from all previous stages
 # must be specified again or otherwise the default values of
@@ -88,7 +78,7 @@ build-train:
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
-		- < Dockerfile
+		-f Dockerfile .
 
 
 # The following builds are `full` builds, i.e., builds specifying all available options.
@@ -115,7 +105,7 @@ build-install-full:
 		--build-arg MAGMA_VERSION=${MAGMA_VERSION} \
 		--build-arg PYTHON_VERSION=${PYTHON_VERSION} \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		- < Dockerfile
+		-f Dockerfile .
 
 build-torch-full:
 	DOCKER_BUILDKIT=1 docker build \
@@ -134,7 +124,7 @@ build-torch-full:
 		--build-arg MAGMA_VERSION=${MAGMA_VERSION} \
 		--build-arg PYTHON_VERSION=${PYTHON_VERSION} \
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
-		- < Dockerfile
+		-f Dockerfile .
 
 build-train-full:
 	DOCKER_BUILDKIT=1 docker build \
@@ -156,7 +146,7 @@ build-train-full:
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
-		- < Dockerfile
+		-f Dockerfile .
 
 # The following builds are `clean` builds, i.e., builds that do not use caches from previous builds.
 # Their main purpose is to test whether the commands work properly without cached runs.
@@ -173,7 +163,7 @@ build-train-clean:
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
-		- < Dockerfile
+		-f Dockerfile .
 
 build-train-full-clean:
 	DOCKER_BUILDKIT=1 docker build \
@@ -194,4 +184,4 @@ build-train-full-clean:
 		--build-arg GID="$(shell id -g)" \
 		--build-arg UID="$(shell id -u)" \
 		--build-arg TZ=${TZ} \
-		- < Dockerfile
+		-f Dockerfile .
