@@ -571,6 +571,11 @@ add `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1` to any
 
 ## Compose as Best Practice
 
+Docker Compose is a far superior option to using custom shell scripts for each environment.
+Not only does it gather all variables and commands for both build and run into a single file,
+but its native integration with Docker means that 
+it makes complicated Docker setups simple to implement.
+
 I wish to emphasize that using Docker Compose this way is a general-purpose technique 
 that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
