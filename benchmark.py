@@ -15,7 +15,7 @@ GPU utilization must be 100% for a meaningful comparison.
 
 Windows users should disable Windows Security real-time protection
 and other antivirus programs for best performance.
-The hit to code performance from antivirus programs is nontrivial.
+The hit to performance from antivirus programs is nontrivial.
 """
 import subprocess
 import warnings
