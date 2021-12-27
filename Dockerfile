@@ -299,6 +299,7 @@ ARG USR=user
 ARG PASSWD=ubuntu
 # Create user with home directory and password-free sudo permissions.
 # This may cause security issues. Use at your own risk.
+# The `zsh` shell will be used due to its convenience and popularity.
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
@@ -312,9 +313,8 @@ COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
 
-# Setting the prompt to `pure`, the only one without complicated dependencies.
-# This is a personal preference and users may use any prompt that they wish.
-# Also expects home directory to be in the default location.
+# Setting the prompt to `pure`, which is available on all terminals without additional settings.
+# This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
 RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" >> $HOME/.zshrc
