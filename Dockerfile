@@ -302,7 +302,7 @@ ARG PASSWD=ubuntu
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    printf "%s ALL=(ALL) NOPASSWD:ALL" ${GRP} >> /etc/sudoers && \
+    printf "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
 USER ${USR}
@@ -317,7 +317,7 @@ ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
 # Also expects home directory to be in the default location.
 WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
-RUN printf "fpath+=%s/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" $HOME >> $HOME/.zshrc
+RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" >> $HOME/.zshrc
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project

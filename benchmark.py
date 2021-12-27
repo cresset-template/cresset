@@ -17,23 +17,23 @@ Windows users should disable Windows Security real-time protection
 and other antivirus programs for best performance.
 The hit to code performance from antivirus programs is nontrivial.
 """
-from collections import namedtuple
 import subprocess
 import warnings
+from collections import namedtuple
 from typing import Sequence, Union
 
 import torch
-from torch import nn, Tensor
+from torch import autocast, nn, Tensor
 from torchvision.models import (
     vgg19,
     resnet50,
 )
+from torchvision.models.detection import (
+    retinanet_resnet50_fpn,
+)
 from torchvision.models.segmentation import (
     fcn_resnet50,
     deeplabv3_resnet50,
-)
-from torchvision.models.detection import (
-    retinanet_resnet50_fpn,
 )
 from torchvision.models.video import r3d_18
 # Too useful to do without, even if it is an external library.
@@ -82,19 +82,14 @@ def infer(
     inputs = tuple(torch.rand(*s, device=device) for s in input_shapes)
     if enable_scripting:
         network = torch.jit.trace(network, inputs)
-    if enable_amp:
-        with torch.cuda.amp.autocast():
-            elapsed_time = _infer(
-                network=network,
-                inputs=inputs,
-                num_steps=num_steps
-            )
-    else:
+
+    with autocast(device_type=device.type, enabled=enable_amp):
         elapsed_time = _infer(
             network=network,
             inputs=inputs,
             num_steps=num_steps
         )
+
     return elapsed_time
 
 
@@ -132,7 +127,9 @@ def get_device(gpu: int) -> torch.device:
     return device
 
 
+# Configuration container.
 Config = namedtuple('Config', ('name', 'network', 'input_shapes'))
+
 
 def measure(
         cfgs: Sequence[Config],

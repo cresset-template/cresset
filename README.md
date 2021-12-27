@@ -3,7 +3,6 @@
 [![GitHub stars](https://img.shields.io/github/stars/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/issues)
 [![GitHub forks](https://img.shields.io/github/forks/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/network)
-[![Github All Releases](https://img.shields.io/github/downloads/veritas9872/PyTorch-Universal-Docker-Template/total.svg?style=flat-square)]()
 [![GitHub license](https://img.shields.io/github/license/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/LICENSE)
 [![Twitter](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template?style=flat-square)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fveritas9872%2FPyTorch-Universal-Docker-Template)
 
@@ -569,12 +568,24 @@ add `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1` to any
 `docker compose` commands being used.
 
 
+### Tip
+
+The `.env` file does not work with the `Makefile` by default.
+However, typing in the configurations for each run can be tedious.
+To use the `.env` file for the `make` commands, use the following technique to
+give all the variables in the `.env` file to the `make` command.
+
+`make COMMAND $(tr '\n' ' ' < .env)`
+
+Example: `make all-full $(tr '\n' ' ' < .env)`.
+
+
 ## Compose as Best Practice
 
 Docker Compose is a far superior option to using custom shell scripts for each environment.
 Not only does it gather all variables and commands for both build and run into a single file,
-but its native integration with Docker means that 
-it makes complicated Docker setups simple to implement.
+but its native integration with Docker means that it makes complicated Docker 
+build/run setups simple to implement.
 
 I wish to emphasize that using Docker Compose this way is a general-purpose technique 
 that does not depend on anything about this project.

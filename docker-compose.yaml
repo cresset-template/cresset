@@ -35,7 +35,7 @@ services:
       dockerfile: Dockerfile
       cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
         - pytorch_source:${INSTALL_NAME:-build_install}
-        - pytorch_source:${TORCH_NAME:-build_torch-v1.10.1}
+        - pytorch_source:${TORCH_NAME:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}}
       # All arguments given during the build with must be respecified
       # in `args` to prevent a cache miss from occurring.
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
@@ -90,8 +90,9 @@ services:
         # Note that the `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
         # different variable names from the `train` service.
         # This may cause a cache miss if set incorrectly.
-        - pytorch_source:${INSTALL_NAME_FULL:-build_install-ubuntu18.04-cuda10.2-cudnn8-py3.9}
-        - pytorch_source:${TORCH_NAME_FULL:-build_torch-v.1.10.1-ubuntu18.04-cuda10.2-cudnn8-py3.9}
+        - # Using defaults inside defaults, which may be hard to read.
+        - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
+        - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
