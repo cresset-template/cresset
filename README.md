@@ -615,12 +615,12 @@ are compatible with Docker Compose.
 [context](https://docs.docker.com/engine/context/working-with-contexts)
 to connect your local Docker with the remote Docker.
 
-1. **PyCharm** (Professional only): Docker and Docker Compose are both natively available as Python interpreters. 
-See tutorial for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) and 
+1. **PyCharm** (Professional only): Both Docker and Docker Compose are natively available as Python interpreters. 
+See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) and 
 [Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
 JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
-JetBrains Fleet IDE will become available in early 2022.
+JetBrains Fleet IDE, with much more advanced features, will become available in early 2022.
 _N.B._ PyCharm Professional and other JetBrains IDEs are available 
 free of charge to anyone with a valid university e-mail address.
 
