@@ -90,7 +90,7 @@ services:
         # Note that the `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
         # different variable names from the `train` service.
         # This may cause a cache miss if set incorrectly.
-        - # Using defaults inside defaults, which may be hard to read.
+        # Using defaults inside defaults, which may be hard to read.
         - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
         - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
