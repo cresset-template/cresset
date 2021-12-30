@@ -40,7 +40,7 @@ FROM ${BUILD_IMAGE} AS build-base-ubuntu
 
 # Change default settings to allow `apt` cache in Docker image.
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
     > /etc/apt/apt.conf.d/keep-cache
 
 RUN --mount=type=cache,id=apt-cache-build,target=/var/cache/apt \
@@ -88,7 +88,7 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     conda clean -ya
 
 # Include `conda` in dynamic linking. Setting $LD_LIBRARY_PATH directly is bad practice.
-RUN printf /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
@@ -236,9 +236,9 @@ FROM ${BUILD_IMAGE} AS train-builds
 # with only the build artifacts (e.g., pip wheels) copied over.
 
 COPY --from=build-install /opt/conda /opt/conda
-COPY --from=build-vision /tmp/dist /tmp/dist
-COPY --from=build-text /tmp/dist /tmp/dist
-COPY --from=build-audio /tmp/dist /tmp/dist
+COPY --from=build-vision  /tmp/dist  /tmp/dist
+COPY --from=build-text    /tmp/dist  /tmp/dist
+COPY --from=build-audio   /tmp/dist  /tmp/dist
 
 
 FROM ${TRAIN_IMAGE} AS train
@@ -255,7 +255,7 @@ ARG PYTHONUNBUFFERED=1
 
 # Change default settings to allow `apt` cache in Docker image.
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
     > /etc/apt/apt.conf.d/keep-cache
 
 # `tzdata` requires a timezone and noninteractive mode.
@@ -273,6 +273,8 @@ ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 # Remove any pre-existing global `pip` configurations.
+# `printf` is preferred over `echo` when escape characters are used
+# because the behavior of `echo` is inconsistent across shells.
 RUN if [ $TZ = Asia/Seoul ]; then \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
@@ -303,7 +305,7 @@ ARG PASSWD=ubuntu
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    printf "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    echo "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
 USER ${USR}
@@ -317,7 +319,15 @@ ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
-RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" >> $HOME/.zshrc
+RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
+
+# Add autosuggestions from history. Comment this out if the terminal becomes distracting.
+RUN git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
+RUN echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+
+# Add syntax highlighting. This must be activated after auto-suggestions.
+RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $HOME/.zsh/zsh-syntax-highlighting
+RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -341,6 +351,7 @@ COPY --chown=${UID}:${GID} requirements.txt /tmp/requirements.txt
 
 # Preserving pip cache by omitting `--no-cache-dir`.
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
+# `--find-links` gives higher priority to the wheels in /tmp/dist, just in case.
 # External requirements files should be installed in a single installation
 # for dependency resolution by pip.
 RUN --mount=type=cache,id=pip-train,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
