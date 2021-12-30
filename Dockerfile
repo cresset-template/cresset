@@ -255,7 +255,7 @@ ARG PYTHONUNBUFFERED=1
 
 # Change default settings to allow `apt` cache in Docker image.
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";\n' \
     > /etc/apt/apt.conf.d/keep-cache
 
 # `tzdata` requires a timezone and noninteractive mode.
@@ -303,7 +303,7 @@ ARG PASSWD=ubuntu
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    printf "${GRP} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    printf "${GRP} ALL=(ALL) NOPASSWD:ALL\n" >> /etc/sudoers && \
     usermod -aG sudo ${USR}
 
 USER ${USR}
@@ -317,16 +317,16 @@ ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
-RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" >> $HOME/.zshrc
+RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
 # Order of `.zshrc` activations is important.
 # Add autosuggestions from history.
 RUN git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
-RUN printf "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+RUN printf "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh\n" >> $HOME/.zshrc
 
 # Add syntax highlighting.
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $HOME/.zsh/zsh-syntax-highlighting
-RUN printf "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
+RUN printf "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh\n" >> $HOME/.zshrc
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
