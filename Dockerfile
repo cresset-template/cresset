@@ -319,6 +319,15 @@ WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
 RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure" >> $HOME/.zshrc
 
+# Order of `.zshrc` activations is important.
+# Add autosuggestions from history.
+RUN git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
+RUN printf "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+
+# Add syntax highlighting.
+RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $HOME/.zsh/zsh-syntax-highlighting
+RUN printf "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
+
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 
