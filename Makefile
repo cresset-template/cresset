@@ -16,13 +16,13 @@
 # Note that the `Makefile` does not use the `.env` file.
 ENV_FILE = .env
 env:
-	test -s ${ENV_FILE} || echo "GID=$(shell id -g)\nUID=$(shell id -u)" >> ${ENV_FILE}
+	test -s ${ENV_FILE} || printf "GID=$(shell id -g)\nUID=$(shell id -u)\n" >> ${ENV_FILE}
 
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
 # The `.dockerignore` file ignore all context except for requirements during build.
 DI_FILE = .dockerignore
 di:
-	test -s ${DI_FILE} || echo "**\n!**/*requirements*.txt" >> ${DI_FILE}
+	test -s ${DI_FILE} || printf "**\n!**/*requirements*.txt\n" >> ${DI_FILE}
 
 # The following are the default builds for the make commands.
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
