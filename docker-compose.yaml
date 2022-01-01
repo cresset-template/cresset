@@ -27,8 +27,10 @@ services:
     # Docker volumes are the preferred method for connecting to the host filesystem.
     # Setting `HOST_PATH:CONTAINER_PATH` allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
+    # Current working directory `.` is connected to `PROJECT_ROOT`.
+    # PyCharm cannot recognize the $PWD variable for unknown reasons.
     volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
-      - $PWD:${PROJECT_ROOT:-/opt/project}
+      - .:${PROJECT_ROOT:-/opt/project}
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       target: train  # Specify build target.
       context: .  # `.dockerignore` should remove all context, making this equivalent to the `Makefile` results.
@@ -81,7 +83,7 @@ services:
     init: true
     stdin_open: true
     volumes:
-      - $PWD:${PROJECT_ROOT:-/opt/project}
+      - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: train
       context: .
@@ -132,7 +134,7 @@ services:
     init: true
     stdin_open: true
     volumes:
-      - $PWD:${PROJECT_ROOT:-/opt/project}
+      - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: ngc
       context: .
