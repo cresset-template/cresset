@@ -281,6 +281,16 @@ RUN if [ $TZ = Asia/Seoul ]; then \
     > /etc/pip.conf; \
     fi
 
+# Use the following method to install `apt` packages from
+# a requirements file similar to `requirements.txt`.
+#COPY apt-requirements.txt /tmp/apt-requirements.txt
+#RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
+#    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
+#    apt-get update && sed 's/#.*//' /tmp/apt-requirements.txt \
+#        | xargs apt-get install -y --no-install-recommends  &&\
+#    rm -rf /var/lib/apt/lists/* /tmp/apt-requirements.txt
+
+# Delete this section if `apt-requirements.txt` is used.
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
     --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
     apt-get update && apt-get install -y --no-install-recommends \
