@@ -282,12 +282,13 @@ RUN if [ $TZ = Asia/Seoul ]; then \
     fi
 
 # Use the following method to install `apt` packages from
-# a requirements file similar to `requirements.txt`.
+# a requirements file, 'apt-requirements.txt', with a format
+# similar to `requirements.txt` in `pip`.
 #COPY apt-requirements.txt /tmp/apt-requirements.txt
 #RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
 #    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
 #    apt-get update && sed 's/#.*//' /tmp/apt-requirements.txt \
-#        | xargs apt-get install -y --no-install-recommends  &&\
+#        | xargs apt-get install -y --no-install-recommends &&\
 #    rm -rf /var/lib/apt/lists/* /tmp/apt-requirements.txt
 
 # Delete this section if `apt-requirements.txt` is used.
