@@ -57,8 +57,7 @@ ARG PASSWD=ubuntu
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    usermod -aG sudo ${USR}
+    echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER ${USR}
 
