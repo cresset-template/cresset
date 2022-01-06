@@ -9,6 +9,10 @@
 **Translations:
 [한국어](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/KOREAN.README.md)**
 
+#### Notice
+The project will soon be renamed `Cresset`.
+Please be aware that the project URL will also change.
+My apologies for the inconvenience.
 
 ## TL;DR
 __*PyTorch built from source can be x4 faster than a naïve PyTorch install.

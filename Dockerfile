@@ -21,11 +21,16 @@
 # See https://pytorch.org/docs/stable/cpp_extension.html for an
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 
+# Magma version must match the CUDA version of the build image.
+
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 ARG USE_CUDA=1
+ARG MKL_MODE=include
 ARG CUDA_VERSION=11.3.1
+ARG MAGMA_VERSION=113
 ARG CUDNN_VERSION=8
+ARG PYTHON_VERSION=3.8
 ARG LINUX_DISTRO=ubuntu
 ARG DISTRO_VERSION=20.04
 ARG TORCH_CUDA_ARCH_LIST="5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"
@@ -76,15 +81,22 @@ ENV PYTHONUNBUFFERED=1
 # Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
 
-ARG PYTHON_VERSION=3.8
+ARG PYTHON_VERSION
 # Conda always uses the specified version of Python, regardless of Miniconda version.
 # Use a different conda URL for a different CPU architecture. Default is x86_64.
+# Anaconda default channel is no longer free for commercial use.
+# Anaconda (and Miniconda) itself is still open-source.
+# https://conda.io/en/latest/license.html
+# https://www.anaconda.com/terms-of-service
+# https://www.anaconda.com/end-user-license-agreement-miniconda
+# Set `CONDA_PYTHON_CHANNEL` to `conda-forge` if licensing is an issue.
+ARG CONDA_PYTHON_CHANNEL=default
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh
 RUN curl -fsSL -v -o ~/miniconda.sh -O  ${CONDA_URL} && \
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
-    conda install -y python=${PYTHON_VERSION} && \
+    conda install -c ${CONDA_PYTHON_CHANNEL} -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
 # Include `conda` in dynamic linking. Setting $LD_LIBRARY_PATH directly is bad practice.
@@ -94,14 +106,11 @@ RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
 
-# Install everything required for build.
-FROM build-base AS build-install
-
-# Magma version must match CUDA version of build image.
-ARG MAGMA_VERSION=113
+FROM build-base AS build-install-include-mkl
 
 # Multiple conda installs are not the best solution but
 # using multiple channels in one install uses older packages.
+ARG MAGMA_VERSION
 RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
     conda install -y \
         astunparse \
@@ -125,6 +134,37 @@ RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
     conda install -y -c pytorch \
         magma-cuda${MAGMA_VERSION}
 
+
+FROM build-base AS build-install-exclude-mkl
+
+# The Intel Math Kernel Library (MKL) places some restrictions on commercial use.
+# https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
+# Also, non-intel CPUs may face slowdowns if MKL is used as the backend.
+ARG MAGMA_VERSION
+RUN --mount=type=cache,id=conda-build,target=/opt/conda/pkgs \
+    conda install -y \
+        astunparse \
+        cffi \
+        cmake \
+        future \
+        ninja \
+        nomkl \
+        numpy \
+        pillow \
+        pkgconfig \
+        pyyaml \
+        requests \
+        setuptools \
+        six \
+        typing_extensions && \
+    conda install -y -c conda-forge \
+        libjpeg-turbo \
+        libpng && \
+    conda install -y -c pytorch \
+        magma-cuda${MAGMA_VERSION}
+
+
+FROM build-install-${MKL_MODE}-mkl AS build-install
 WORKDIR /opt
 # Using `--jobs 0` gives a reasonable default value for parallel recursion.
 # Remove the `--jobs 0` flags to build on Ubuntu 16.04.
@@ -240,6 +280,10 @@ COPY --from=build-vision  /tmp/dist  /tmp/dist
 COPY --from=build-text    /tmp/dist  /tmp/dist
 COPY --from=build-audio   /tmp/dist  /tmp/dist
 
+# Copying requirements files from context so that the `train` image
+# can be built from this stage with no dependency on the Docker context.
+COPY reqs/apt-train.requirements.txt /tmp/reqs/apt-train.requirements.txt
+COPY reqs/pip-train.requirements.txt /tmp/reqs/pip-train.requirements.txt
 
 FROM ${TRAIN_IMAGE} AS train
 ######### *Customize for your use case by editing from here* #########
@@ -284,26 +328,35 @@ RUN if [ $TZ = Asia/Seoul ]; then \
 # Use the following method to install `apt` packages from
 # a requirements file, 'apt-requirements.txt', with a format
 # similar to `requirements.txt` in `pip`.
-#COPY apt-requirements.txt /tmp/apt-requirements.txt
-#RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
-#    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
-#    apt-get update && sed 's/#.*//' /tmp/apt-requirements.txt \
-#        | xargs apt-get install -y --no-install-recommends &&\
-#    rm -rf /var/lib/apt/lists/* /tmp/apt-requirements.txt
-
-# Delete this section if `apt-requirements.txt` is used.
+# This removes the need to edit the Dockerfile for different
+# `apt` requirements in different projects.
+# Essential packages (e.g., `sudo`) are installed explicitly.
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
     --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-        curl \
+    --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
+    apt-get update && sed 's/#.*//' /tmp/reqs/apt-train.requirements.txt \
+        | xargs -r apt-get install -y --no-install-recommends && \
+    apt-get install -y --no-install-recommends \
         git \
-        nano \
         openssh-server \
         sudo \
-        tmux \
         tzdata \
         zsh && \
     rm -rf /var/lib/apt/lists/*
+
+# Example of installation without a requirements file.
+#RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
+#    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
+#    apt-get update && apt-get install -y --no-install-recommends \
+#        curl \
+#        git \
+#        nano \
+#        openssh-server \
+#        sudo \
+#        tmux \
+#        tzdata \
+#        zsh && \
+#    rm -rf /var/lib/apt/lists/*
 
 ARG GID
 ARG UID
@@ -357,22 +410,71 @@ RUN conda install -y \
         numpy==1.20.3 && \
     conda clean -ya
 
-COPY --chown=${UID}:${GID} requirements.txt /tmp/requirements.txt
-
 # Preserving pip cache by omitting `--no-cache-dir`.
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in /tmp/dist, just in case.
 # External requirements files should be installed in a single installation
 # for dependency resolution by pip.
 RUN --mount=type=cache,id=pip-train,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
-    --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
+    --mount=type=bind,from=train-builds,source=/tmp,target=/tmp \
     python -m pip install --find-links /tmp/dist/ \
         /tmp/dist/*.whl \
-        -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
+        -r /tmp/reqs/pip-train.requirements.txt
 
 CMD ["/bin/zsh"]
 
 
-# Create a deployment image as necessary.
-# FROM ${DEPLOY_IMAGE} AS deploy
+# Minimalist deployment preparation layer.
+FROM ${BUILD_IMAGE} AS deploy-builds
+COPY --from=build-vision  /tmp/dist  /tmp/dist
+
+# Use this if a `conda` environment is preferred.
+COPY --from=build-install /opt/conda /opt/conda
+
+# The licenses for the Anaconda default channel and Intel MKL are not fully open-source.
+# Enterprise users may therefore wish to remove them from their final product.
+# The deployment build thus uses system Python.
+# MKL can be removed from the PyTorch build by using MKL_MODE=exclude during the build.
+# If necessary, edit the `build-install-exclude-mkl` layer to use the
+# `conda-forge` channel when building PyTorch.
+
+# Minimalist deployment image for Ubuntu 20.04 LTS.
+FROM ${DEPLOY_IMAGE} AS deploy
+
+LABEL maintainer="veritas9872@gmail.com"
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Use mirror links for faster installation if necessary.
+#ARG DEB_OLD=http://archive.ubuntu.com
+#ARG DEB_NEW=http://mirror.kakao.com
+#RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list
+#ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+#ARG TRUSTED_HOST=mirror.kakao.com
+#RUN printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
+#    > /etc/pip.conf
+
+# TODO: Add requirements files for deployment.
+ARG PYTHON_VERSION
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        python${PYTHON_VERSION} \
+        python3-pip \
+        python-is-python3 \
+        libopenblas0-openmp \
+        libjpeg-turbo8 \
+        libpng16-16 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
+    python -m pip install --no-cache-dir --find-links /tmp/dist/ \
+        /tmp/dist/*.whl \
+        tqdm  # Included for `benchmark.py`.
+
+CMD ["/bin/sh"]

@@ -159,3 +159,37 @@ services:
           devices:
             - driver: nvidia
               capabilities: [ gpu ]
+
+
+  deploy:
+    hostname: deploy
+    env_file:  # Use a separate environment file for deployment if necessary.
+      - ${ENV_FILE:-.env}
+    image: pytorch_source:${DEPLOY_NAME:-deploy}
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: deploy
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CONDA_PYTHON_CHANNEL: conda-forge
+        MKL_MODE: ${MKL_MODE:-exclude}
+        TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.1}
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    environment:
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]

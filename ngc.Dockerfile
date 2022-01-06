@@ -95,12 +95,12 @@ ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 RUN conda config --set pip_interop_enabled True
 
-COPY --chown=${UID}:${GID} ngc.requirements.txt /tmp/ngc.requirements.txt
+COPY --chown=${UID}:${GID} reqs/pip-ngc.requirements.txt /tmp/ngc.requirements.txt
 
 # Preserving pip cache by omitting `--no-cache-dir`.
 RUN --mount=type=cache,id=pip-ngc,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
     python -m pip install \
-      -r /tmp/ngc.requirements.txt && \
-    rm /tmp/ngc.requirements.txt
+      -r /tmp/pip-ngc.requirements.txt && \
+    rm /tmp/pip-ngc.requirements.txt
 
 CMD ["/bin/zsh"]
