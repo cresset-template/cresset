@@ -1,4 +1,4 @@
-# The Ultimate PyTorch Source-Build Template
+# Cresset: The Universal PyTorch Template
 
 [![GitHub stars](https://img.shields.io/github/stars/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/issues)
