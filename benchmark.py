@@ -24,7 +24,8 @@ from collections import namedtuple
 from typing import Sequence, Union
 
 import torch
-from torch import autocast, nn, Tensor
+from torch import nn, Tensor
+from torch.cuda.amp import autocast
 from torchvision.models import (
     vgg19,
     resnet50,
@@ -40,7 +41,7 @@ from torchvision.models.video import r3d_18
 # Too useful to do without, even if it is an external library.
 from tqdm import tqdm
 
-eval_mode = getattr(torch, 'inference_mode', 'no_grad')
+eval_mode = getattr(torch, 'inference_mode', torch.no_grad)
 
 
 @eval_mode()
@@ -83,7 +84,7 @@ def infer(
     if enable_scripting:
         network = torch.jit.trace(network, inputs)
 
-    with autocast(device_type=device.type, enabled=enable_amp):
+    with autocast(enabled=enable_amp):
         elapsed_time = _infer(
             network=network,
             inputs=inputs,
