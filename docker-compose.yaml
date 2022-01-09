@@ -19,8 +19,9 @@ services:
     # If no image with the specified image name exists,
     # a new image with that name will be created.
     image: pytorch_source:${TRAIN_NAME:-train}
-    # `ipc: host` is a known security vulnerability, but it removes the shared memory cap.
+    # `ipc: host` is a known security vulnerability but removes the shared memory cap.
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
+#    shm_size: 1GB  # Explicit shared memory limit.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
@@ -79,6 +80,7 @@ services:
       - ${ENV_FILE:-.env}
     image: pytorch_source:${TRAIN_NAME:-full}
     ipc: host
+#    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
@@ -102,6 +104,7 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
+        MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
@@ -130,6 +133,7 @@ services:
       - ${ENV_FILE:-.env}
     image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
     ipc: host
+#    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
@@ -163,7 +167,7 @@ services:
 
   deploy:
     hostname: deploy
-    env_file:  # Use a separate environment file for deployment if necessary.
+    env_file:  # Use a separate `.env` file for deployment if necessary.
       - ${ENV_FILE:-.env}
     image: pytorch_source:${DEPLOY_NAME:-deploy}
     tty: true
@@ -176,8 +180,9 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        CONDA_PYTHON_CHANNEL: conda-forge
-        MKL_MODE: ${MKL_MODE:-exclude}
+        # Removing the `defaults` channel, which is not free for commercial use.
+        CONDA_NO_DEFAULTS: 1  # 0: `defaults` channel, 1: `conda-forge` channel.
+        MKL_MODE: include  # `include` or `exclude`
         TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
