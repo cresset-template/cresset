@@ -329,7 +329,7 @@ ARG TRUSTED_HOST=mirror.kakao.com
 # Remove any pre-existing global `pip` configurations.
 # `printf` is preferred over `echo` when escape characters are used
 # because the behavior of `echo` is inconsistent across shells.
-RUN if [ $TZ = Asia/Seoul ]; then \
+RUN if [ ${TZ} = Asia/Seoul ]; then \
         sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
         printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
             > /etc/pip.conf; \

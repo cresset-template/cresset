@@ -74,7 +74,7 @@ ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-RUN if [ $TZ = Asia/Seoul ]; then \
+RUN if [ ${TZ} = Asia/Seoul ]; then \
         printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
             > /opt/conda/pip.conf; \
     fi
