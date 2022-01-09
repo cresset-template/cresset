@@ -182,7 +182,8 @@ services:
       args:
         # Removing the `defaults` channel, which is not free for commercial use.
         CONDA_NO_DEFAULTS: 1  # 0: `defaults` channel, 1: `conda-forge` channel.
-        MKL_MODE: include  # `include` or `exclude`
+        # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
+        MKL_MODE: include  # `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}

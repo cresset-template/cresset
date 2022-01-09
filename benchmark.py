@@ -146,8 +146,8 @@ def measure(
     info = get_cuda_info(device)
     for k, v in info.items():
         print(f'{k}: {v}')
-    print(f'Automatic Mixed Precision Enabled: {enable_amp}')
-    print(f'TorchScript Enabled: {enable_scripting}')
+    print(f'Automatic Mixed Precision Enabled: {enable_amp}.')
+    print(f'TorchScript Enabled: {enable_scripting}.')
 
     for cfg in cfgs:
         ms = infer(
@@ -158,8 +158,8 @@ def measure(
             enable_amp=enable_amp,
             enable_scripting=enable_scripting
         )
-        print(f'\nModel: {cfg.name}')
-        print(f'Input shapes: {cfg.input_shapes}')
+        print(f'\nModel: {cfg.name}.')
+        print(f'Input shapes: {cfg.input_shapes}.')
         print(f'Average time: {ms / num_steps:7.3f} milliseconds.')
         print(f'Total time: {round(ms / 1000):3d} seconds.')
 
@@ -208,7 +208,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
     torch.set_grad_enabled(False)
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore')  # Comment this out to see warnings.
+        # Comment out the line below to see warnings.
+        warnings.simplefilter('ignore')
         measure(
             cfgs=configs,
             num_steps=1024,
