@@ -19,6 +19,7 @@ The hit to performance from antivirus programs is nontrivial.
 """
 import subprocess
 import warnings
+import platform
 from collections import namedtuple
 from typing import Sequence, Union
 
@@ -65,7 +66,6 @@ def _infer(
     return tic.elapsed_time(toc)  # Time in milliseconds.
 
 
-@eval_mode()
 def infer(
         network: nn.Module,
         input_shapes: Sequence[Sequence[int]],
@@ -94,9 +94,11 @@ def infer(
 
 
 def get_cuda_info(device: Union[torch.device, str, int]) -> dict:
+    pv = platform.python_version()
     tv = torch.__version__
     dp = torch.cuda.get_device_properties(device)
     cc = f'{dp.major}.{dp.minor}'  # GPU Compute Capability
+    cd = torch.backends.cudnn.version()
     dn = dp.name  # GPU device name (e.g., RTX 3090)
     # The list of architectures that PyTorch was built for.
     al = tuple(torch.cuda.get_arch_list())
@@ -108,8 +110,10 @@ def get_cuda_info(device: Union[torch.device, str, int]) -> dict:
     ], capture_output=True, text=True)
     dv = dv.stdout.strip()  # NVIDIA Driver version.
     info = {
+        'Python Version': pv,
         'PyTorch Version': tv,
         'PyTorch CUDA Version': tc,
+        'PyTorch cuDNN Version': cd,
         'PyTorch Architecture List': al,
         'GPU Device Name': dn,
         'GPU Compute Capability': cc,
@@ -142,8 +146,8 @@ def measure(
     info = get_cuda_info(device)
     for k, v in info.items():
         print(f'{k}: {v}')
-    print(f'Automatic Mixed Precision Enabled: {enable_amp}')
-    print(f'TorchScript Enabled: {enable_scripting}')
+    print(f'Automatic Mixed Precision Enabled: {enable_amp}.')
+    print(f'TorchScript Enabled: {enable_scripting}.')
 
     for cfg in cfgs:
         ms = infer(
@@ -154,8 +158,8 @@ def measure(
             enable_amp=enable_amp,
             enable_scripting=enable_scripting
         )
-        print(f'\nModel: {cfg.name}')
-        print(f'Input shapes: {cfg.input_shapes}')
+        print(f'\nModel: {cfg.name}.')
+        print(f'Input shapes: {cfg.input_shapes}.')
         print(f'Average time: {ms / num_steps:7.3f} milliseconds.')
         print(f'Total time: {round(ms / 1000):3d} seconds.')
 
@@ -204,7 +208,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
     torch.set_grad_enabled(False)
     with warnings.catch_warnings():
-        warnings.simplefilter('ignore')  # Comment this out to see warnings.
+        # Comment out the line below to see warnings.
+        warnings.simplefilter('ignore')
         measure(
             cfgs=configs,
             num_steps=1024,

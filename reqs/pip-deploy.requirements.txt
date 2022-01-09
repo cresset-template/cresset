@@ -1,0 +1,2 @@
+tqdm==4.62.3
+mkl==2022.0.1  # Remove this if MKL is disabled

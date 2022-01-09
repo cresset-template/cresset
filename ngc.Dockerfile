@@ -21,7 +21,7 @@ ARG PYTHONUNBUFFERED=1
 
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
-    > /etc/apt/apt.conf.d/keep-cache
+        > /etc/apt/apt.conf.d/keep-cache
 
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
@@ -31,21 +31,23 @@ ARG DEB_NEW=http://mirror.kakao.com
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
 RUN if [ $TZ = Asia/Seoul ]; then \
-    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; \
+        sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; \
     fi
+
+# Copy `apt` requirements.
+COPY reqs/apt-ngc.requirements.txt /tmp/reqs/apt-ngc.requirements.txt
 
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
     --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-        curl \
+    apt-get update && sed 's/#.*//' /tmp/reqs/apt-ngc.requirements.txt \
+        | xargs -r apt-get install -y --no-install-recommends && \
+    apt-get install -y --no-install-recommends \
         git \
-        nano \
         openssh-server \
         sudo \
-        tmux \
         tzdata \
         zsh && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/reqs/apt-ngc.requirements.txt
 
 ARG GID
 ARG UID
@@ -72,9 +74,9 @@ ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-RUN if [ $TZ = Asia/Seoul ]; then \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-    > /opt/conda/pip.conf; \
+RUN if [ ${TZ} = Asia/Seoul ]; then \
+        printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
+            > /opt/conda/pip.conf; \
     fi
 
 ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
@@ -83,8 +85,8 @@ WORKDIR $HOME/.zsh
 RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
 RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
-RUN echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+#RUN git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
+#RUN echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
 
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
@@ -95,12 +97,12 @@ ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 RUN conda config --set pip_interop_enabled True
 
-COPY --chown=${UID}:${GID} ngc.requirements.txt /tmp/ngc.requirements.txt
+COPY --chown=${UID}:${GID} reqs/pip-ngc.requirements.txt /tmp/ngc.requirements.txt
 
 # Preserving pip cache by omitting `--no-cache-dir`.
 RUN --mount=type=cache,id=pip-ngc,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
     python -m pip install \
-      -r /tmp/ngc.requirements.txt && \
-    rm /tmp/ngc.requirements.txt
+        -r /tmp/pip-ngc.requirements.txt && \
+    rm /tmp/pip-ngc.requirements.txt
 
 CMD ["/bin/zsh"]

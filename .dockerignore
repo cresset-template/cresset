@@ -1,6 +1,9 @@
 # See the link below for the .dockerignore file syntax.
 # https://docs.docker.com/engine/reference/builder/#dockerignore-file
-# Remove all build context by ignoring everything except requirements files.
+# Remove all build context by ignoring everything
+# except for requirements files placed in the `reqs` directory or project root.
+# Using "*\n!**/*requirements*.txt" would be best but this does not work.
 # The order of lines is significant.
-**
-!**/*requirements*.txt
+*
+!reqs/*requirements*.txt
+!*requirements*.txt

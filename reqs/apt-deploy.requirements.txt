@@ -1,0 +1,2 @@
+libjpeg-turbo8
+libpng16-16

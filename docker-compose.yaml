@@ -3,7 +3,7 @@
 # `docker-compose.yaml` files cannot use shell outputs as their inputs.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
 # for a guide on how to interpret the `docker-compose.yaml` file.
-# Variables are in ${VARIBALE:-DEFAULT_VALUE} format
+# Variables are in ${VARIABLE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
 # Users are recommended to use an `.env` file to set variables.
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
@@ -19,8 +19,9 @@ services:
     # If no image with the specified image name exists,
     # a new image with that name will be created.
     image: pytorch_source:${TRAIN_NAME:-train}
-    # `ipc: host` is a known security vulnerability, but it removes the shared memory cap.
+    # `ipc: host` is a known security vulnerability but removes the shared memory cap.
     ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
+#    shm_size: 1GB  # Explicit shared memory limit.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
@@ -79,6 +80,7 @@ services:
       - ${ENV_FILE:-.env}
     image: pytorch_source:${TRAIN_NAME:-full}
     ipc: host
+#    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
@@ -102,6 +104,7 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
+        MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
@@ -130,6 +133,7 @@ services:
       - ${ENV_FILE:-.env}
     image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
     ipc: host
+#    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
@@ -152,6 +156,42 @@ services:
     user: ${UID:-1000}:${GID:-1000}
     environment:
       TZ: ${TZ:-Asia/Seoul}
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+
+
+  deploy:  # Bare-bones deploy service.
+    hostname: deploy
+    env_file:  # Use a separate `.env` file for deployment if necessary.
+      - ${ENV_FILE:-.env}
+    image: pytorch_source:${DEPLOY_NAME:-deploy}
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: deploy
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # The Anaconda `defaults` channel is not free for commercial use.
+        CONDA_NO_DEFAULTS: 1  # 0: Use `defaults` as default, 1: Use `conda-forge` as default.
+        # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
+        MKL_MODE: include  # `include` or `exclude`.
+        TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.1}
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
     deploy:
       resources:

@@ -22,7 +22,7 @@ env:
 # The `.dockerignore` file ignore all context except for requirements during build.
 DI_FILE = .dockerignore
 di:
-	test -s ${DI_FILE} || printf "**\n!**/*requirements*.txt\n" >> ${DI_FILE}
+	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
 # The following are the default builds for the make commands.
 CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
