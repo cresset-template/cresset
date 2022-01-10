@@ -1,5 +1,5 @@
 """
-Benchmarking code for accurate measurement of compute speeds.
+GPU benchmarking code for accurate measurement of compute speeds.
 Compatible with PyTorch 1.7.0+ and TorchVision 0.8.1+.
 Add your own benchmark models as necessary.
 See link below for an explanation of timing in CUDA.
@@ -17,6 +17,7 @@ Windows users should disable Windows Security real-time protection
 and other antivirus programs for best performance.
 The hit to performance from antivirus programs is nontrivial.
 """
+import os
 import subprocess
 import warnings
 import platform
@@ -105,9 +106,10 @@ def get_cuda_info(device: Union[torch.device, str, int]) -> dict:
     al = tuple(torch.cuda.get_arch_list())
     tc = torch.version.cuda  # CUDA version used by PyTorch.
     dv = subprocess.run([
-        'nvidia-smi',
-        '--query-gpu=driver_version',
-        '--format=csv,noheader'
+        f'nvidia-smi',
+        f'--id={device.index}',
+        f'--query-gpu=driver_version',
+        f'--format=csv,noheader'
     ], capture_output=True, text=True)
     dv = dv.stdout.strip()  # NVIDIA Driver version.
     info = {
@@ -124,15 +126,16 @@ def get_cuda_info(device: Union[torch.device, str, int]) -> dict:
 
 
 def get_device(gpu: int) -> torch.device:
-    if torch.cuda.is_available() and isinstance(gpu, int):
-        device = torch.device(f'cuda:{gpu}')
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{int(gpu)}')
     else:
-        print('No valid GPU was found. Using CPU.')
-        device = torch.device('cpu')
+        raise RuntimeError(
+            'No GPUs were found for this container. '
+            'Please check container run settings.')
     return device
 
 
-# Configuration container.
+# Configuration specifications.
 Config = namedtuple('Config', ('name', 'network', 'input_shapes'))
 
 
@@ -166,17 +169,18 @@ def measure(
 
 
 if __name__ == '__main__':
+    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     # Specify model configurations manually.
     configs = [
         Config(
             name='vgg19',
             network=vgg19(),
-            input_shapes=((8, 3, 224, 224),)
+            input_shapes=((1, 3, 224, 224),)
         ),
         Config(
             name='resnet50',
             network=resnet50(),
-            input_shapes=((8, 3, 224, 224),)
+            input_shapes=((2, 3, 224, 224),)
         ),
         Config(
             name='fcn_resnet50',

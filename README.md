@@ -1,4 +1,4 @@
-# Cresset: The Universal PyTorch Template
+# Cresset: The One Template to Train Them All
 
 [![GitHub stars](https://img.shields.io/github/stars/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/veritas9872/PyTorch-Universal-Docker-Template?style=flat-square)](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/issues)
@@ -13,6 +13,8 @@
 The project will soon be renamed `Cresset`.
 Please be aware that the project URL will also change.
 My apologies for the inconvenience.
+Documentation updates are also planned within a few months.
+Until then, please read the source code and comments carefully.
 
 ## TL;DR
 __*PyTorch built from source can be x4 faster than a naïve PyTorch install.

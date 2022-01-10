@@ -8,6 +8,11 @@
 # Users are recommended to use an `.env` file to set variables.
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
 
+# Using a `docker-compose.yaml` file has many advantages
+# over creating custom shell scripts for each project.
+# The settings are much easier to see and maintain than scattered shell scripts.
+# Also, Compose is a native Docker component, simplifying project maintenance.
+
 services:
   train:  # Service name. Change the name as necessary for each project.
     hostname: train  # Set to be the same as the service name. Makes terminals easier to tell apart.
@@ -165,7 +170,7 @@ services:
               capabilities: [ gpu ]
 
 
-  deploy:  # Bare-bones deploy service.
+  deploy:
     hostname: deploy
     env_file:  # Use a separate `.env` file for deployment if necessary.
       - ${ENV_FILE:-.env}
@@ -182,8 +187,14 @@ services:
       args:
         # The Anaconda `defaults` channel is not free for commercial use.
         CONDA_NO_DEFAULTS: 1  # 0: Use `defaults` as default, 1: Use `conda-forge` as default.
+        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
+        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
+        CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
+        CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
+        MAGMA_VERSION: ${MAGMA_VERSION:-113}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
-        MKL_MODE: include  # `include` or `exclude`.
+        MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
