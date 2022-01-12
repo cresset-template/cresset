@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.3-labs
+# syntax = docker/dockerfile:1.3.0-labs
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 # See the link below for documentation on BuildKit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
@@ -335,39 +335,18 @@ RUN if [ ${TZ} = Asia/Seoul ]; then \
             > /etc/pip.conf; \
     fi
 
-# Use the following method to install `apt` packages from
-# a requirements file, 'apt-requirements.txt', with a format
-# similar to `requirements.txt` in `pip`.
-# This removes the need to edit the Dockerfile for different
-# `apt` requirements in different projects.
-# Essential packages (e.g., `sudo`) are installed explicitly.
-# The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
 RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
     --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
-    --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
-    apt-get update && sed 's/#.*//' /tmp/reqs/apt-train.requirements.txt \
-        | xargs -r apt-get install -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends \
+    apt-get update && apt-get install -y --no-install-recommends \
+        curl \
         git \
+        nano \
         openssh-server \
         sudo \
+        tmux \
         tzdata \
         zsh && \
     rm -rf /var/lib/apt/lists/*
-
-# Example of installation without a requirements file.
-#RUN --mount=type=cache,id=apt-cache-train,target=/var/cache/apt \
-#    --mount=type=cache,id=apt-lib-train,target=/var/lib/apt \
-#    apt-get update && apt-get install -y --no-install-recommends \
-#        curl \
-#        git \
-#        nano \
-#        openssh-server \
-#        sudo \
-#        tmux \
-#        tzdata \
-#        zsh && \
-#    rm -rf /var/lib/apt/lists/*
 
 ARG GID
 ARG UID
@@ -478,13 +457,13 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && sed 's/#.*//' /tmp/reqs/apt-deploy.requirements.txt \
-        | xargs -r apt-get install -y --no-install-recommends && \
     apt-get update && apt-get install -y --no-install-recommends \
         python${PYTHON_VERSION} \
         python3-pip \
         python-is-python3 \
-        libopenblas0-openmp && \
+        libopenblas0-openmp  \
+        libjpeg-turbo8 \
+        libpng16-16 && \
     rm -rf /var/lib/apt/lists/*
 
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.

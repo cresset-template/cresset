@@ -175,12 +175,12 @@ if __name__ == '__main__':
         Config(
             name='vgg19',
             network=vgg19(),
-            input_shapes=((1, 3, 224, 224),)
+            input_shapes=((1, 3, 512, 512),)
         ),
         Config(
             name='resnet50',
             network=resnet50(),
-            input_shapes=((2, 3, 224, 224),)
+            input_shapes=((2, 3, 512, 512),)
         ),
         Config(
             name='fcn_resnet50',

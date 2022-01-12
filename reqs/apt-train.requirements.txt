@@ -1,3 +1,9 @@
+# This does not work yet!
 curl
 nano
 tmux
+git
+openssh-server
+sudo
+tzdata
+zsh
