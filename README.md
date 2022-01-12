@@ -504,6 +504,8 @@ Also edit `docker-compose.yaml` as necessary for your project.
 Feel free to change session names, hostnames, etc. for different projects and configurations.
 
 3. Run `docker compose up -d --build train` or `docker compose up -d --build full`.
+If an error occurs, try `export COMPOSE_DOCKER_CLI_BUILD=1` and `export DOCKER_BUILDKIT=1` first.
+The following variables will instruct DOcker Compose to use BuildKit.
 The `train` service corresponds to the default `make all ...` build 
 while the `full` service corresponds to the `make all-full ...` build.
 If you have already run `make all ...` or `make all-full ...`, 
