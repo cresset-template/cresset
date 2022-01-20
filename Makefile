@@ -1,10 +1,10 @@
 # Basic Makefile for starting projects.
 # For more sophisticated settings, use the Dockerfile directly.
-# See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
+# See https://developer.nvidia.com/cuda-gpus to find GPU compute capabilities.
 # Also assumes host Linux shell for UID, GID.
 # See https://pytorch.org/docs/stable/cpp_extension.html
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
-# which is specified by `CC` in the `Makefile`.
+# which is specified by `CCA` in the `Makefile`.
 
 .PHONY: env di all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
@@ -25,7 +25,9 @@ di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
 # The following are the default builds for the make commands.
-CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
+# Compute Capability is specified by the `CCA` variable and
+# the build will fail (hopefully) if `CCA` is not specified.
+CCA                     =
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.10.1
@@ -36,6 +38,10 @@ TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
 all: env build-install build-torch build-train
+
+cca:
+	if [ -n "${CCA}" ]; then
+
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -49,7 +55,7 @@ build-torch:
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--tag pytorch_source:${TORCH_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -70,7 +76,7 @@ build-train:
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--cache-from=pytorch_source:${TORCH_NAME} \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -91,6 +97,7 @@ PYTHON_VERSION    = 3.9
 MAGMA_VERSION     = 102  # Magma version must match CUDA version.
 TORCH_NAME_FULL   = build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 INSTALL_NAME_FULL = build_install-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
+TRAIN_NAME_FULL   = full
 
 all-full: env build-install-full build-torch-full build-train-full
 
@@ -112,7 +119,7 @@ build-torch-full:
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--tag pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -129,10 +136,10 @@ build-torch-full:
 build-train-full:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--tag pytorch_source:${TRAIN_NAME} \
+		--tag pytorch_source:${TRAIN_NAME_FULL} \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--cache-from=pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -155,7 +162,7 @@ build-train-clean:
 		--target train \
 		--no-cache \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -169,8 +176,8 @@ build-train-full-clean:
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
-		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--tag pytorch_source:${TRAIN_NAME_FULL} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \

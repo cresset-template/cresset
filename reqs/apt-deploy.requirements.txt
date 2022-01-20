@@ -1,3 +1,1 @@
-# This does not work yet!
-libjpeg-turbo8
-libpng16-16
+libjpeg-turbo8libpng16-16
