@@ -26,7 +26,11 @@ di:
 
 # The following are the default builds for the make commands.
 # Compute Capability is specified by the `CCA` variable and
-# the build will fail (hopefully) if `CCA` is not specified.
+# the build will fail if `CCA` is not specified.
+ifndef CCA
+$(error CCA variable has not been specified. Please check your .env file. Use :make env: to create one.)
+endif
+
 CCA                     =
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul

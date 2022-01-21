@@ -47,7 +47,7 @@ services:
       # in `args` to prevent a cache miss from occurring.
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
-        TORCH_CUDA_ARCH_LIST: ${CCA:?"The `CCA` (Compute Capability) variable must be specified in the `.env` file."}
+        TORCH_CUDA_ARCH_LIST: ${CCA:?The CCA (Compute Capability) variable must be specified in the .env file.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
@@ -102,7 +102,7 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CCA:?"The `CCA` (Compute Capability) variable must be specified in the `.env` file."}
+        TORCH_CUDA_ARCH_LIST: ${CCA:?The CCA (Compute Capability) variable must be specified in the .env file.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
@@ -174,7 +174,6 @@ services:
       dockerfile: Dockerfile
       args:
         # The Anaconda `defaults` channel is not free for commercial use.
-        CONDA_NO_DEFAULTS: 1  # 0: Use `defaults` as default, 1: Use `conda-forge` as default.
         BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
@@ -184,7 +183,7 @@ services:
         MAGMA_VERSION: ${MAGMA_VERSION:-113}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CCA:?"The `CCA` (Compute Capability) variable must be specified in the `.env` file."}
+        TORCH_CUDA_ARCH_LIST: ${CCA:?The CCA (Compute Capability) variable must be specified in the .env file.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
