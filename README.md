@@ -12,6 +12,7 @@
 #### Notice
 The project will soon be renamed `Cresset`.
 Please be aware that the project URL will also change.
+There will also be breaking changes in the API. See `dev` branch for details.
 My apologies for the inconvenience.
 Documentation updates are also planned within a few months.
 Until then, please read the source code and comments carefully.
