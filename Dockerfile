@@ -299,8 +299,7 @@ ARG TRUSTED_HOST=mirror.kakao.com
 # `printf` is preferred over `echo` when escape characters are used
 # because the behavior of `echo` is inconsistent across shells.
 RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-        > /etc/pip.conf
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf
 
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
@@ -424,8 +423,7 @@ ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-        > /etc/pip.conf
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
