@@ -127,6 +127,8 @@ version because of compatibility issues with their pre-existing environment.
 4. Informing users on where to look for solutions to their speed problems 
 (this may be the most important factor).
 
+See the [documentation](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-compilation) for details.
+
 Combined with techniques such as AMP and cuDNN benchmarking, 
 computational throughput can be increased dramatically 
 (possibly x10) __*on the same hardware*__.
@@ -666,9 +668,13 @@ The CUDA driver version can be found using the `nvidia-smi` command.
 0. **MORE STARS**. If you are reading this, please star this repository immediately.
 _**No Contribution Without Appreciation!**_
 
-1. CentOS and UBI images have not been implemented yet.
-As they require only simple modifications, 
-pull requests implementing them are very much welcome.
+1. Only PyTorch 1.10.x on Ubuntu 20.04 LTS with CUDA 11.3.1 has been tested rigorously.
+Please raise an issue if there are any versions that do not build properly.
+Ubuntu 16.04, CentOS, and UBI base images are now supported. 
+However, please check that your host Docker, Docker Compose, and NVIDIA Driver
+are up-to-date before doing so. 
+Also, note that some combinations of PyTorch version and CUDA environment 
+may simply be impossible to build because of issues in the underlying source code.
 
 2. Translations into other languages and updates to existing translations are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.

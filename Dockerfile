@@ -7,6 +7,10 @@
 
 # This image uses multi-stage builds. See the link below for a detailed description.
 # https://docs.docker.com/develop/develop-images/multistage-build
+# The build process is similar to a neural network with complicated control flow.
+# The `stages` are like blocks in the network, with control flow implemented
+# by the names of arguments and stages. This allows muh greater modularity in the build.
+# It also makes the final image much more compact and efficient.
 
 # All `ARG` variables must be redefined for every stage,
 # `ARG`s defined before `FROM` transfer their values to layers that redefine them.
@@ -92,7 +96,7 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O ${CONDA_URL} && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
-COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build-requirements.txt
+COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 
 
 FROM build-install AS build-install-include-mkl
@@ -105,7 +109,7 @@ RUN conda install -y -c intel \
         mkl \
         mkl-include \
         magma-cuda${MAGMA_VERSION}  \
-        --file /tmp/reqs/conda-build-requirements.txt && \
+        --file /tmp/reqs/conda-build.requirements.txt && \
     conda clean -ya
 
 
@@ -116,19 +120,19 @@ FROM build-install AS build-install-exclude-mkl
 # Other Intel software such as the Intel OpenMP^* Runtime Library (iomp) are licensed under the
 # Intel End User License Agreement for Developer Tools. See URL below for Intel licenses & EULAs.
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
-# Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used as the backend.
+# Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
 ARG MAGMA_VERSION
 RUN conda install -y \
         nomkl \
         magma-cuda${MAGMA_VERSION}  \
-        --file /tmp/reqs/conda-build-requirements.txt && \
+        --file /tmp/reqs/conda-build.requirements.txt && \
     conda clean -ya
 
 
 FROM build-install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the basis for all builds in the Dockerfile.
 
-# Set Jemalloc as the system memory allocator for faster and more efficient memory management.
+# Use Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # Anaconda build of Jemalloc does not have profiling enabled.
 #ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
@@ -163,18 +167,16 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # on its own but its subsidiary libraries cannot,
 # hence the need to specify the architecture list explicitly.
 # Building PyTorch with several optimizations and bugfixes.
-# `USE_CUDA`, `USE_CUDNN`, and `USE_ROCM` are made explicit just in case.
 # Test builds are disabled by default to speed up the build time.
 # Disabling Caffe2 is dangerous but most users do not need it.
 # Read `setup.py` and `CMakeLists.txt` to find build flags appropriate for your needs.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
-ARG TORCH_CUDA_ARCH_LIST
 ARG BUILD_TEST=0
-ARG USE_PRECOMPILED_HEADERS=1
-ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 ARG BUILD_CAFFE2=0
-
+ARG USE_PRECOMPILED_HEADERS=1
+ARG TORCH_CUDA_ARCH_LIST
+ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 RUN --mount=type=cache,target=/opt/ccache \
     CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
@@ -264,6 +266,8 @@ COPY --from=build-vision  /tmp/dist  /tmp/dist
 COPY --from=build-audio   /tmp/dist  /tmp/dist
 COPY --from=build-text    /tmp/dist  /tmp/dist
 
+# COPY new builds here to minimize the likelihood of cache misses.
+
 COPY --from=build-pure /opt/pure /opt/pure
 COPY --from=build-pure /opt/zsh-autosuggestions /opt/zsh-autosuggestions
 COPY --from=build-pure /opt/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
@@ -274,7 +278,6 @@ COPY reqs/apt-train.requirements.txt /tmp/reqs/apt-train.requirements.txt
 COPY reqs/pip-train.requirements.txt /tmp/reqs/pip-train.requirements.txt
 
 FROM ${TRAIN_IMAGE} AS train
-######### *Customize for your use case by editing from here* #########
 
 LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
@@ -325,8 +328,8 @@ ARG UID
 ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
-# The `zsh` shell will be used due to its convenience and popularity.
-# Create user with home directory and password-free sudo permissions.
+# The `zsh` shell is used due to its convenience and popularity.
+# Creating user with home directory and password-free sudo permissions.
 # This may cause security issues. Use at your own risk.
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
@@ -347,8 +350,6 @@ ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 
-WORKDIR $HOME/.zsh
-
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 COPY --from=train-builds --chown=${UID}:${GID} /opt/pure $HOME/.zsh/pure
@@ -362,7 +363,7 @@ RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt 
 COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
-# Using the Intel channel to get Intel-optimized Python and Numpy.
+# Using the Intel channel to get Intel-optimized Numpy.
 # Conda configurations must be restated for the user.
 RUN conda config --set pip_interop_enabled True && \
     conda config --add channels conda-forge && \
@@ -441,8 +442,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
         python3-pip \
         libgomp1 && \
     rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3 3 && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python2 2
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 3
 
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
@@ -452,5 +452,3 @@ RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
         -r /tmp/reqs/pip-deploy.requirements.txt \
         /tmp/dist/*.whl && \
     ldconfig
-
-WORKDIR /

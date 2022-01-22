@@ -223,3 +223,4 @@ services:
 # https://github.com/compose-spec/compose-spec/blob/master/spec.md#volumes-top-level-element
 volumes:
   shared:  # Maybe use later to share data between different containers.
+  # See # https://docs.docker.com/storage/volumes/#share-data-among-machines
