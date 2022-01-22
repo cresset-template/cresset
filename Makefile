@@ -6,7 +6,7 @@
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `CCA` in the `Makefile`.
 
-.PHONY: env di all build-install build-torch build-train
+.PHONY: env di cca all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
 .PHONY: build-train-clean build-train-full-clean
 
@@ -24,13 +24,13 @@ DI_FILE = .dockerignore
 di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
+# Prevent builds if `CCA` (Compute Capability) is undefined.
+cca:
+	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
+
 # The following are the default builds for the make commands.
 # Compute Capability is specified by the `CCA` variable and
-# the build will fail if `CCA` is not specified.
-ifndef CCA
-$(error CCA variable has not been specified. Please check your .env file. Use :make env: to create one.)
-endif
-
+# the build should fail if `CCA` is not specified.
 CCA                     =
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
@@ -41,11 +41,7 @@ TORCHAUDIO_VERSION_TAG  = v0.10.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
-all: env build-install build-torch build-train
-
-cca:
-	if [ -n "${CCA}" ]; then
-
+all: env cca build-install build-torch build-train
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -54,7 +50,7 @@ build-install:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-torch:
+build-torch: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
@@ -74,7 +70,7 @@ build-torch:
 # This both wastes time and, more importantly, causes environment mismatch.
 # Both the install and build images should be specified as caches.
 # Otherwise, the installation process will cause a cache miss.
-build-train:
+build-train: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
@@ -103,7 +99,7 @@ TORCH_NAME_FULL   = build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_V
 INSTALL_NAME_FULL = build_install-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 TRAIN_NAME_FULL   = full
 
-all-full: env build-install-full build-torch-full build-train-full
+all-full: env cca build-install-full build-torch-full build-train-full
 
 build-install-full:
 	DOCKER_BUILDKIT=1 docker build \
@@ -118,7 +114,7 @@ build-install-full:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-torch-full:
+build-torch-full: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
@@ -137,7 +133,7 @@ build-torch-full:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-train-full:
+build-train-full: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--tag pytorch_source:${TRAIN_NAME_FULL} \
@@ -161,7 +157,7 @@ build-train-full:
 
 # The following builds are `clean` builds, i.e., builds that do not use caches from previous builds.
 # Their main purpose is to test whether the commands work properly without cached runs.
-build-train-clean:
+build-train-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
@@ -176,7 +172,7 @@ build-train-clean:
 		--build-arg TZ=${TZ} \
 		-f Dockerfile .
 
-build-train-full-clean:
+build-train-full-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \

@@ -78,16 +78,19 @@ ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:$PATH
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# Channel priority: `conda-forge`, `defaults`, `pytorch`.
+# Channel priority: `conda-forge`, `pytorch`, `defaults`.
+# Cannot set strict priority because of installation conflicts.
 RUN curl -fsSL -v -o ~/miniconda.sh -O ${CONDA_URL} && \
     chmod +x ~/miniconda.sh && \
     ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
     conda config --add channels conda-forge && \
     conda config --append channels pytorch && \
-    conda config --set channel_priority strict && \
+    conda config --append channels defaults && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
+
+COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build-requirements.txt
 
 
 FROM build-install AS build-install-include-mkl
@@ -97,29 +100,10 @@ FROM build-install AS build-install-include-mkl
 # Intel channel set to highest priority for optimal Intel builds.
 ARG MAGMA_VERSION
 RUN conda install -y -c intel \
-        autoconf \
-        astunparse \
-        ccache \
-        cffi \
-        cmake \
-        future \
-        git \
-        jemalloc \
-        libjpeg-turbo \
-        libpng \
-        lld \
         mkl \
         mkl-include \
-        ninja \
-        numpy \
-        pillow \
-        pkgconfig \
-        pyyaml \
-        requests \
-        setuptools \
-        six \
-        typing_extensions \
-        magma-cuda${MAGMA_VERSION} && \
+        magma-cuda${MAGMA_VERSION}  \
+        --file /tmp/reqs/conda-build-requirements.txt && \
     conda clean -ya
 
 
@@ -133,28 +117,9 @@ FROM build-install AS build-install-exclude-mkl
 # Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used as the backend.
 ARG MAGMA_VERSION
 RUN conda install -y \
-        autoconf \
-        astunparse \
-        ccache \
-        cffi \
-        cmake \
-        future \
-        git \
-        jemalloc \
-        libjpeg-turbo \
-        libpng \
-        lld \
-        ninja \
         nomkl \
-        numpy \
-        pillow \
-        pkgconfig \
-        pyyaml \
-        requests \
-        setuptools \
-        six \
-        typing_extensions \
-        magma-cuda${MAGMA_VERSION} && \
+        magma-cuda${MAGMA_VERSION}  \
+        --file /tmp/reqs/conda-build-requirements.txt && \
     conda clean -ya
 
 
@@ -163,14 +128,15 @@ FROM build-install-${MKL_MODE}-mkl AS build-base
 
 # Set Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
+# Anaconda build of Jemalloc does not have profiling enabled.
+#ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
 
 WORKDIR /opt/ccache
 ENV PATH=/opt/conda/bin/ccache:$PATH
 # Enable `ccache` with unlimited memory size for faster builds.
 RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
-# Set LLD as the default linker for faster linking.
+# Use LLD as the default linker for faster linking.
 RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
 
 # Include `conda` in dynamic linking.
@@ -372,11 +338,6 @@ ARG HOME=/home/${USR}
 
 # Get conda with the directory ownership given to the user.
 COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
-# Use Intel OpenMP.
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-# Use Jemalloc for faster and more efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -399,13 +360,21 @@ RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt 
 COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
-# Using the Intel channel to get Intel-optimized Numpy.
+# Using the Intel channel to get Intel-optimized Python and Numpy.
+# Conda configurations must be restated for the user.
 RUN conda config --set pip_interop_enabled True && \
+    conda config --add channels conda-forge && \
     conda install -y -c intel \
         numpy \
+        jemalloc \
         libjpeg-turbo \
         libpng && \
     conda clean -ya
+
+# Use Intel OpenMP.
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+# Use Jemalloc for faster and more efficient memory management.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`, just in case.

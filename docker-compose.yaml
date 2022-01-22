@@ -2,7 +2,8 @@
 # Docker Compose V2 is recommended.
 # `docker-compose.yaml` files cannot use shell outputs as their inputs.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
-# for a guide on how to interpret the `docker-compose.yaml` file.
+# and https://github.com/compose-spec/compose-spec/blob/master/spec.md
+# for details concerning the `docker-compose.yaml` file syntax.
 # Variables are in ${VARIABLE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
 # Using a `.env` file to set variables is strongly recommended.
@@ -13,6 +14,7 @@
 # over creating custom shell scripts for each project.
 # The settings are much easier to see and maintain than scattered shell scripts.
 # Also, Compose is a native Docker component, simplifying project maintenance.
+
 
 services:
   train:  # Service name. Change the name as necessary for each project.
@@ -88,13 +90,11 @@ services:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        # Note that the `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
-        # different variable names from the `train` service.
-        # This may cause a cache miss if set incorrectly.
         # Using defaults inside defaults, which may be hard to read.
         - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
         - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
+        BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
         CUDA_VERSION: ${CUDA_VERSION:-10.2}
@@ -108,42 +108,6 @@ services:
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}
-        UID: ${UID:-1000}
-        TZ: ${TZ:-Asia/Seoul}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      TZ: ${TZ:-Asia/Seoul}
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [ gpu ]
-
-
-  ngc:  # NGC image service.
-    hostname: ngc
-    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
-#    ipc: host
-#    shm_size: 1GB
-    tty: true
-    init: true
-    stdin_open: true
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    build:
-      target: ngc
-      context: .
-      dockerfile: ngc.Dockerfile
-      cache_from: 
-        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-12}-py3
-      args:
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        YEAR: ${YEAR:-21}
-        MONTH: ${MONTH:-12}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
@@ -198,3 +162,61 @@ services:
           devices:
             - driver: nvidia
               capabilities: [ gpu ]
+
+  # This layer may be useful for PyTorch contributors.
+  # It is also the base for developing new layers for new builds.
+  devel:  # Skeleton service for development and debugging.
+    hostname: devel
+    image: pytorch_source:${DEVEL_NAME:-devel}
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: build-base  # All builds begin here.
+      context: .
+      dockerfile: Dockerfile
+
+
+  ngc:  # NGC image service.
+    hostname: ngc
+    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
+#    ipc: host
+#    shm_size: 1GB
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: ngc
+      context: .
+      dockerfile: ngc.Dockerfile
+      cache_from:
+        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-12}-py3
+      args:
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        YEAR: ${YEAR:-21}
+        MONTH: ${MONTH:-12}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+        TZ: ${TZ:-Asia/Seoul}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    user: ${UID:-1000}:${GID:-1000}
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+
+
+# https://docs.docker.com/storage/volumes/#use-a-volume-with-docker-compose
+# https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
+# https://github.com/compose-spec/compose-spec/blob/master/spec.md#volumes-top-level-element
+volumes:
+  shared:  # Maybe use later to share data between different containers.
