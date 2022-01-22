@@ -25,6 +25,7 @@
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 # Magma version must match the CUDA version of the build image.
 ARG USE_CUDA=1
+ARG USE_ROCM=0
 ARG CONDA_NO_DEFAULTS=0
 ARG MKL_MODE=include
 
@@ -41,6 +42,7 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 
 # Build related packages are pre-installed on `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
+# The only use of cURL is to download Miniconda.
 # Only the Ubuntu image has been tested.
 FROM ${BUILD_IMAGE} AS build-install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
