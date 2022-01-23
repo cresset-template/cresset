@@ -429,7 +429,7 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
 # Note that `python` now points to the installed version of Python while
 # `python3` points to the OS provided Python3. Always use `python` at runtime.
-# The `python3-dev` package is used because some packages require building on installation.
+# The `python3.x-dev` packages are used because some packages require building on installation.
 ARG PYTHON_VERSION
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
