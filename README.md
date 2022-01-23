@@ -10,9 +10,9 @@
 [한국어](https://github.com/veritas9872/PyTorch-Universal-Docker-Template/blob/main/KOREAN.README.md)**
 
 #### Notice
-The project will soon be renamed `Cresset`.
-Please be aware that the project URL will also change.
-There will also be breaking changes in the API. See `dev` branch for details.
+The project has been renamed `Cresset`.
+Please be aware that the project URL has also also changed.
+There are also be breaking changes in the API. `CC` has been renamed `CCA`.
 My apologies for the inconvenience.
 Documentation updates are also planned within a few months.
 Until then, please read the source code and comments carefully.
