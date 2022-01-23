@@ -671,11 +671,10 @@ The CUDA driver version can be found using the `nvidia-smi` command.
 _**No Contribution Without Appreciation!**_
 
 1. Only PyTorch 1.10.x on Ubuntu 20.04 LTS with CUDA 11.3.1 has been tested rigorously.
-Please raise an issue if there are any versions that do not build properly.
-Ubuntu 16.04, CentOS, and UBI base images are now supported. 
+Please go to the discussioons or raise an issue if there are any versions that do not build properly. 
 However, please check that your host Docker, Docker Compose, and NVIDIA Driver
-are up-to-date before doing so. 
-Also, note that some combinations of PyTorch version and CUDA environment 
+are up-to-date before doing so. Ubuntu 16.04, CentOS, and UBI base images should now work.
+Note that some combinations of PyTorch version and CUDA environment 
 may simply be impossible to build because of issues in the underlying source code.
 
 2. Translations into other languages and updates to existing translations are welcome. 
