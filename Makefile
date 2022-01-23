@@ -1,12 +1,12 @@
 # Basic Makefile for starting projects.
 # For more sophisticated settings, use the Dockerfile directly.
-# See https://developer.nvidia.com/cuda-gpus to find GPU CCs.
+# See https://developer.nvidia.com/cuda-gpus to find GPU compute capabilities.
 # Also assumes host Linux shell for UID, GID.
 # See https://pytorch.org/docs/stable/cpp_extension.html
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
-# which is specified by `CC` in the `Makefile`.
+# which is specified by `CCA` in the `Makefile`.
 
-.PHONY: env di all build-install build-torch build-train
+.PHONY: env di cca all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
 .PHONY: build-train-clean build-train-full-clean
 
@@ -24,8 +24,14 @@ DI_FILE = .dockerignore
 di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
+# Prevent builds if `CCA` (Compute Capability) is undefined.
+cca:
+	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
+
 # The following are the default builds for the make commands.
-CC                      = 5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX
+# Compute Capability is specified by the `CCA` variable and
+# the build should fail if `CCA` is not specified.
+CCA                     =
 TRAIN_NAME              = train
 TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.10.1
@@ -35,7 +41,7 @@ TORCHAUDIO_VERSION_TAG  = v0.10.1
 TORCH_NAME              = build_torch-${PYTORCH_VERSION_TAG}
 INSTALL_NAME            = build_install
 
-all: env build-install build-torch build-train
+all: env cca build-install build-torch build-train
 
 build-install:
 	DOCKER_BUILDKIT=1 docker build \
@@ -44,12 +50,12 @@ build-install:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-torch:
+build-torch: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--tag pytorch_source:${TORCH_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -64,13 +70,13 @@ build-torch:
 # This both wastes time and, more importantly, causes environment mismatch.
 # Both the install and build images should be specified as caches.
 # Otherwise, the installation process will cause a cache miss.
-build-train:
+build-train: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--cache-from=pytorch_source:${TORCH_NAME} \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -91,8 +97,9 @@ PYTHON_VERSION    = 3.9
 MAGMA_VERSION     = 102  # Magma version must match CUDA version.
 TORCH_NAME_FULL   = build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 INSTALL_NAME_FULL = build_install-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
+TRAIN_NAME_FULL   = full
 
-all-full: env build-install-full build-torch-full build-train-full
+all-full: env cca build-install-full build-torch-full build-train-full
 
 build-install-full:
 	DOCKER_BUILDKIT=1 docker build \
@@ -107,12 +114,12 @@ build-install-full:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-torch-full:
+build-torch-full: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train-builds \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--tag pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -126,13 +133,13 @@ build-torch-full:
 		--build-arg BUILDKIT_INLINE_CACHE=1 \
 		-f Dockerfile .
 
-build-train-full:
+build-train-full: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--tag pytorch_source:${TRAIN_NAME} \
+		--tag pytorch_source:${TRAIN_NAME_FULL} \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--cache-from=pytorch_source:${TORCH_NAME_FULL} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -150,12 +157,12 @@ build-train-full:
 
 # The following builds are `clean` builds, i.e., builds that do not use caches from previous builds.
 # Their main purpose is to test whether the commands work properly without cached runs.
-build-train-clean:
+build-train-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
 		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \
@@ -165,12 +172,12 @@ build-train-clean:
 		--build-arg TZ=${TZ} \
 		-f Dockerfile .
 
-build-train-full-clean:
+build-train-full-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
-		--tag pytorch_source:${TRAIN_NAME} \
-		--build-arg TORCH_CUDA_ARCH_LIST="${CC}" \
+		--tag pytorch_source:${TRAIN_NAME_FULL} \
+		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
 		--build-arg TORCHTEXT_VERSION_TAG=${TORCHTEXT_VERSION_TAG} \

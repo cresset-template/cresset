@@ -2,22 +2,23 @@
 # Docker Compose V2 is recommended.
 # `docker-compose.yaml` files cannot use shell outputs as their inputs.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
-# for a guide on how to interpret the `docker-compose.yaml` file.
+# and https://github.com/compose-spec/compose-spec/blob/master/spec.md
+# for details concerning the `docker-compose.yaml` file syntax.
 # Variables are in ${VARIABLE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
-# Users are recommended to use an `.env` file to set variables.
+# Using a `.env` file to set variables is strongly recommended.
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
+# Compute Capability must be specified manually via the `CCA` variable.
 
 # Using a `docker-compose.yaml` file has many advantages
 # over creating custom shell scripts for each project.
 # The settings are much easier to see and maintain than scattered shell scripts.
 # Also, Compose is a native Docker component, simplifying project maintenance.
 
+
 services:
   train:  # Service name. Change the name as necessary for each project.
     hostname: train  # Set to be the same as the service name. Makes terminals easier to tell apart.
-    env_file:  # Explicitly specifying the `.env` file causes an error if it does not exist.
-      - ${ENV_FILE:-.env}  # Forcing users to create a `.env` file before using compose, thus preventing errors.
     # Remember to use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
@@ -25,8 +26,8 @@ services:
     # a new image with that name will be created.
     image: pytorch_source:${TRAIN_NAME:-train}
     # `ipc: host` is a known security vulnerability but removes the shared memory cap.
-    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
-#    shm_size: 1GB  # Explicit shared memory limit.
+#    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
+#    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
@@ -48,7 +49,7 @@ services:
       # in `args` to prevent a cache miss from occurring.
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
-        TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
+        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
@@ -73,18 +74,11 @@ services:
 #              device_ids: [ "0" ]  # Use only GPU 0.
 
 
-  # Perhaps placing unrelated services in the same file is not best practice,
-  # but I did not wish to create another file. Users are generally expected
-  # to use either the `train` or `full` services but not both simultaneously.
-  # Perhaps using different variable names for the default and `full` builds
-  # would have been better, but I wished to match the `Makefile` exactly.
   # Use a separate `full.env` file for different configurations if necessary.
   full:  # Service for `*-full` installs.
     hostname: full
-    env_file:
-      - ${ENV_FILE:-.env}
-    image: pytorch_source:${TRAIN_NAME:-full}
-    ipc: host
+    image: pytorch_source:${TRAIN_NAME_FULL:-full}
+#    ipc: host
 #    shm_size: 1GB
     tty: true
     init: true
@@ -96,13 +90,11 @@ services:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        # Note that the `INSTALL_NAME_FULL` and `TORCH_NAME_FULL` variables have
-        # different variable names from the `train` service.
-        # This may cause a cache miss if set incorrectly.
         # Using defaults inside defaults, which may be hard to read.
         - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
         - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
+        BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
         CUDA_VERSION: ${CUDA_VERSION:-10.2}
@@ -110,7 +102,7 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
+        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
@@ -132,12 +124,68 @@ services:
               capabilities: [ gpu ]
 
 
+  deploy:
+    hostname: deploy
+    image: pytorch_source:${DEPLOY_NAME:-deploy}
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: deploy
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # The Anaconda `defaults` channel is not free for commercial use.
+        BUILD_TEST: 1  # Enable build tests for deployment.
+        BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
+        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
+        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
+        CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
+        CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
+        MAGMA_VERSION: ${MAGMA_VERSION:-113}
+        # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
+        MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`.
+        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.1}
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    environment:
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+
+  # This layer may be useful for PyTorch contributors.
+  # It is also the base for developing new layers for new builds.
+  devel:  # Skeleton service for development and debugging.
+    hostname: devel
+    image: pytorch_source:${DEVEL_NAME:-devel}
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: build-base  # All builds begin here.
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+
+
   ngc:  # NGC image service.
     hostname: ngc
-    env_file: 
-      - ${ENV_FILE:-.env}
     image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
-    ipc: host
+#    ipc: host
 #    shm_size: 1GB
     tty: true
     init: true
@@ -148,7 +196,7 @@ services:
       target: ngc
       context: .
       dockerfile: ngc.Dockerfile
-      cache_from: 
+      cache_from:
         - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-12}-py3
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
@@ -170,43 +218,9 @@ services:
               capabilities: [ gpu ]
 
 
-  deploy:
-    hostname: deploy
-    env_file:  # Use a separate `.env` file for deployment if necessary.
-      - ${ENV_FILE:-.env}
-    image: pytorch_source:${DEPLOY_NAME:-deploy}
-    tty: true
-    init: true
-    stdin_open: true
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    build:
-      target: deploy
-      context: .
-      dockerfile: Dockerfile
-      args:
-        # The Anaconda `defaults` channel is not free for commercial use.
-        CONDA_NO_DEFAULTS: 1  # 0: Use `defaults` as default, 1: Use `conda-forge` as default.
-        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
-        MAGMA_VERSION: ${MAGMA_VERSION:-113}
-        # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
-        MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CC:-"5.2 6.0 6.1 7.0 7.5 8.0 8.6+PTX"}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.2}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.1}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.1}
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    environment:
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [ gpu ]
+# https://docs.docker.com/storage/volumes/#use-a-volume-with-docker-compose
+# https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
+# https://github.com/compose-spec/compose-spec/blob/master/spec.md#volumes-top-level-element
+volumes:
+  shared:  # Maybe use later to share data between different containers.
+  # See # https://docs.docker.com/storage/volumes/#share-data-among-machines

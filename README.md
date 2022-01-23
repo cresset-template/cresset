@@ -128,6 +128,8 @@ version because of compatibility issues with their pre-existing environment.
 4. Informing users on where to look for solutions to their speed problems 
 (this may be the most important factor).
 
+See the [documentation](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-compilation) for details.
+
 Combined with techniques such as AMP and cuDNN benchmarking, 
 computational throughput can be increased dramatically 
 (possibly x10) __*on the same hardware*__.
@@ -158,23 +160,23 @@ To build a training image, first edit the Dockerfile `train` stage and
 `requirements.txt` file to include desired packages from `apt`/`conda`/`pip`.
 
 Then, visit https://developer.nvidia.com/cuda-gpus to find the
-Compute Capability (CC) of the target GPU device.
+Compute Capability, denoted by the `CCA` variable, of the target GPU device.
 
-Finally, run `make all CC=TARGET_CC(s)`.
+Finally, run `make all CCA=TARGET_CUDA_ARCH(s)`.
 
 
 ### Examples 
-(1) `make all CC="8.6"` for RTX 3090, 
-(2) `make all CC="7.5 8.6"` for both RTX 2080Ti and RTX 3090 
-(building for many GPU CCs will lengthen build times).
+(1) `make all CCA="8.6"` for RTX 3090, 
+(2) `make all CCA="7.5 8.6"` for both RTX 2080Ti and RTX 3090 
+(building for many GPU architectures will lengthen build times).
 
 This will result in an image, `pytorch_source:train`, which can be used for training.
-Note that CCs for devices not available during the build can be used to build the image.
+Note that architectures for devices not available during the build can be used to build the image.
 For example, if the image must be used on an RTX 2080Ti machine but the user only has an RTX 3090, 
-the user can set `CC="7.5"` to enable the image to operate on the RTX 2080Ti GPU.
+the user can set `CCA="7.5"` to enable the image to operate on the RTX 2080Ti GPU.
 See https://pytorch.org/docs/stable/cpp_extension.html 
 for an in-depth guide on how to set `TORCH_CUDA_ARCH_LIST`, 
-which is specified by `CC` in the `Makefile`.
+which is specified by `CCA` in the `Makefile`.
 
 
 ### Makefile Explanation
@@ -219,7 +221,7 @@ specifying the `TZ` variable when calling `make`.
 Use [IANA](https://www.iana.org/time-zones) 
 timezone names to specify the desired timezone.
 
-Example: `make all CC="8.6" TZ=America/Los_Angeles` uses L.A. time on the training image.
+Example: `make all CCA="8.6" TZ=America/Los_Angeles` uses L.A. time on the training image.
 
 _N.B._ Only the training image has timezone settings. 
 The installation and build images do not use timezone information.
@@ -246,7 +248,7 @@ Visit the GitHub repositories of each library to find the appropriate tags.
 
 Example: To build on an RTX 3090 GPU with PyTorch 1.9.1, use the following command:
 
-`make all CC="8.6" 
+`make all CCA="8.6" 
 PYTORCH_VERSION_TAG=v1.9.1 
 TORCHVISION_VERSION_TAG=v0.10.1 
 TORCHTEXT_VERSION_TAG=v0.10.1
@@ -278,7 +280,7 @@ Alice and Bob would use the following commands to create separate images.
 
 Alice:
 `make build-train 
-CC="8.6"
+CCA="8.6"
 TORCH_NAME=build_torch-v1.9.1
 PYTORCH_VERSION_TAG=v1.9.1
 TORCHVISION_VERSION_TAG=v0.10.1
@@ -288,7 +290,7 @@ TRAIN_NAME=train_alice`
 
 Bob:
 `make build-train 
-CC="8.6"
+CCA="8.6"
 TORCH_NAME=build_torch-v1.9.1
 PYTORCH_VERSION_TAG=v1.9.1
 TORCHVISION_VERSION_TAG=v0.10.1
@@ -331,7 +333,7 @@ for more information.
 ## Advanced Usage
 The `Makefile` provides the `*-full` commands for advanced usage.
 
-`make all-full CC=YOUR_GPU_CC TRAIN_NAME=full` will create
+`make all-full CCA=YOUR_GPU_ARCH TRAIN_NAME=full` will create
 `pytorch_source:build_install-ubuntu18.04-cuda10.2-cudnn8-py3.9`,
 `pytorch_source:build_torch-$(PYTORCH_VERSION_TAG)-ubuntu18.04-cuda10.2-cudnn8-py3.9`, and 
 `pytorch_source:full` by default.
@@ -538,7 +540,7 @@ Example `.env` file for RTX 3090 GPUs:
 ```
 UID=1000
 GID=1000
-CC=8.6
+CCA=8.6
 ```
 
 This is extremely convenient for managing reproducible development environments.
@@ -548,17 +550,17 @@ users can simply edit the `train` layer of the
 `apt-get install` or `pip install` commands, 
 then run the following command:
 
-`docker compose up -d --build train`.
+`docker compose up -d --build full`.
 
-This will remove the current `train` session, rebuild the image, 
-and start a new `train` session.
+This will remove the current `full` session, rebuild the image, 
+and start a new `full` session.
 It will not, however, rebuild PyTorch (assuming no cache miss occurs).
 Users thus need only wait a few minutes for the additional downloads, 
 which are accelerated by caching and fast mirror URLs.
 
 To stop and restart a service after editing the 
 `Dockerfile` or `docker-compose.yaml` file,
-simply run `docker compose up -d --build train` again.
+simply run `docker compose up -d --build full` again.
 
 To stop services and remove containers, use the following command:
 
@@ -643,28 +645,12 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. Building on CUDA 11.4.x is not available as of December 2021 because `magma-cuda114`
-has not been released on the `pytorch` channel of anaconda.
-Bizarrely, magma-cuda115 is available.
-Users may attempt building with older versions of `magma-cuda` 
-or try the version available on `conda-forge`.
-A source build of `magma` would be welcome as a pull request.
-The NVIDIA NGC images use NVIDIA's in-house build of `magma`.
-
-3. Ubuntu 16.04 build fails because the default `git` installed by `apt` on 
-Ubuntu 16.04 does not support the `--jobs` flag.
-Remove the `--jobs 0` argument from the `git clone` commands to make it work.
-Also, PyTorch v1.9+ may not build on Ubuntu 16.04. 
-Lower the version tag to v1.8.2 to build.
-This project will not be modified to accommodate
-Ubuntu 16.04 builds as Xenial Xerus has already reached EOL.
-
 4. If the Docker Compose build fails with an error message that `BuildKit` is required,
 add `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1` in front of the command.
 This issue occurs because Docker Compose V2 is not configured to use BuildKit on the host by default.
 One can tell if BuildKit is enabled by checking if the terminal outputs are in color.
 BuildKit outputs are colored blue, whereas the old Docker has no color.
-**Example command**: `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up -d --build train`.
+**Example command**: `COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up -d --build full`.
 
 5. WSL users using Compose must disable `ipc: host`. WSL cannot use this option.
 
@@ -683,9 +669,13 @@ The CUDA driver version can be found using the `nvidia-smi` command.
 0. **MORE STARS**. If you are reading this, please star this repository immediately.
 _**No Contribution Without Appreciation!**_
 
-1. CentOS and UBI images have not been implemented yet.
-As they require only simple modifications, 
-pull requests implementing them are very much welcome.
+1. Only PyTorch 1.10.x on Ubuntu 20.04 LTS with CUDA 11.3.1 has been tested rigorously.
+Please raise an issue if there are any versions that do not build properly.
+Ubuntu 16.04, CentOS, and UBI base images are now supported. 
+However, please check that your host Docker, Docker Compose, and NVIDIA Driver
+are up-to-date before doing so. 
+Also, note that some combinations of PyTorch version and CUDA environment 
+may simply be impossible to build because of issues in the underlying source code.
 
 2. Translations into other languages and updates to existing translations are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.
@@ -694,6 +684,6 @@ Please make a separate `LANG.README.md` file and create a PR.
 Although the code for building the `magma` package is available at
 https://github.com/pytorch/builder/tree/main/magma,
 it is updated several months after a new CUDA version is released.
-A source build as a layer on the image would be welcome.
+The NVIDIA NGC images use NVIDIA's in-house build of `magma`.
 
 4. Please feel free to share this project! I wish you good luck and happy coding!

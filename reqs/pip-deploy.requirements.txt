@@ -1,2 +1,5 @@
+# Lower the MKL version to mkl==2021.4.0 if PyTorch cannot find `libmkl_intel_lp64.so.1`.
+# The MKL major version (year) used to build PyTorch must match the version to run it.
+# Delete the `mkl` package from the requirements manually if `MKL_MODE=exclude`.
+mkl==2022.0.1
 tqdm==4.62.3
-mkl==2022.0.1  # Remove this if MKL is disabled

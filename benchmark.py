@@ -16,6 +16,10 @@ GPU utilization must be 100% for a meaningful comparison.
 Windows users should disable Windows Security real-time protection
 and other antivirus programs for best performance.
 The hit to performance from antivirus programs is nontrivial.
+
+Please note that a clean installation of PyTorch on the same image
+as provided in the `Dockerfile` will probably not give any speedup.
+Use your environment as you were using it for a fair comparison.
 """
 import os
 import subprocess
