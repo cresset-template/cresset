@@ -428,7 +428,8 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
 # Note that `python` now points to the installed version of Python while
-# `python3` points to the version of Python3 provided by the system.
+# `python3` points to the OS provided Python3. Always use `python` at runtime.
+# The `python3-dev` package is used because some packages require building on installation.
 ARG PYTHON_VERSION
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -438,7 +439,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
         | tr [:cntrl:] ' '  \
         | xargs -r apt-get install -y --no-install-recommends && \
     apt-get install -y --no-install-recommends --fix-broken \
-        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-dev \
         python3-pip \
         libgomp1 && \
     rm -rf /var/lib/apt/lists/* && \

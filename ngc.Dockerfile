@@ -29,7 +29,7 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list
 # Copy `apt` requirements.
 COPY reqs/apt-ngc.requirements.txt /tmp/reqs/apt-ngc.requirements.txt
 RUN apt-get update && sed 's/#.*//' /tmp/reqs/apt-ngc.requirements.txt \
-        | tr '\n' ' ' | xargs -r apt-get install -y --no-install-recommends && \
+        | tr [:cntrl:] ' ' | xargs -r apt-get install -y --no-install-recommends && \
     apt-get install -y --no-install-recommends \
         autoconf \
         git \
@@ -40,15 +40,14 @@ RUN apt-get update && sed 's/#.*//' /tmp/reqs/apt-ngc.requirements.txt \
     rm -rf /var/lib/apt/lists/* /tmp/reqs/apt-ngc.requirements.txt
 
 ARG JEMALLOC_VERSION_TAG
-RUN git clone https://github.com/jemalloc/jemalloc.git /opt/jemalloc
 WORKDIR /opt/jemalloc
 # `autogen.sh` requires the `autoconf` package.
-RUN if [ -n ${JEMALLOC_VERSION_TAG} ]; then \
+RUN git clone https://github.com/jemalloc/jemalloc.git /opt/jemalloc && \
+    if [ -n ${JEMALLOC_VERSION_TAG} ]; then \
         git checkout ${JEMALLOC_VERSION_TAG}; \
     fi && \
     ./autogen.sh && make && make install
 ENV LD_PRELOAD=/opt/jemalloc/lib/libjemalloc.so:$LD_PRELOAD
-
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ARG GID
@@ -75,37 +74,28 @@ ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-RUN printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
-            > /opt/conda/pip.conf
-
-ENV PIP_DOWNLOAD_CACHE=$HOME/.cache/pip
+RUN printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf
 
 WORKDIR $HOME/.zsh
-RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure
-RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
+RUN git clone https://github.com/sindresorhus/pure.git $HOME/.zsh/pure && \
+    printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
 #RUN git clone https://github.com/zsh-users/zsh-autosuggestions \
 #        $HOME/.zsh/zsh-autosuggestions &&  \
-#    echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" \
-#        >> $HOME/.zshrc
+#    echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
 
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
-        $HOME/.zsh/zsh-syntax-highlighting
-RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" \
-        >> $HOME/.zshrc
+        $HOME/.zsh/zsh-syntax-highlighting && \
+    echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
 ARG PROJECT_ROOT=/opt/project
 WORKDIR ${PROJECT_ROOT}
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
-RUN conda config --set pip_interop_enabled True
-
 COPY --chown=${UID}:${GID} reqs/pip-ngc.requirements.txt /tmp/ngc.requirements.txt
-
-# Preserving pip cache by omitting `--no-cache-dir`.
-RUN --mount=type=cache,id=pip-ngc,target=${PIP_DOWNLOAD_CACHE},uid=${UID},gid=${GID} \
-    python -m pip install \
+RUN conda config --set pip_interop_enabled True && \
+    python -m pip install --no-cache-dir \
         -r /tmp/pip-ngc.requirements.txt && \
-    rm /tmp/pip-ngc.requirements.txt
+    rm /tmp/pip-ngc.requirements.txt && sudo ldconfig
 
 CMD ["/bin/zsh"]
