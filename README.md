@@ -12,10 +12,11 @@
 #### Notice
 The project has been renamed `Cresset`.
 Please be aware that the project URL has also also changed.
-There are also be breaking changes in the API. `CC` has been renamed `CCA`.
+There are also breaking changes in the API. Compute Capability `CC` has been renamed `CCA`.
 My apologies for the inconvenience.
-Documentation updates are also planned within a few months.
+Documentation updates are also planned within a month or two.
 Until then, please read the source code and comments carefully.
+Ubuntu 16.04 LTS support has been implemented but not tested rigorously.
 
 ## TL;DR
 __*PyTorch built from source can be x4 faster than a naïve PyTorch install.
