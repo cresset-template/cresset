@@ -132,6 +132,12 @@ RUN conda install -y \
 FROM build-install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the basis for all builds in the Dockerfile.
 
+# Use Intel OpenMP with optimizations enabled.
+# Some compilers can use OpenMP for faster builds.
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV KMP_BLOCKTIME=1
+
 # Use Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # Anaconda build of Jemalloc does not have profiling enabled.
@@ -373,8 +379,11 @@ RUN conda config --set pip_interop_enabled True && \
         libpng && \
     conda clean -ya
 
-# Use Intel OpenMP.
+# Use Intel OpenMP with optimizations. See documentation for details.
+# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV KMP_BLOCKTIME=1
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 
