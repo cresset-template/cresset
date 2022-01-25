@@ -436,9 +436,10 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
-# Note that `python` now points to the installed version of Python while
-# `python3` points to the OS provided Python3. Always use `python` at runtime.
 # The `python3.x-dev` packages are used because some packages require building on installation.
+# Both `python` and `python3` are set to point to the installed version of Python.
+# The pre-installed system Python3 may be over-ridden if the installed and pre-installed
+# versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
 ARG PYTHON_VERSION
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -452,7 +453,8 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
         python3-pip \
         libgomp1 && \
     rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 1
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
+    update-alternatives --install /usr/bin/python  python  /usr/bin/python${PYTHON_VERSION} 1
 
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
