@@ -29,6 +29,11 @@
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 # Magma version must match the CUDA version of the build image.
+
+# The cuDNN minor version is tied to CUDA minor version.
+# See documentation below for available versions.
+# https://developer.nvidia.com/rdp/cudnn-archive
+
 ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG CONDA_NO_DEFAULTS=0
@@ -105,7 +110,7 @@ COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
 RUN conda install -y -c conda-forge mamba && conda clean -ya
-# Using Mamba instead of Conda as the package manager.
+# Using Mamba instead of Conda as the package manager for faster installation.
 #ENV conda=/opt/conda/bin/conda
 ENV conda=/opt/conda/bin/mamba
 
@@ -125,8 +130,6 @@ RUN $conda install -y -c intel \
         magma-cuda${MAGMA_VERSION}  \
         --file /tmp/reqs/conda-build.requirements.txt && \
     conda clean -ya
-
-
 
 
 FROM build-install-conda AS build-install-exclude-mkl
@@ -155,7 +158,7 @@ FROM build-install-${MKL_MODE}-mkl AS build-base
 # Some compilers can use OpenMP for faster builds.
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV KMP_BLOCKTIME=1
+ENV KMP_BLOCKTIME=0
 
 # Use Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
@@ -197,7 +200,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # NNPack and QNNPack are also unnecessary for most users.
 # MKLDNN is restated to prevent anyone from forgetting that it has been set.
 # Restating `USE_MKLDNN` also allows the value to be set externally.
-# Read `setup.py` to find build flags appropriate for your needs.
+# Read `setup.py` to find build flags appropriate for user needs.
 # Different flags are available for different versions of PyTorch.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
@@ -220,6 +223,8 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 # **Additional information for custom builds.**
 
+# Manually edit conda package versions if older PyTorch versions will not build.
+
 # Use this to build with custom CMake settings.
 #RUN --mount=type=cache,target=/opt/ccache \
 #    python setup.py build --cmake-only && \
@@ -230,8 +235,6 @@ RUN --mount=type=cache,target=/opt/ccache \
 # PyTorch builds with ROCM has not been tested.
 # Note that PyTorch for ROCM is still in beta and
 # the API for enabling ROCM builds may change.
-
-# Manually edit the versions of conda packages if older versions will not build.
 
 # To build for Jetson Nano devices, see the link below for the necessary modifications.
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
@@ -340,8 +343,8 @@ ARG PYTHONUNBUFFERED=1
 
 # Speedups in `apt` and `pip` installs for Korean users. Change URLs for other locations.
 # http://archive.ubuntu.com/ubuntu is specific to NVIDIA's CUDA Ubuntu images.
-# Check `/etc/apt/sources.list` of your base image to find your Ubuntu URL.
-# Use `apt` and `pip` mirror links optimized for your location.
+# Check `/etc/apt/sources.list` of the base image to find the Ubuntu URL.
+# Use `apt` and `pip` mirror links optimized for user location.
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
@@ -379,7 +382,7 @@ ARG USR=user
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
 # Creating user with home directory and password-free sudo permissions.
-# This may cause security issues. Use at your own risk.
+# This may cause security issues.
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
@@ -429,7 +432,7 @@ RUN conda config --set pip_interop_enabled True && \
 # https://www.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support/openmp-library-support/thread-affinity-interface-linux-and-windows.html
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV KMP_BLOCKTIME=1
+ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 
@@ -472,7 +475,7 @@ ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Use mirror links optimized for your location and security level.
+# Use mirror links optimized for user location and security level.
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
