@@ -30,7 +30,6 @@ from typing import Sequence, Union
 
 import torch
 from torch import nn, Tensor
-from torch.cuda.amp import autocast
 from torchvision.models import (
     vgg19,
     resnet50,
@@ -89,7 +88,15 @@ def infer(
     if enable_scripting:
         network = torch.jit.trace(network, inputs)
 
-    with autocast(enabled=enable_amp):
+    if enable_amp:
+        from torch.cuda.amp import autocast
+        with autocast():
+            elapsed_time = _infer(
+                network=network,
+                inputs=inputs,
+                num_steps=num_steps
+            )
+    else:
         elapsed_time = _infer(
             network=network,
             inputs=inputs,

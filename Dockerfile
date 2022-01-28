@@ -1,5 +1,6 @@
-# syntax = docker/dockerfile:1.3
+# syntax = docker/dockerfile:1
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
+
 # See the link below for documentation on BuildKit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
 # Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
@@ -32,7 +33,6 @@ ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG CONDA_NO_DEFAULTS=0
 ARG MKL_MODE=include
-
 ARG CUDA_VERSION=11.3.1
 ARG MAGMA_VERSION=113
 ARG CUDNN_VERSION=8
@@ -48,6 +48,7 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
 # Only the Ubuntu image has been tested.
+# The `train` and `deploy` stages are designed for Ubuntu.
 FROM ${BUILD_IMAGE} AS build-install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
@@ -96,16 +97,29 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O ${CONDA_URL} && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
+
+FROM build-install AS build-install-conda
+
+# Get build requirements. Set package versions manually if compatibility issues arise.
 COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 
+# Comment out the lines below if Mamba causes any issues.
+RUN conda install -y -c conda-forge mamba && conda clean -ya
+# Using Mamba instead of Conda as the package manager.
+#ENV conda=/opt/conda/bin/conda
+ENV conda=/opt/conda/bin/mamba
 
-FROM build-install AS build-install-include-mkl
+FROM build-install-conda AS build-install-include-mkl
+
+# Roundabout method to enable MKLDNN in PyTorch build when MKL is included.
+ENV USE_MKLDNN=1
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
+# Use fixed version numbers if versioning issues cause build failures.
 # Intel channel set to highest priority for optimal Intel builds.
 ARG MAGMA_VERSION
-RUN conda install -y -c intel \
+RUN $conda install -y -c intel \
         mkl \
         mkl-include \
         magma-cuda${MAGMA_VERSION}  \
@@ -113,7 +127,12 @@ RUN conda install -y -c intel \
     conda clean -ya
 
 
-FROM build-install AS build-install-exclude-mkl
+
+
+FROM build-install-conda AS build-install-exclude-mkl
+
+# Roundabout method to disable MKLDNN in PyTorch build when MKL is excluded.
+ENV USE_MKLDNN=0
 
 # The Intel(R) Math Kernel Library (MKL) places some restrictions on its use, though there are no
 # restrictions on commercial use. See the Intel(R) Simplified Software License (ISSL) for details.
@@ -122,7 +141,7 @@ FROM build-install AS build-install-exclude-mkl
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
 # Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
 ARG MAGMA_VERSION
-RUN conda install -y \
+RUN $conda install -y \
         nomkl \
         magma-cuda${MAGMA_VERSION}  \
         --file /tmp/reqs/conda-build.requirements.txt && \
@@ -130,7 +149,7 @@ RUN conda install -y \
 
 
 FROM build-install-${MKL_MODE}-mkl AS build-base
-# `build-base` is the basis for all builds in the Dockerfile.
+# `build-base` is the base stage for all builds in the Dockerfile.
 
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
@@ -175,22 +194,47 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # Building PyTorch with several optimizations and bugfixes.
 # Test builds are disabled by default to speed up the build time.
 # Disabling Caffe2 is dangerous but most users do not need it.
-# Read `setup.py` and `CMakeLists.txt` to find build flags appropriate for your needs.
+# NNPack and QNNPack are also unnecessary for most users.
+# MKLDNN is restated to prevent anyone from forgetting that it has been set.
+# Restating `USE_MKLDNN` also allows the value to be set externally.
+# Read `setup.py` to find build flags appropriate for your needs.
+# Different flags are available for different versions of PyTorch.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
+ARG USE_MKLDNN=${USE_MKLDNN}
+ARG USE_ROCM
+ARG USE_NNPACK=0
+ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
 ARG BUILD_CAFFE2=0
 ARG USE_PRECOMPILED_HEADERS=1
 ARG TORCH_CUDA_ARCH_LIST
+ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+# Build wheel for installation in later stages.
 RUN --mount=type=cache,target=/opt/ccache \
-    CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py bdist_wheel -d /tmp/dist
-
 # Install PyTorch for subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
-    CMAKE_PREFIX_PATH="$(dirname $(which conda))/../" \
     python setup.py install
+
+# **Additional information for custom builds.**
+
+# Use this to build with custom CMake settings.
+#RUN --mount=type=cache,target=/opt/ccache \
+#    python setup.py build --cmake-only && \
+#    ccmake build  # or cmake-gui build
+
+# Run the command below before building to enable ROCM builds.
+# RUN python tools/amd_build/build_amd.py
+# PyTorch builds with ROCM has not been tested.
+# Note that PyTorch for ROCM is still in beta and
+# the API for enabling ROCM builds may change.
+
+# Manually edit the versions of conda packages if older versions will not build.
+
+# To build for Jetson Nano devices, see the link below for the necessary modifications.
+# https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
 
 
 FROM build-torch AS build-vision
@@ -272,7 +316,7 @@ COPY --from=build-vision  /tmp/dist  /tmp/dist
 COPY --from=build-audio   /tmp/dist  /tmp/dist
 COPY --from=build-text    /tmp/dist  /tmp/dist
 
-# COPY new builds here to minimize the likelihood of cache misses.
+# `COPY` new builds here to minimize the likelihood of cache misses.
 
 COPY --from=build-pure /opt/pure /opt/pure
 COPY --from=build-pure /opt/zsh-autosuggestions /opt/zsh-autosuggestions
@@ -381,6 +425,8 @@ RUN conda config --set pip_interop_enabled True && \
 
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
+# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
+# https://www.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support/openmp-library-support/thread-affinity-interface-linux-and-windows.html
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV KMP_BLOCKTIME=1
