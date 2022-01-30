@@ -378,9 +378,6 @@ RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Include `conda` in dynamic linking.
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf
-
 ARG GID
 ARG UID
 ARG GRP=user
@@ -440,8 +437,7 @@ RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
 RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
     python -m pip install --no-cache-dir --find-links /tmp/dist/ \
         -r /tmp/reqs/pip-train.requirements.txt \
-        /tmp/dist/*.whl && \
-    sudo ldconfig
+        /tmp/dist/*.whl
 
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
@@ -452,6 +448,11 @@ ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+
+# Include `conda` in dynamic linking. Temporarily switch to `root` for permissions.
+USER root
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+USER ${USR}
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.

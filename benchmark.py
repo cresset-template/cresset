@@ -31,15 +31,15 @@ from typing import Sequence, Union
 import torch
 from torch import nn, Tensor
 from torchvision.models import (
-    vgg19,
     resnet50,
+    vgg19,
 )
 from torchvision.models.detection import (
     retinanet_resnet50_fpn,
 )
 from torchvision.models.segmentation import (
-    fcn_resnet50,
     deeplabv3_resnet50,
+    fcn_resnet50,
 )
 from torchvision.models.video import r3d_18
 # Too useful to do without, even if it is an external library.
@@ -184,14 +184,24 @@ if __name__ == '__main__':
     # Specify model configurations manually.
     configs = [
         Config(
-            name='vgg19',
-            network=vgg19(),
-            input_shapes=((1, 3, 512, 512),)
+            name='r3d_18',
+            network=r3d_18(),
+            input_shapes=((1, 3, 64, 128, 128),)
+        ),
+        Config(
+            name='Transformer',
+            network=nn.Transformer(),
+            input_shapes=((1, 512, 512), (1, 512, 512))
         ),
         Config(
             name='resnet50',
             network=resnet50(),
             input_shapes=((2, 3, 512, 512),)
+        ),
+        Config(
+            name='vgg19',
+            network=vgg19(),
+            input_shapes=((1, 3, 512, 512),)
         ),
         Config(
             name='fcn_resnet50',
@@ -207,16 +217,6 @@ if __name__ == '__main__':
             name='retinanet_resnet50_fpn',
             network=retinanet_resnet50_fpn(pretrained_backbone=False),
             input_shapes=((1, 3, 512, 512),)
-        ),
-        Config(
-            name='r3d_18',
-            network=r3d_18(),
-            input_shapes=((1, 3, 64, 128, 128),)
-        ),
-        Config(
-            name='Transformer',
-            network=nn.Transformer(),
-            input_shapes=((1, 512, 512), (1, 512, 512))
         ),
     ]
 
