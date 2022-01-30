@@ -1,0 +1,23 @@
+# Requirements file for `conda` packages in `train`.
+# Note that having packages installed by `conda` may
+# lead to different versions of the same packages being installed.
+# Do not install anything related to PyTorch or CUDA here.
+# Doing so may cause another version of PyTorch to be installed.
+# Nearly all packages specified here, except for `numpy`,
+# will be installed from the `conda-forge` channel.
+
+# Essential packages.
+jemalloc
+numpy
+libjpeg-turbo
+libpng
+
+# Non-essential utility packages.
+tmux
+nano
+git
+
+# Add additional `conda` packages here.
+black==21.12b0
+pytest==6.2.5
+pre_commit==2.17.0

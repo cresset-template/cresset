@@ -49,7 +49,8 @@ ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
-# Build related packages are pre-installed on `devel` images.
+
+# Build related packages are pre-installed on CUDA `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
 # Only the Ubuntu image has been tested.
@@ -57,11 +58,14 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 FROM ${BUILD_IMAGE} AS build-install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
+
 FROM ${BUILD_IMAGE} AS build-install-centos
 RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 
+
 FROM ${BUILD_IMAGE} AS build-install-ubi
 RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
+
 
 FROM build-install-${LINUX_DISTRO} AS build-install
 
@@ -85,7 +89,7 @@ ENV PYTHONIOENCODING=UTF-8
 # https://conda.io/en/latest/license.html
 # https://www.anaconda.com/terms-of-service
 # https://www.anaconda.com/end-user-license-agreement-miniconda
-
+ARG CONDA_NO_DEFAULTS
 ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:$PATH
@@ -99,6 +103,9 @@ RUN curl -fsSL -v -o ~/miniconda.sh -O ${CONDA_URL} && \
     conda config --add channels conda-forge && \
     conda config --append channels pytorch && \
     conda config --append channels defaults && \
+    if [ ${CONDA_NO_DEFAULTS} != 0 ]; then \
+        conda config --remove channels defaults; \
+    fi && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
@@ -114,6 +121,7 @@ RUN conda install -y -c conda-forge mamba && conda clean -ya
 #ENV conda=/opt/conda/bin/conda
 ENV conda=/opt/conda/bin/mamba
 
+
 FROM build-install-conda AS build-install-include-mkl
 
 # Roundabout method to enable MKLDNN in PyTorch build when MKL is included.
@@ -125,10 +133,10 @@ ENV USE_MKLDNN=1
 # Intel channel set to highest priority for optimal Intel builds.
 ARG MAGMA_VERSION
 RUN $conda install -y -c intel \
+        --file /tmp/reqs/conda-build.requirements.txt \
+        magma-cuda${MAGMA_VERSION} \
         mkl \
-        mkl-include \
-        magma-cuda${MAGMA_VERSION}  \
-        --file /tmp/reqs/conda-build.requirements.txt && \
+        mkl-include && \
     conda clean -ya
 
 
@@ -145,9 +153,9 @@ ENV USE_MKLDNN=0
 # Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
 ARG MAGMA_VERSION
 RUN $conda install -y \
-        nomkl \
-        magma-cuda${MAGMA_VERSION}  \
-        --file /tmp/reqs/conda-build.requirements.txt && \
+        --file /tmp/reqs/conda-build.requirements.txt \
+        magma-cuda${MAGMA_VERSION} \
+        nomkl && \
     conda clean -ya
 
 
@@ -175,7 +183,7 @@ RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
 
 # Include `conda` in dynamic linking.
 # Use `ldconfig` to update link directories.
-# Setting $LD_LIBRARY_PATH directly is bad practice.
+# Setting `LD_LIBRARY_PATH` directly is bad practice.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 
@@ -198,10 +206,10 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # Test builds are disabled by default to speed up the build time.
 # Disabling Caffe2 is dangerous but most users do not need it.
 # NNPack and QNNPack are also unnecessary for most users.
-# MKLDNN is restated to prevent anyone from forgetting that it has been set.
-# Restating `USE_MKLDNN` also allows the value to be set externally.
-# Read `setup.py` to find build flags appropriate for user needs.
+# `USE_MKLDNN` is restated to remind users that it has been set.
+# Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
+# Variables without default values here recieve defaults from the top of the Dockerfile.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_MKLDNN=${USE_MKLDNN}
@@ -221,7 +229,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py install
 
-# **Additional information for custom builds.**
+###### Additional information for custom builds. ######
 
 # Manually edit conda package versions if older PyTorch versions will not build.
 
@@ -313,11 +321,12 @@ FROM ${BUILD_IMAGE} AS train-builds
 # with only the build artifacts (e.g., pip wheels) copied over.
 
 # The order of `COPY` instructions is chosen to minimize cache misses.
-COPY --from=build-install /opt/conda /opt/conda
+# `conda` in `build-install-conda` has `mamba` installed, unlike `conda` in `build-install`.
+COPY --from=build-install-conda /opt/conda /opt/conda
 
-COPY --from=build-vision  /tmp/dist  /tmp/dist
-COPY --from=build-audio   /tmp/dist  /tmp/dist
-COPY --from=build-text    /tmp/dist  /tmp/dist
+COPY --from=build-vision /tmp/dist /tmp/dist
+COPY --from=build-audio  /tmp/dist /tmp/dist
+COPY --from=build-text   /tmp/dist /tmp/dist
 
 # `COPY` new builds here to minimize the likelihood of cache misses.
 
@@ -327,8 +336,10 @@ COPY --from=build-pure /opt/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
 
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
-COPY reqs/apt-train.requirements.txt /tmp/reqs/apt-train.requirements.txt
-COPY reqs/pip-train.requirements.txt /tmp/reqs/pip-train.requirements.txt
+COPY reqs/apt-train.requirements.txt   /tmp/reqs/apt-train.requirements.txt
+COPY reqs/conda-train.requirements.txt /tmp/reqs/conda-train.requirements.txt
+COPY reqs/pip-train.requirements.txt   /tmp/reqs/pip-train.requirements.txt
+
 
 FROM ${TRAIN_IMAGE} AS train
 
@@ -360,20 +371,15 @@ ARG DEBIAN_FRONTEND=noninteractive
 # The `readwrite` option is necessary because `apt` writes to `/tmp`.
 # Requirements for `apt` should be in `reqs/apt-train.requirements.txt`.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
-# Essential packages are installed explicitly.
+# Using `sed` and `xargs` to imitate the behavior of a requirements file.
 RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
-    apt-get update && sed 's/#.*//' /tmp/reqs/apt-train.requirements.txt  \
-        | tr [:cntrl:] ' '  \
-        | xargs -r apt-get install -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends --fix-broken \
-        openssh-server \
-        sudo \
-        tzdata \
-        zsh && \
+    apt-get update &&  \
+    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-train.requirements.txt | \
+    xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Include `conda` in dynamic linking.
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ARG GID
 ARG UID
@@ -415,16 +421,27 @@ RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt 
 COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
-# Using the Intel channel to get Intel-optimized Numpy.
-# Conda configurations must be restated for the user.
-RUN conda config --set pip_interop_enabled True && \
+# Using the Intel channel to get Intel-optimized numpy.
+# Using `mamba` instead of `conda` for faster installation.
+# Source wheels are installed to get dependencies from `conda` instead of `pip`.
+# Mixing `conda` and `pip` is not recommended but `conda` should come first if this is unavoidable.
+# https://www.anaconda.com/blog/using-pip-in-a-conda-environment
+ARG conda=/opt/conda/bin/mamba
+RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
+    conda config --set pip_interop_enabled True && \
     conda config --add channels conda-forge && \
-    conda install -y -c intel \
-        numpy \
-        jemalloc \
-        libjpeg-turbo \
-        libpng && \
+    python -m pip install --no-cache-dir --no-deps /tmp/dist/*.whl && \
+    $conda install -y -c intel --file /tmp/reqs/conda-train.requirements.txt && \
+    conda config --set pip_interop_enabled False && \
     conda clean -ya
+
+# The `/tmp/dist/*.whl` files are the wheels built in previous stages.
+# `--find-links` gives higher priority to the wheels in `/tmp/dist`.
+RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
+    python -m pip install --no-cache-dir --find-links /tmp/dist/ \
+        -r /tmp/reqs/pip-train.requirements.txt \
+        /tmp/dist/*.whl && \
+    sudo ldconfig
 
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
@@ -435,14 +452,6 @@ ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-
-# The `/tmp/dist/*.whl` files are the wheels built in previous stages.
-# `--find-links` gives higher priority to the wheels in `/tmp/dist`, just in case.
-RUN --mount=type=bind,from=train-builds,source=/tmp,target=/tmp \
-    python -m pip install --no-cache-dir --find-links /tmp/dist/ \
-        -r /tmp/reqs/pip-train.requirements.txt \
-        /tmp/dist/*.whl && \
-    sudo ldconfig
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
@@ -464,6 +473,7 @@ COPY --from=build-vision  /tmp/dist  /tmp/dist
 
 COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt-deploy.requirements.txt
 COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-deploy.requirements.txt
+
 
 # Minimalist deployment Ubuntu image.
 FROM ${DEPLOY_IMAGE} AS deploy
@@ -487,20 +497,18 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
 # The `python3.x-dev` packages are used because some packages require building on installation.
 # Both `python` and `python3` are set to point to the installed version of Python.
-# The pre-installed system Python3 may be over-ridden if the installed and pre-installed
+# The pre-installed system Python3 may be overridden if the installed and pre-installed
 # versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
+# Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
+ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && sed 's/#.*//' /tmp/reqs/apt-deploy.requirements.txt \
-        | tr [:cntrl:] ' '  \
-        | xargs -r apt-get install -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends --fix-broken \
-        python${PYTHON_VERSION}-dev \
-        python3-pip \
-        libgomp1 && \
+    add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
+    printf "\n python${PYTHON_VERSION}-dev \n" >> /tmp/reqs/apt-deploy.requirements.txt && \
+    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-deploy.requirements.txt |  \
+    xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
     update-alternatives --install /usr/bin/python  python  /usr/bin/python${PYTHON_VERSION} 1

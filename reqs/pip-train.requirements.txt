@@ -1,10 +1,9 @@
 # Packages to be installed in `Dockerfile` in `train` or `full` modes.
-jupyterlab==3.2.8
-hydra-core==1.1.0
-hydra_colorlog==1.1.0
+# PyTorch and CUDA related libraries should be installed here.
+# Packages unavailable in `conda` should also be placed here.
 pytorch-lightning==1.5.9
 torchmetrics==0.7.0
+hydra-core==1.1.0
+hydra_colorlog==1.1.0
+jupyterlab==3.2.8
 seaborn==0.11.2
-pytest==6.2.5
-scikit-learn==1.0.1
-black==21.12b0

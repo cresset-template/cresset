@@ -1,1 +1,7 @@
-libjpeg-turbo8libpng16-16
+# Essential packages.
+python3-pip
+libgomp1
+libjpeg-turbo8
+libpng16-16
+
+# Add additional `apt` packages here.

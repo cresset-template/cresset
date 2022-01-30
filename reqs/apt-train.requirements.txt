@@ -1,3 +1,7 @@
-curl
-nano
-tmux
+# Essential packages.
+openssh-server
+sudo
+tzdata
+zsh
+
+# Add additional `apt` packages here.

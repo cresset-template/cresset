@@ -140,6 +140,9 @@ services:
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1  # Enable build tests for deployment.
         BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
+        USE_NNPACK: 1  # Enable NNPack for deployment.
+        USE_QNNPACK: 1  # Enable QNNPack for deployment.
+        CONDA_NO_DEFAULTS: 1  # No licensing issues this way.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
