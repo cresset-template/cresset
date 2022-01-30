@@ -3,21 +3,33 @@
 # lead to different versions of the same packages being installed.
 # Do not install anything related to PyTorch or CUDA here.
 # Doing so may cause another version of PyTorch to be installed.
-# Nearly all packages specified here, except for `numpy`,
-# will be installed from the `conda-forge` channel.
+
+# Channel priority: Intel > conda-forge > defaults (`defaults` may be unavailable).
+# Most packages will be installed from `conda-forge`.
+# See the repository URL below for available Intel packages.
+# https://anaconda.org/intel/repo
 
 # Essential packages.
-jemalloc
+jemalloc==5.2.1
 numpy
 libjpeg-turbo
 libpng
+
+# Useful packages
+scipy
+pandas
+openpyxl  # Read `.xlsx` files in Pandas.
+scikit-learn>=1.0.0
+jupyterlab
+seaborn
 
 # Non-essential utility packages.
 tmux
 nano
 git
 
-# Add additional `conda` packages here.
-black==21.12b0
-pytest==6.2.5
-pre_commit==2.17.0
+# Add additional packages here.
+black
+pytest
+pre-commit
+rich
