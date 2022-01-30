@@ -30,7 +30,7 @@
 # Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
 # Magma version must match the CUDA version of the build image.
 
-# The cuDNN minor version is tied to CUDA minor version.
+# cuDNN minor version is tied to CUDA minor version.
 # See documentation below for available versions.
 # https://developer.nvidia.com/rdp/cudnn-archive
 
