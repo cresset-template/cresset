@@ -379,7 +379,7 @@ RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
     rm -rf /var/lib/apt/lists/*
 
 # Include `conda` in dynamic linking.
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf
 
 ARG GID
 ARG UID
