@@ -145,7 +145,8 @@ RUN $conda install -y -c intel \
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV KMP_WARNINGS=0
+ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
 
 
@@ -477,7 +478,8 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
 # https://www.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support/openmp-library-support/thread-affinity-interface-linux-and-windows.html
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV KMP_WARNINGS=0
+ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
