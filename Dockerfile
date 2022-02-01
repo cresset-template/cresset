@@ -34,9 +34,11 @@
 # See documentation below for available versions.
 # https://developer.nvidia.com/rdp/cudnn-archive
 
+ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG CONDA_NO_DEFAULTS=0
+ARG USE_PRECOMPILED_HEADERS=1
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.3.1
 ARG MAGMA_VERSION=113
@@ -70,6 +72,7 @@ RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 FROM build-install-${LINUX_DISTRO} AS build-install
 
 LABEL maintainer="veritas9872@gmail.com"
+LABEL com.nvidia.volumes.needed="nvidia_driver"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
@@ -139,6 +142,12 @@ RUN $conda install -y -c intel \
         mkl-include && \
     conda clean -ya
 
+# Use Intel OpenMP with optimizations enabled.
+# Some compilers can use OpenMP for faster builds.
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV KMP_BLOCKTIME=0
+
 
 FROM build-install-conda AS build-install-exclude-mkl
 
@@ -162,17 +171,19 @@ RUN $conda install -y \
 FROM build-install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the base stage for all builds in the Dockerfile.
 
-# Use Intel OpenMP with optimizations enabled.
-# Some compilers can use OpenMP for faster builds.
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV KMP_BLOCKTIME=0
-
 # Use Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # Anaconda build of Jemalloc does not have profiling enabled.
 #ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
 
+# The Docker Daemon cache memory may be insufficient to hold the entire cache.
+# A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
+# by removing the caches of previous builds, forcing the compiler to recompile.
+# The default GC size is often smaller than the compiler cache size of PyTorch.
+# To configure GC settings, edit the Docker Daemon configuration JSON file.
+# This is available in Settings -> Docker Engine on Docker Desktop for Windows.
+# https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
+# https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
 ENV PATH=/opt/conda/bin/ccache:$PATH
 # Enable `ccache` with unlimited memory size for faster builds.
@@ -210,6 +221,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
+ARG DEBUG
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_MKLDNN=${USE_MKLDNN}
@@ -218,7 +230,7 @@ ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
 ARG BUILD_CAFFE2=0
-ARG USE_PRECOMPILED_HEADERS=1
+ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
@@ -259,7 +271,17 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/vision.git /opt/vi
         git submodule update --init --recursive --jobs 0; \
     fi
 
+# Install Pillow SIMD before TorchVision build and add it to `/tmp/dist`.
+# This may not work on older CPUs as it requires SSE4 and AVX2.
+# Pillow will be uninstalled if it is present.
+RUN python -m pip uninstall -y pillow && \
+    CC="cc -mavx2" python -m pip install -U --force-reinstall --no-deps Pillow-SIMD && \
+    CC="cc -mavx2" python -m pip wheel Pillow-SIMD --wheel-dir /tmp/dist
+
+ARG DEBUG
 ARG USE_CUDA
+ARG USE_FFMPEG=1
+ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
 RUN --mount=type=cache,target=/opt/ccache \
@@ -278,6 +300,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/text.git /opt/text
     fi
 
 # TorchText does not use CUDA.
+ARG USE_PRECOMPILED_HEADERS
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -294,7 +317,10 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git /opt/aud
     fi
 
 ARG USE_CUDA
-ARG BUILD_SOX=1
+ARG USE_ROCM
+ARG USE_PRECOMPILED_HEADERS
+ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
+ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
@@ -308,7 +334,7 @@ RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh-autosugg
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh-syntax-highlighting
 
 
-FROM ${BUILD_IMAGE} AS train-builds
+FROM build-base AS train-builds
 # A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
 # If other source builds are included later on, gather them here as well.
 # The train stage should not have any dependencies other than this stage.
@@ -336,14 +362,19 @@ COPY --from=build-pure /opt/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
 
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
-COPY reqs/apt-train.requirements.txt   /tmp/reqs/apt-train.requirements.txt
-COPY reqs/conda-train.requirements.txt /tmp/reqs/conda-train.requirements.txt
-COPY reqs/pip-train.requirements.txt   /tmp/reqs/pip-train.requirements.txt
+# The files are placed in different directories to allow changing one file
+# without affecting the bind mount directory of the other files.
+# If all files were placed in the same directory, changing just one file
+# would cause a cache miss, forcing all requirements to reinstall.
+COPY reqs/apt-train.requirements.txt   /tmp/reqs/apt/requirements.txt
+COPY reqs/conda-train.requirements.txt /tmp/reqs/conda/requirements.txt
+COPY reqs/pip-train.requirements.txt   /tmp/reqs/pip/requirements.txt
 
 
 FROM ${TRAIN_IMAGE} AS train
 
 LABEL maintainer="veritas9872@gmail.com"
+LABEL com.nvidia.volumes.needed="nvidia_driver"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -372,9 +403,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Requirements for `apt` should be in `reqs/apt-train.requirements.txt`.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
-RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
     apt-get update &&  \
-    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-train.requirements.txt | \
+    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -424,19 +455,21 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 # Mixing `conda` and `pip` is not recommended but `conda` should come first if this is unavoidable.
 # https://www.anaconda.com/blog/using-pip-in-a-conda-environment
 ARG conda=/opt/conda/bin/mamba
-RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
+    --mount=type=bind,from=train-builds,source=/tmp/reqs/conda,target=/tmp/reqs/conda \
     conda config --set pip_interop_enabled True && \
     conda config --add channels conda-forge && \
     python -m pip install --no-cache-dir --no-deps /tmp/dist/*.whl && \
-    $conda install -y -c intel --file /tmp/reqs/conda-train.requirements.txt && \
+    $conda install -y -c intel --file /tmp/reqs/conda/requirements.txt && \
     conda config --set pip_interop_enabled False && \
     conda clean -ya
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-RUN --mount=type=bind,from=train-builds,readwrite,source=/tmp,target=/tmp \
-    python -m pip install --no-cache-dir --find-links /tmp/dist/ \
-        -r /tmp/reqs/pip-train.requirements.txt \
+RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
+    --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
+    python -m pip install --no-cache-dir --find-links /tmp/dist \
+        -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
 
 # Use Intel OpenMP with optimizations. See documentation for details.
@@ -449,8 +482,9 @@ ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 
-# Include `conda` in dynamic linking. Temporarily switch to `root` for permissions.
+# Temporarily switch to `root` for permissions.
 USER root
+# Include `conda` in dynamic linking.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 USER ${USR}
 
@@ -462,9 +496,13 @@ CMD ["/bin/zsh"]
 
 
 # Minimalist deployment preparation layer.
-FROM ${BUILD_IMAGE} AS deploy-builds
+FROM build-base AS deploy-builds
 
-# The licenses for the Anaconda default channel and Intel MKL are not fully open-source.
+# If any `pip` packages must be compiled on installation, create a wheel in the
+# `build` stages and move it to `/tmp/dist`. Otherwise, the installtion may fail.
+# The `deploy` image is a CUDA `runtime` image without compiler tools.
+
+# The licenses for the Anaconda defaults channel and Intel MKL are not fully open-source.
 # Enterprise users may therefore wish to remove them from their final product.
 # The deployment therefore uses system Python. Conda is copied here just in case.
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
@@ -480,6 +518,7 @@ COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-deploy.requirements.txt
 FROM ${DEPLOY_IMAGE} AS deploy
 
 LABEL maintainer="veritas9872@gmail.com"
+LABEL com.nvidia.volumes.needed="nvidia_driver"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -496,7 +535,6 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
-# The `python3.x-dev` packages are used because some packages require building on installation.
 # Both `python` and `python3` are set to point to the installed version of Python.
 # The pre-installed system Python3 may be overridden if the installed and pre-installed
 # versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
@@ -507,7 +545,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION}-dev \n" >> /tmp/reqs/apt-deploy.requirements.txt && \
+    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt-deploy.requirements.txt && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-deploy.requirements.txt |  \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \

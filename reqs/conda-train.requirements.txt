@@ -17,6 +17,7 @@ libpng
 
 # Useful packages
 scipy
+modin-all
 pandas
 openpyxl  # Read `.xlsx` files in Pandas.
 scikit-learn>=1.0.0
@@ -24,6 +25,7 @@ jupyterlab
 seaborn
 
 # Non-essential utility packages.
+# Some users may prefer installing these with `apt`.
 tmux
 nano
 git

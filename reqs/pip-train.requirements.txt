@@ -11,3 +11,4 @@ hydra-core==1.1.0
 hydra_colorlog==1.1.0
 
 # Add additional packages here.
+ray[tune]==1.9.2

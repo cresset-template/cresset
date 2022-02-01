@@ -87,6 +87,7 @@ def infer(
     inputs = tuple(torch.rand(*s, device=device) for s in input_shapes)
     if enable_scripting:
         network = torch.jit.trace(network, inputs)
+        network = torch.jit.freeze(network)
 
     if enable_amp:
         from torch.cuda.amp import autocast
