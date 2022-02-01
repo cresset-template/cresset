@@ -2,5 +2,5 @@
 # Raise the MKL version to mkl==2022.x.x if PyTorch cannot find `libmkl_intel_lp64.so.2`.
 # The MKL major version (year) used to build PyTorch must match the version to run it.
 # Include the appropriate version of the `mkl` package manually if `MKL_MODE=include`.
-mkl==2022.0.1
+# mkl==2022.0.1
 tqdm==4.62.3
