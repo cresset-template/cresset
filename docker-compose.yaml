@@ -15,6 +15,9 @@
 # The settings are much easier to see and maintain than scattered shell scripts.
 # Also, Compose is a native Docker component, simplifying project maintenance.
 
+# Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
+# https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
+
 
 services:
   train:  # Service name. Change the name as necessary for each project.
@@ -95,6 +98,7 @@ services:
         - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
         BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
+        BUILD_CAFFE2_OPS: 0
         BUILD_TEST: 0
         USE_NNPACK: 0
         USE_QNNPACK: 0
@@ -147,6 +151,7 @@ services:
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1  # Enable build tests for deployment.
         BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
+        BUILD_CAFFE2_OPS: 1
         USE_NNPACK: 1  # Enable NNPack for deployment.
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
         CONDA_NO_DEFAULTS: 1  # No licensing issues this way.

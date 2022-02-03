@@ -174,8 +174,9 @@ FROM build-install-${MKL_MODE}-mkl AS build-base
 
 # Use Jemalloc as the system memory allocator for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-# Anaconda build of Jemalloc does not have profiling enabled.
-#ENV MALLOC_CONF="prof:true,lg_prof_sample:1,prof_accum:false,prof_prefix:jeprof.out"
+# See the documentation for an explanation of the following configuration.
+# https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
+ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 # The Docker Daemon cache memory may be insufficient to hold the entire cache.
 # A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
@@ -204,7 +205,8 @@ FROM build-base AS build-torch
 # Checkout to specific version and update submodules.
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/pytorch && \
+ARG TORCH_URL=https://github.com/pytorch/pytorch.git
+RUN git clone --recursive --jobs 0 ${TORCH_URL} /opt/pytorch && \
     if [ -n ${PYTORCH_VERSION_TAG} ]; then \
         git checkout ${PYTORCH_VERSION_TAG} && \
         git submodule sync && \
@@ -215,9 +217,7 @@ RUN git clone --recursive --jobs 0 https://github.com/pytorch/pytorch.git /opt/p
 # on its own but its subsidiary libraries cannot,
 # hence the need to specify the architecture list explicitly.
 # Building PyTorch with several optimizations and bugfixes.
-# Test builds are disabled by default to speed up the build time.
-# Disabling Caffe2 is dangerous but most users do not need it.
-# NNPack and QNNPack are also unnecessary for most users.
+# Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
 # `USE_MKLDNN` is restated to remind users that it has been set.
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
@@ -231,15 +231,15 @@ ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
 ARG BUILD_CAFFE2=0
+ARG BUILD_CAFFE2_OPS=0
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
-RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
 # Install PyTorch for subsidiary libraries.
 RUN --mount=type=cache,target=/opt/ccache \
+    python setup.py bdist_wheel -d /tmp/dist && \
     python setup.py install
 
 ###### Additional information for custom builds. ######
@@ -265,7 +265,8 @@ FROM build-torch AS build-vision
 
 WORKDIR /opt/vision
 ARG TORCHVISION_VERSION_TAG
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/vision.git /opt/vision && \
+ARG VISION_URL=https://github.com/pytorch/vision.git
+RUN git clone --recursive --jobs 0 ${VISION_URL} /opt/vision && \
     if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
         git checkout ${TORCHVISION_VERSION_TAG} && \
         git submodule sync && \
@@ -293,7 +294,8 @@ FROM build-torch AS build-text
 
 WORKDIR /opt/text
 ARG TORCHTEXT_VERSION_TAG
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/text.git /opt/text && \
+ARG TEXT_URL=https://github.com/pytorch/text.git
+RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
     if [ -n ${TORCHTEXT_VERSION_TAG} ]; then \
         git checkout ${TORCHTEXT_VERSION_TAG} && \
         git submodule sync && \
@@ -310,7 +312,8 @@ FROM build-torch AS build-audio
 
 WORKDIR /opt/audio
 ARG TORCHAUDIO_VERSION_TAG
-RUN git clone --recursive --jobs 0 https://github.com/pytorch/audio.git /opt/audio && \
+ARG AUDIO_URL=https://github.com/pytorch/audio.git
+RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
     if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
         git checkout ${TORCHAUDIO_VERSION_TAG} && \
         git submodule sync && \
@@ -483,6 +486,7 @@ ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 # Temporarily switch to `root` for permissions.
 USER root
