@@ -122,8 +122,8 @@ services:
         TZ: ${TZ:-Asia/Seoul}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
-    depends_on:
-      - pull
+#    depends_on:
+#      - pull
     environment:
       TZ: ${TZ:-Asia/Seoul}
       CUDA_DEVICE_ORDER: PCI_BUS_ID

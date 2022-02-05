@@ -71,8 +71,7 @@ RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 
 FROM build-install-${LINUX_DISTRO} AS build-install
 
-LABEL maintainer="veritas9872@gmail.com"
-LABEL com.nvidia.volumes.needed="nvidia_driver"
+LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
@@ -237,19 +236,46 @@ ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
-# Install PyTorch for subsidiary libraries.
+# Install PyTorch for subsidiary libraries (e.g., TorchVision).
+WORKDIR /opt/_pytorch
 RUN --mount=type=cache,target=/opt/ccache \
+    --mount=type=cache,target=/opt/_pytorch \
+#    find /opt/_pytorch -mindepth 1 -delete && \  -> Delete the previous cache if the build gets stuck.
+    rsync -a /opt/pytorch/ /opt/_pytorch/ && \
     python setup.py bdist_wheel -d /tmp/dist && \
-    python setup.py install
+    python setup.py install && \
+    rm -rf .git
+
+# The following mechanism combines the reproducibility of Docker with the speed of local compilation.
+# The entire directory is used as a BuildKit cache to speed up installation between separate builds.
+# Compilation outputs between different builds must be saved.
+# Otherwise, PyTorch must be rebuilt whenever any previous stage is modified,
+# even if the version of PyTorch being compiled is identical because
+# without whole directory caching, many build artifacts (e.g., `*.so` files) must be rebuilt.
+# Even with CCache accceleration, this is a very slow process.
+
+# Please note that ~20GB of memory for the entire process, which may be larger than the
+# default cache size allowed by the Docker BuildKit garbage collection settings.
+# Disable GC or increase `defaultKeepStorage`, the allowed cache size, to prevent recompiles.
+# See the issue for help. https://github.com/docker/cli/issues/2325
+# If a build failure occurs, try clearing the /opt/_*/ directory cache.
+
+# The `.git` directory is deleted due to its large size (759MB of 846MB).
 
 ###### Additional information for custom builds. ######
+# A detailed (but out of date) explanation of the buildsystem can be found below.
+# https://pytorch.org/blog/a-tour-of-pytorch-internals-2
 
-# Manually edit conda package versions if older PyTorch versions will not build.
+# Manually specify conda package versions if older PyTorch versions will not build.
+# PyYAML, MKL-DNN, and SetupTools are known culprits.
 
 # Use this to build with custom CMake settings.
 #RUN --mount=type=cache,target=/opt/ccache \
 #    python setup.py build --cmake-only && \
 #    ccmake build  # or cmake-gui build
+
+# See the SetupTools documentation for more setup.py options.
+# https://setuptools.pypa.io/en/latest
 
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
@@ -286,8 +312,13 @@ ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
+WORKDIR /opt/_vision
 RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
+    --mount=type=cache,target=/opt/_vision \
+#    find /opt/_vision -mindepth 1 -delete && \
+    rsync -a /opt/vision/ /opt/_vision/ && \
+    python setup.py bdist_wheel -d /tmp/dist && \
+    rm -rf .git
 
 
 FROM build-torch AS build-text
@@ -304,8 +335,13 @@ RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
 
 # TorchText does not use CUDA.
 ARG USE_PRECOMPILED_HEADERS
+WORKDIR /opt/_text
 RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
+    --mount=type=cache,target=/opt/_text \
+#    find /opt/_text -mindepth 1 -delete && \
+    rsync -a /opt/text/ /opt/_text/ && \
+    python setup.py bdist_wheel -d /tmp/dist && \
+    rm -rf .git
 
 
 FROM build-torch AS build-audio
@@ -326,8 +362,14 @@ ARG USE_PRECOMPILED_HEADERS
 ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
+
+WORKDIR /opt/_audio
 RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
+    --mount=type=cache,target=/opt/_audio \
+#    find /opt/_audio -mindepth 1 -delete && \
+    rsync -a /opt/audio/ /opt/_audio/ && \
+    python setup.py bdist_wheel -d /tmp/dist && \
+    rm -rf .git
 
 
 FROM build-base AS build-pure
@@ -338,13 +380,14 @@ RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh-autosugg
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh-syntax-highlighting
 
 
-FROM build-base AS train-builds
+FROM ${BUILD_IMAGE} AS train-builds
 # A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
 # If other source builds are included later on, gather them here as well.
 # The train stage should not have any dependencies other than this stage.
 # This stage does not have anything installed. No variables are specified either.
 # This stage is simply the `BUILD_IMAGE` with additional files and directories.
 # All pip wheels are located in `/tmp/dist`.
+# Using an image other than `BUILD_IMAGE` may contaminate the `/opt/conda` and other key directories.
 
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
@@ -377,8 +420,7 @@ COPY reqs/pip-train.requirements.txt   /tmp/reqs/pip/requirements.txt
 
 FROM ${TRAIN_IMAGE} AS train
 
-LABEL maintainer="veritas9872@gmail.com"
-LABEL com.nvidia.volumes.needed="nvidia_driver"
+LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -502,16 +544,18 @@ CMD ["/bin/zsh"]
 
 
 # Minimalist deployment preparation layer.
-FROM build-base AS deploy-builds
+FROM ${BUILD_IMAGE} AS deploy-builds
 
 # If any `pip` packages must be compiled on installation, create a wheel in the
 # `build` stages and move it to `/tmp/dist`. Otherwise, the installtion may fail.
+# See `Pillow-SIMD` in the TorchVision build process for an example.
 # The `deploy` image is a CUDA `runtime` image without compiler tools.
 
 # The licenses for the Anaconda defaults channel and Intel MKL are not fully open-source.
 # Enterprise users may therefore wish to remove them from their final product.
 # The deployment therefore uses system Python. Conda is copied here just in case.
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
+# This may also be useful for non-Intel CPUs.
 
 COPY --from=build-install /opt/conda /opt/conda
 COPY --from=build-vision  /tmp/dist  /tmp/dist
@@ -523,8 +567,7 @@ COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-deploy.requirements.txt
 # Minimalist deployment Ubuntu image.
 FROM ${DEPLOY_IMAGE} AS deploy
 
-LABEL maintainer="veritas9872@gmail.com"
-LABEL com.nvidia.volumes.needed="nvidia_driver"
+LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8

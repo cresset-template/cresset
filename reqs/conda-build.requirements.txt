@@ -19,6 +19,7 @@ numpy
 pkgconfig
 pyyaml
 requests
+rsync
 setuptools<=59.5.0
 six
 typing_extensions
