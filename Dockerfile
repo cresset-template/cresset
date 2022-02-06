@@ -1,6 +1,7 @@
 # syntax = docker/dockerfile:1
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 
+# Use `export BUILDKIT_PROGRESS=plain` in the host to see full build logs.
 # See the link below for documentation on BuildKit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
 # Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
@@ -242,7 +243,9 @@ RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_pytorch \
 #    find /opt/_pytorch -mindepth 1 -delete && \  -> Delete the previous cache if the build gets stuck.
     rsync -a /opt/pytorch/ /opt/_pytorch/ && \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py install && \
     rm -rf .git
 
@@ -265,6 +268,8 @@ RUN --mount=type=cache,target=/opt/ccache \
 ###### Additional information for custom builds. ######
 # A detailed (but out of date) explanation of the buildsystem can be found below.
 # https://pytorch.org/blog/a-tour-of-pytorch-internals-2
+# The following repository may also be helpful for available options and possible issues.
+# https://github.com/mratsim/Arch-Data-Science/blob/master/frameworks/python-pytorch-magma-mkldnn-cudnn-git/PKGBUILD
 
 # Manually specify conda package versions if older PyTorch versions will not build.
 # PyYAML, MKL-DNN, and SetupTools are known culprits.
@@ -317,6 +322,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_vision \
 #    find /opt/_vision -mindepth 1 -delete && \
     rsync -a /opt/vision/ /opt/_vision/ && \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
 
@@ -368,6 +374,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_audio \
 #    find /opt/_audio -mindepth 1 -delete && \
     rsync -a /opt/audio/ /opt/_audio/ && \
+    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
 
