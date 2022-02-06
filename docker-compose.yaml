@@ -190,7 +190,7 @@ services:
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
-      target: build-base  # All builds begin here.
+      target: ${TARGET_STAGE:-build-base}  # All builds begin at `build-base`.
       context: .
       dockerfile: Dockerfile
       args:

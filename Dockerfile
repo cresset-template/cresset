@@ -40,6 +40,7 @@ ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG CONDA_NO_DEFAULTS=0
 ARG USE_PRECOMPILED_HEADERS=1
+ARG CLEAN_CACHE_BEFORE_BUILD=0
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.3.1
 ARG MAGMA_VERSION=113
@@ -233,15 +234,29 @@ ARG BUILD_TEST=0
 ARG BUILD_CAFFE2=0
 ARG BUILD_CAFFE2_OPS=0
 ARG USE_PRECOMPILED_HEADERS
+ARG CLEAN_CACHE_BEFORE_BUILD
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
+
+# The standard method for building PyTorch is shown below.
+# Build artifacts such as `*.so` files are lost between builds.
+# CCache will speed up builds but identical PyTorch configurations will still require rebuilds.
+# Cleaning the `/opt/_pytorch` cache is equivalent to the example below.
+#RUN --mount=type=cache,target=/opt/ccache \
+#    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+#    python setup.py bdist_wheel -d /tmp/dist && \
+#    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+#    python setup.py install
+
 WORKDIR /opt/_pytorch
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_pytorch \
-#    find /opt/_pytorch -mindepth 1 -delete && \  -> Delete the previous cache if the build gets stuck.
+    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+        find /opt/_pytorch -mindepth 1 -delete; \
+    fi && \
     rsync -a /opt/pytorch/ /opt/_pytorch/ && \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
@@ -262,6 +277,11 @@ RUN --mount=type=cache,target=/opt/ccache \
 # Disable GC or increase `defaultKeepStorage`, the allowed cache size, to prevent recompiles.
 # See the issue for help. https://github.com/docker/cli/issues/2325
 # If a build failure occurs, try clearing the /opt/_*/ directory cache.
+# Note that new build configuration may not be correctly processed if the cache is not cleared.
+
+# On balance, the additional complexity is worth the increased ease of modifying the build layers.
+# Enable `CLEAN_CACHE_BEFORE_BUILD` if multiple slightly different versions of
+# PyTorch in different environments must be built continuously, such as in CI tests.
 
 # The `.git` directory is deleted due to its large size (759MB of 846MB).
 
@@ -315,12 +335,15 @@ ARG DEBUG
 ARG USE_CUDA
 ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
+ARG CLEAN_CACHE_BEFORE_BUILD
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
 WORKDIR /opt/_vision
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_vision \
-#    find /opt/_vision -mindepth 1 -delete && \
+    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+        find /opt/_vision -mindepth 1 -delete; \
+    fi && \
     rsync -a /opt/vision/ /opt/_vision/ && \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
@@ -341,10 +364,13 @@ RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
 
 # TorchText does not use CUDA.
 ARG USE_PRECOMPILED_HEADERS
+ARG CLEAN_CACHE_BEFORE_BUILD
 WORKDIR /opt/_text
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_text \
-#    find /opt/_text -mindepth 1 -delete && \
+    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+        find /opt/_text -mindepth 1 -delete; \
+    fi && \
     rsync -a /opt/text/ /opt/_text/ && \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
@@ -365,14 +391,16 @@ RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
 ARG USE_CUDA
 ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
+ARG CLEAN_CACHE_BEFORE_BUILD
 ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
-
 WORKDIR /opt/_audio
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_audio \
-#    find /opt/_audio -mindepth 1 -delete && \
+    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+        find /opt/_audio -mindepth 1 -delete; \
+    fi && \
     rsync -a /opt/audio/ /opt/_audio/ && \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
