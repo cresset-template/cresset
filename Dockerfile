@@ -98,17 +98,21 @@ ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:$PATH
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# Channel priority: `conda-forge`, `pytorch`, `defaults`.
+# Channel priority: `intel`, `conda-forge`, `pytorch`, `defaults`.
 # Cannot set strict priority because of installation conflicts.
-RUN curl -fsSL -v -o ~/miniconda.sh -O ${CONDA_URL} && \
-    chmod +x ~/miniconda.sh && \
-    ~/miniconda.sh -b -p /opt/conda && \
-    rm ~/miniconda.sh && \
-    conda config --add channels conda-forge && \
+RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
+    chmod +x /tmp/miniconda.sh && \
+    /tmp/miniconda.sh -b -p /opt/conda && \
+    rm /tmp/miniconda.sh && \
+    conda config --append channels intel && \
+    conda config --append channels conda-forge && \
     conda config --append channels pytorch && \
     conda config --append channels defaults && \
     if [ ${CONDA_NO_DEFAULTS} != 0 ]; then \
         conda config --remove channels defaults; \
+    fi && \
+    if [ ${MKL_MODE} != include ]; then \
+        conda config --remove channels intel; \
     fi && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
@@ -120,7 +124,7 @@ FROM build-install AS build-install-conda
 COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
-RUN conda install -y -c conda-forge mamba && conda clean -ya
+RUN conda install -y mamba && conda clean -ya
 # Using Mamba instead of Conda as the package manager for faster installation.
 #ENV conda=/opt/conda/bin/conda
 ENV conda=/opt/conda/bin/mamba
@@ -246,15 +250,13 @@ ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # CCache will speed up builds but identical PyTorch configurations will still require rebuilds.
 # Cleaning the `/opt/_pytorch` cache is equivalent to the example below.
 #RUN --mount=type=cache,target=/opt/ccache \
-#    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
 #    python setup.py bdist_wheel -d /tmp/dist && \
-#    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
 #    python setup.py install
 
 WORKDIR /opt/_pytorch
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_pytorch \
-    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
         find /opt/_pytorch -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/pytorch/ /opt/_pytorch/ && \
@@ -278,10 +280,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 # See the issue for help. https://github.com/docker/cli/issues/2325
 # If a build failure occurs, try clearing the /opt/_*/ directory cache.
 # Note that new build configuration may not be correctly processed if the cache is not cleared.
+# Use `docker builder prune` to clear all build caches in BuildKit.
 
 # On balance, the additional complexity is worth the increased ease of modifying the build layers.
 # Enable `CLEAN_CACHE_BEFORE_BUILD` if multiple slightly different versions of
 # PyTorch in different environments must be built continuously, such as in CI tests.
+
+# C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
 
 # The `.git` directory is deleted due to its large size (759MB of 846MB).
 
@@ -341,7 +346,7 @@ ARG TORCH_CUDA_ARCH_LIST
 WORKDIR /opt/_vision
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_vision \
-    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
         find /opt/_vision -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/vision/ /opt/_vision/ && \
@@ -368,7 +373,7 @@ ARG CLEAN_CACHE_BEFORE_BUILD
 WORKDIR /opt/_text
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_text \
-    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
         find /opt/_text -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/text/ /opt/_text/ && \
@@ -398,7 +403,7 @@ ARG TORCH_CUDA_ARCH_LIST
 WORKDIR /opt/_audio
 RUN --mount=type=cache,target=/opt/ccache \
     --mount=type=cache,target=/opt/_audio \
-    if [ CLEAN_CACHE_BEFORE_BUILD != 0 ]; then \
+    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
         find /opt/_audio -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/audio/ /opt/_audio/ && \
@@ -429,8 +434,7 @@ FROM ${BUILD_IMAGE} AS train-builds
 # with only the build artifacts (e.g., pip wheels) copied over.
 
 # The order of `COPY` instructions is chosen to minimize cache misses.
-# `conda` in `build-install-conda` has `mamba` installed, unlike `conda` in `build-install`.
-COPY --from=build-install-conda /opt/conda /opt/conda
+COPY --from=build-install /opt/conda /opt/conda
 
 COPY --from=build-vision /tmp/dist /tmp/dist
 COPY --from=build-audio  /tmp/dist /tmp/dist
@@ -464,27 +468,19 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-# Speedups in `apt` and `pip` installs for Korean users. Change URLs for other locations.
+# Speedups in `apt` installs for Korean users. Change URLs for other locations.
 # http://archive.ubuntu.com/ubuntu is specific to NVIDIA's CUDA Ubuntu images.
 # Check `/etc/apt/sources.list` of the base image to find the Ubuntu URL.
-# Use `apt` and `pip` mirror links optimized for user location.
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
-ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
-ARG TRUSTED_HOST=mirror.kakao.com
-# `printf` is preferred over `echo` when escape characters are used
-# because the behavior of `echo` is inconsistent across shells.
-RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf
 
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
-# The `readwrite` option is necessary because `apt` writes to `/tmp`.
-# Requirements for `apt` should be in `reqs/apt-train.requirements.txt`.
-# The `--mount=type=bind` temporarily mounts a directory from another stage.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
+# The `--mount=type=bind` temporarily mounts a directory from another stage.
 RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
+    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update &&  \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
@@ -530,25 +526,30 @@ RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt 
 COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
-# Using the Intel channel to get Intel-optimized numpy.
-# Using `mamba` instead of `conda` for faster installation.
 # Source wheels are installed to get dependencies from `conda` instead of `pip`.
 # Mixing `conda` and `pip` is not recommended but `conda` should come first if this is unavoidable.
 # https://www.anaconda.com/blog/using-pip-in-a-conda-environment
-ARG conda=/opt/conda/bin/mamba
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/conda,target=/tmp/reqs/conda \
     conda config --set pip_interop_enabled True && \
     conda config --add channels conda-forge && \
+    conda config --add channels intel && \
+    conda install -y mamba && \
     python -m pip install --no-cache-dir --no-deps /tmp/dist/*.whl && \
-    $conda install -y -c intel --file /tmp/reqs/conda/requirements.txt && \
+    mamba install -y --file /tmp/reqs/conda/requirements.txt && \
     conda config --set pip_interop_enabled False && \
     conda clean -ya
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
+# `printf` is preferred over `echo` when escape characters are used due to
+# the inconsistent behavior of `echo` across different shells.
+# Speedups in `pip` for Korean users. Change URLs for other locations.
+ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+ARG TRUSTED_HOST=mirror.kakao.com
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
@@ -565,7 +566,7 @@ ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
-# Temporarily switch to `root` for permissions.
+# Temporarily switch to `root` for super-user permissions.
 USER root
 # Include `conda` in dynamic linking.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
@@ -614,8 +615,6 @@ ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
-RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
@@ -626,6 +625,7 @@ RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
+    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
@@ -640,6 +640,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist/ \
         -r /tmp/reqs/pip-deploy.requirements.txt \

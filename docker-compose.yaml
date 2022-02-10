@@ -103,6 +103,7 @@ services:
         USE_NNPACK: 0
         USE_QNNPACK: 0
         DEBUG: ${DEBUG:-0}
+        CLEAN_CACHE_BEFORE_BUILD: ${CLEAN_CACHE_BEFORE_BUILD:-0}
         CONDA_NO_DEFAULTS: ${CONDA_NO_DEFAULTS:-0}  # Remove `defaults` channel if set to 1.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
@@ -155,6 +156,7 @@ services:
         USE_NNPACK: 1  # Enable NNPack for deployment.
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
         CONDA_NO_DEFAULTS: 1  # No licensing issues this way.
+        CLEAN_CACHE_BEFORE_BUILD: 1  # Cache should not affect reproducibility.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
