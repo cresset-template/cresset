@@ -40,14 +40,17 @@ services:
     # Current working directory `.` is connected to `PROJECT_ROOT`.
     # PyCharm cannot recognize the $PWD variable for unknown reasons.
     volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
-      - .:${PROJECT_ROOT:-/opt/project}
+      - .:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is at the project root.
+#      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is in a subdirectory.
+#      - ~/.ssh:/home/user/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
+#      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       target: train  # Specify build target.
       context: .  # `.dockerignore` should remove all context, making this equivalent to the `Makefile` results.
       dockerfile: Dockerfile
-      cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
-        - pytorch_source:${INSTALL_NAME:-build_install}
-        - pytorch_source:${TORCH_NAME:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.2}}
+#      cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
+#        - pytorch_source:${INSTALL_NAME:-build_install}
+#        - pytorch_source:${TORCH_NAME:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.2}}
       # All arguments given during the build with must be respecified
       # in `args` to prevent a cache miss from occurring.
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
@@ -88,14 +91,18 @@ services:
     stdin_open: true
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
+#      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if docker-compose.yaml is in a subdirectory of another project.
+#      - ~/.ssh:/home/user/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
+#      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:
-      target: train
+      # Set `TARGET_STAGE_FULL` to `train-builds` to get just the wheels in `/tmp/dist`.
+      target: ${TARGET_STAGE_FULL:-train}
       context: .
       dockerfile: Dockerfile
-      cache_from:
-        # Using defaults inside defaults, which may be hard to read.
-        - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
-        - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.1}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
+#      cache_from:
+#        # Using defaults inside defaults, which may be hard to read.
+#        - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
+#        - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.2}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
       args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
         BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
         BUILD_CAFFE2_OPS: 0
@@ -103,8 +110,7 @@ services:
         USE_NNPACK: 0
         USE_QNNPACK: 0
         DEBUG: ${DEBUG:-0}
-        CLEAN_CACHE_BEFORE_BUILD: ${CLEAN_CACHE_BEFORE_BUILD:-0}
-        CONDA_NO_DEFAULTS: ${CONDA_NO_DEFAULTS:-0}  # Remove `defaults` channel if set to 1.
+#        CLEAN_CACHE_BEFORE_BUILD: ${CLEAN_CACHE_BEFORE_BUILD:-0}
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
         CUDA_VERSION: ${CUDA_VERSION:-10.2}
@@ -155,7 +161,6 @@ services:
         BUILD_CAFFE2_OPS: 1
         USE_NNPACK: 1  # Enable NNPack for deployment.
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
-        CONDA_NO_DEFAULTS: 1  # No licensing issues this way.
         CLEAN_CACHE_BEFORE_BUILD: 1  # Cache should not affect reproducibility.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
@@ -201,7 +206,7 @@ services:
 
   ngc:  # NGC image service.
     hostname: ngc
-    image: pytorch_source:ngc-${YEAR:-21}.${MONTH:-12}
+    image: pytorch_source:ngc-${YEAR:-22}.${MONTH:-01}
 #    ipc: host
 #    shm_size: 1GB
     tty: true
@@ -213,12 +218,10 @@ services:
       target: ngc
       context: .
       dockerfile: ngc.Dockerfile
-      cache_from:
-        - nvcr.io/nvidia/pytorch:${YEAR:-21}.${MONTH:-12}-py3
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        YEAR: ${YEAR:-21}
-        MONTH: ${MONTH:-12}
+        YEAR: ${YEAR:-22}
+        MONTH: ${MONTH:-01}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}

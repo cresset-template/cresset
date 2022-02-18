@@ -38,7 +38,6 @@
 ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
-ARG CONDA_NO_DEFAULTS=0
 ARG USE_PRECOMPILED_HEADERS=1
 ARG CLEAN_CACHE_BEFORE_BUILD=0
 ARG MKL_MODE=include
@@ -59,19 +58,20 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 # The only use of cURL is to download Miniconda.
 # Only the Ubuntu image has been tested.
 # The `train` and `deploy` stages are designed for Ubuntu.
-FROM ${BUILD_IMAGE} AS build-install-ubuntu
+########################################################################
+FROM ${BUILD_IMAGE} AS install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-
-FROM ${BUILD_IMAGE} AS build-install-centos
+########################################################################
+FROM ${BUILD_IMAGE} AS install-centos
 RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 
-
-FROM ${BUILD_IMAGE} AS build-install-ubi
+########################################################################
+FROM ${BUILD_IMAGE} AS install-ubi
 RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 
-
-FROM build-install-${LINUX_DISTRO} AS build-install
+########################################################################
+FROM install-${LINUX_DISTRO} AS install-base
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -89,16 +89,16 @@ ENV PYTHONIOENCODING=UTF-8
 # The default CPU architecture is x86_64.
 # The Anaconda `defaults` channel is no longer free for commercial use.
 # Anaconda (including Miniconda) itself is still open-source.
-# Setting `defaults` to lowest priority as a result. Viva la Open Source!
+# Removing `defaults` as a result. Viva la Open Source!
 # https://conda.io/en/latest/license.html
 # https://www.anaconda.com/terms-of-service
 # https://www.anaconda.com/end-user-license-agreement-miniconda
-ARG CONDA_NO_DEFAULTS
+ARG MKL_MODE
 ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:$PATH
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# Channel priority: `intel`, `conda-forge`, `pytorch`, `defaults`.
+# Channel priority: `intel`, `conda-forge`, `pytorch`.
 # Cannot set strict priority because of installation conflicts.
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     chmod +x /tmp/miniconda.sh && \
@@ -107,18 +107,15 @@ RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     conda config --append channels intel && \
     conda config --append channels conda-forge && \
     conda config --append channels pytorch && \
-    conda config --append channels defaults && \
-    if [ ${CONDA_NO_DEFAULTS} != 0 ]; then \
-        conda config --remove channels defaults; \
-    fi && \
+    conda config --remove channels defaults && \
     if [ ${MKL_MODE} != include ]; then \
         conda config --remove channels intel; \
     fi && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
-
-FROM build-install AS build-install-conda
+########################################################################
+FROM install-base AS install-conda
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
 COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
@@ -126,11 +123,10 @@ COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 # Comment out the lines below if Mamba causes any issues.
 RUN conda install -y mamba && conda clean -ya
 # Using Mamba instead of Conda as the package manager for faster installation.
-#ENV conda=/opt/conda/bin/conda
 ENV conda=/opt/conda/bin/mamba
 
-
-FROM build-install-conda AS build-install-include-mkl
+########################################################################
+FROM install-conda AS install-include-mkl
 
 # Roundabout method to enable MKLDNN in PyTorch build when MKL is included.
 ENV USE_MKLDNN=1
@@ -138,13 +134,12 @@ ENV USE_MKLDNN=1
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
 # Use fixed version numbers if versioning issues cause build failures.
-# Intel channel set to highest priority for optimal Intel builds.
 ARG MAGMA_VERSION
-RUN $conda install -y -c intel \
+RUN $conda install -y \
         --file /tmp/reqs/conda-build.requirements.txt \
         magma-cuda${MAGMA_VERSION} \
-        mkl \
-        mkl-include && \
+        mkl-include \
+        mkl && \
     conda clean -ya
 
 # Use Intel OpenMP with optimizations enabled.
@@ -154,8 +149,8 @@ ENV KMP_WARNINGS=0
 ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
 
-
-FROM build-install-conda AS build-install-exclude-mkl
+########################################################################
+FROM install-conda AS install-exclude-mkl
 
 # Roundabout method to disable MKLDNN in PyTorch build when MKL is excluded.
 ENV USE_MKLDNN=0
@@ -173,8 +168,8 @@ RUN $conda install -y \
         nomkl && \
     conda clean -ya
 
-
-FROM build-install-${MKL_MODE}-mkl AS build-base
+########################################################################
+FROM install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the base stage for all builds in the Dockerfile.
 
 # Use Jemalloc as the system memory allocator for faster and more efficient memory management.
@@ -182,6 +177,10 @@ ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
+
+# Settings common to both gomp and iomp.
+ENV OMP_PROC_BIND=CLOSE
+ENV OMP_SCHEDULE=STATIC
 
 # The Docker Daemon cache memory may be insufficient to hold the entire cache.
 # A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
@@ -204,7 +203,7 @@ RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
 # Setting `LD_LIBRARY_PATH` directly is bad practice.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
-
+########################################################################
 FROM build-base AS build-torch
 
 # Checkout to specific version and update submodules.
@@ -260,9 +259,7 @@ RUN --mount=type=cache,target=/opt/ccache \
         find /opt/_pytorch -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/pytorch/ /opt/_pytorch/ && \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py install && \
     rm -rf .git
 
@@ -289,6 +286,9 @@ RUN --mount=type=cache,target=/opt/ccache \
 # C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
 
 # The `.git` directory is deleted due to its large size (759MB of 846MB).
+
+# The default configuration removes all files except requirements files from the Docker context.
+# To `COPY` your source files during the build, please edit the `.dockerignore` file.
 
 ###### Additional information for custom builds. ######
 # A detailed (but out of date) explanation of the buildsystem can be found below.
@@ -317,6 +317,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
 
 
+########################################################################
+FROM build-base AS build-pillow
+# Specify the version if necessary.
+# This may not work on older CPUs as it requires SSE4 and AVX2.
+RUN CC="cc -mavx2" python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD
+
+########################################################################
 FROM build-torch AS build-vision
 
 WORKDIR /opt/vision
@@ -330,11 +337,11 @@ RUN git clone --recursive --jobs 0 ${VISION_URL} /opt/vision && \
     fi
 
 # Install Pillow SIMD before TorchVision build and add it to `/tmp/dist`.
-# This may not work on older CPUs as it requires SSE4 and AVX2.
 # Pillow will be uninstalled if it is present.
-RUN python -m pip uninstall -y pillow && \
-    CC="cc -mavx2" python -m pip install -U --force-reinstall --no-deps Pillow-SIMD && \
-    CC="cc -mavx2" python -m pip wheel Pillow-SIMD --wheel-dir /tmp/dist
+RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
+    python -m pip uninstall -y pillow && \
+    python -m pip install --force-reinstall --no-deps /tmp/dist/*
+
 
 ARG DEBUG
 ARG USE_CUDA
@@ -350,11 +357,10 @@ RUN --mount=type=cache,target=/opt/ccache \
         find /opt/_vision -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/vision/ /opt/_vision/ && \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
 
-
+########################################################################
 FROM build-torch AS build-text
 
 WORKDIR /opt/text
@@ -380,7 +386,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
 
-
+########################################################################
 FROM build-torch AS build-audio
 
 WORKDIR /opt/audio
@@ -396,7 +402,8 @@ RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
 ARG USE_CUDA
 ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
-ARG CLEAN_CACHE_BEFORE_BUILD
+# The cache should be cleaned by default due to a bug in TorchAudio.
+ARG CLEAN_CACHE_BEFORE_BUILD=1
 ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
@@ -407,19 +414,18 @@ RUN --mount=type=cache,target=/opt/ccache \
         find /opt/_audio -mindepth 1 -delete; \
     fi && \
     rsync -a /opt/audio/ /opt/_audio/ && \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     python setup.py bdist_wheel -d /tmp/dist && \
     rm -rf .git
 
-
+########################################################################
 FROM build-base AS build-pure
 
 # Z-Shell related libraries.
-RUN git clone https://github.com/sindresorhus/pure.git /opt/pure
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh-autosuggestions
-RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh-syntax-highlighting
+RUN git clone https://github.com/sindresorhus/pure.git /opt/zsh/pure
+RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh/zsh-autosuggestions
+RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh/zsh-syntax-highlighting
 
-
+########################################################################
 FROM ${BUILD_IMAGE} AS train-builds
 # A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
 # If other source builds are included later on, gather them here as well.
@@ -434,17 +440,14 @@ FROM ${BUILD_IMAGE} AS train-builds
 # with only the build artifacts (e.g., pip wheels) copied over.
 
 # The order of `COPY` instructions is chosen to minimize cache misses.
-COPY --from=build-install /opt/conda /opt/conda
-
-COPY --from=build-vision /tmp/dist /tmp/dist
-COPY --from=build-audio  /tmp/dist /tmp/dist
-COPY --from=build-text   /tmp/dist /tmp/dist
+COPY --from=install-base /opt/conda /opt/conda
+COPY --from=build-pillow /tmp/dist  /tmp/dist
+COPY --from=build-vision /tmp/dist  /tmp/dist
+COPY --from=build-audio  /tmp/dist  /tmp/dist
+COPY --from=build-text   /tmp/dist  /tmp/dist
 
 # `COPY` new builds here to minimize the likelihood of cache misses.
-
-COPY --from=build-pure /opt/pure /opt/pure
-COPY --from=build-pure /opt/zsh-autosuggestions /opt/zsh-autosuggestions
-COPY --from=build-pure /opt/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
+COPY --from=build-pure  /opt/zsh /opt
 
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
@@ -452,12 +455,13 @@ COPY --from=build-pure /opt/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
 # without affecting the bind mount directory of the other files.
 # If all files were placed in the same directory, changing just one file
 # would cause a cache miss, forcing all requirements to reinstall.
-COPY reqs/apt-train.requirements.txt   /tmp/reqs/apt/requirements.txt
-COPY reqs/conda-train.requirements.txt /tmp/reqs/conda/requirements.txt
-COPY reqs/pip-train.requirements.txt   /tmp/reqs/pip/requirements.txt
+COPY reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
+COPY reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 
-
+########################################################################
 FROM ${TRAIN_IMAGE} AS train
+# Example training image for Ubuntu on an Intel x86_64 CPU.
+# Edit this image if necessary.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -500,12 +504,24 @@ RUN groupadd -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER ${USR}
-# Docker must use absolute paths in `COPY` but cannot find `$HOME`.
+# Docker must use absolute paths in `COPY` and cannot find `$HOME`.
 # Setting $HOME to its default value explicitly as a fix.
 ARG HOME=/home/${USR}
 
 # Get conda with the directory ownership given to the user.
+# Using conda for the virtual environment but not package installation.
 COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+
+# Configure channels in case anyone uses `conda`.
+# The configurations are not copied with `/opt/conda`.
+ARG MKL_MODE
+RUN conda config --append channels intel && \
+    conda config --append channels conda-forge && \
+    conda config --append channels pytorch && \
+    conda config --remove channels defaults && \
+    if [ ${MKL_MODE} != include ]; then \
+        conda config --remove channels intel; \
+    fi
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -515,6 +531,8 @@ ENV PYTHONPATH=${PROJECT_ROOT}
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
+# `printf` is preferred over `echo` when escape characters are used due to
+# the inconsistent behavior of `echo` across different shells.
 COPY --from=train-builds --chown=${UID}:${GID} /opt/pure $HOME/.zsh/pure
 RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
@@ -526,44 +544,36 @@ RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt 
 COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
-# Source wheels are installed to get dependencies from `conda` instead of `pip`.
-# Mixing `conda` and `pip` is not recommended but `conda` should come first if this is unavoidable.
-# https://www.anaconda.com/blog/using-pip-in-a-conda-environment
-RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
-    --mount=type=bind,from=train-builds,source=/tmp/reqs/conda,target=/tmp/reqs/conda \
-    conda config --set pip_interop_enabled True && \
-    conda config --add channels conda-forge && \
-    conda config --add channels intel && \
-    conda install -y mamba && \
-    python -m pip install --no-cache-dir --no-deps /tmp/dist/*.whl && \
-    mamba install -y --file /tmp/reqs/conda/requirements.txt && \
-    conda config --set pip_interop_enabled False && \
-    conda clean -ya
-
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-# `printf` is preferred over `echo` when escape characters are used due to
-# the inconsistent behavior of `echo` across different shells.
 # Speedups in `pip` for Korean users. Change URLs for other locations.
-ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+# Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
+# Using multiple `pip` installs will break the dependencies of all but the last installation.
+# The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
+# Install them from the Intel channel of Anaconda if desired.
+# Including versioning and dependencies is too complicated.
+ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist \
+    python -m pip install --no-cache-dir --find-links /tmp/dist  \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
 
+# Settings common to both gomp and iomp.
+ENV OMP_PROC_BIND=CLOSE
+ENV OMP_SCHEDULE=STATIC
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-# https://www.intel.com/content/www/us/en/develop/documentation/cpp-compiler-developer-guide-and-reference/top/optimization-and-programming-guide/openmp-support/openmp-library-support/thread-affinity-interface-linux-and-windows.html
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_WARNINGS=0
-ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
+
 # Use Jemalloc for faster and more efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 # Temporarily switch to `root` for super-user permissions.
@@ -578,7 +588,7 @@ WORKDIR ${PROJECT_ROOT}
 
 CMD ["/bin/zsh"]
 
-
+########################################################################
 # Minimalist deployment preparation layer.
 FROM ${BUILD_IMAGE} AS deploy-builds
 
@@ -593,13 +603,14 @@ FROM ${BUILD_IMAGE} AS deploy-builds
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
 # This may also be useful for non-Intel CPUs.
 
-COPY --from=build-install /opt/conda /opt/conda
-COPY --from=build-vision  /tmp/dist  /tmp/dist
+COPY --from=install-base /opt/conda /opt/conda
+COPY --from=build-pillow /tmp/dist  /tmp/dist
+COPY --from=build-vision /tmp/dist  /tmp/dist
 
 COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt-deploy.requirements.txt
 COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-deploy.requirements.txt
 
-
+########################################################################
 # Minimalist deployment Ubuntu image.
 FROM ${DEPLOY_IMAGE} AS deploy
 
@@ -613,7 +624,7 @@ ENV PYTHONUNBUFFERED=1
 # Use mirror links optimized for user location and security level.
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
-ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.

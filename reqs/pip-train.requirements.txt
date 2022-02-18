@@ -1,14 +1,16 @@
 # Packages to be installed in `Dockerfile` in `train` or `full` modes.
-# PyTorch and CUDA related libraries should be installed here.
-# Packages unavailable in `conda` should also be placed here.
-
-# PyTorch related packages.
+mkl  # Remove this if MKL is not used. Essential package in the default setting.
 pytorch-lightning==1.5.9
 torchmetrics==0.7.0
-
-# Not available on `conda`.
 hydra-core==1.1.0
 hydra_colorlog==1.1.0
-
-# Add additional packages here.
 ray[tune]==1.9.2
+pandas
+openpyxl  # Read `.xlsx` files in Pandas.
+scikit-learn>=1.0.0
+jupyterlab
+seaborn
+black
+pytest
+pre-commit
+rich
