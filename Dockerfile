@@ -512,6 +512,12 @@ ARG HOME=/home/${USR}
 # Using conda for the virtual environment but not package installation.
 COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
+# `PROJECT_ROOT` is where the project code will reside.
+ARG PROJECT_ROOT=/opt/project
+# Path order conveys precedence.
+ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
+ENV PYTHONPATH=${PROJECT_ROOT}
+
 # Configure channels in case anyone uses `conda`.
 # The configurations are not copied with `/opt/conda`.
 ARG MKL_MODE
@@ -522,12 +528,6 @@ RUN conda config --append channels intel && \
     if [ ${MKL_MODE} != include ]; then \
         conda config --remove channels intel; \
     fi
-
-# `PROJECT_ROOT` is where the project code will reside.
-ARG PROJECT_ROOT=/opt/project
-# Path order conveys precedence.
-ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
-ENV PYTHONPATH=${PROJECT_ROOT}
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
