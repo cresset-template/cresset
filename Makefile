@@ -6,9 +6,9 @@
 # for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
 # which is specified by `CCA` in the `Makefile`.
 
-.PHONY: env di up exec rebuild cca all build-install build-torch build-train
+.PHONY: env di cca all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
-.PHONY: build-train-clean build-train-full-clean
+.PHONY: build-train-clean build-train-full-clean up exec rebuild down
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
@@ -35,7 +35,8 @@ rebuild:
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up --build -d ${SERVICE}
 exec:
 	DOCKER_BUILDKIT=1 docker compose exec ${SERVICE} ${COMMAND}
-
+down:
+	docker compose down
 # Prevent builds if `CCA` (Compute Capability) is undefined.
 cca:
 	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
