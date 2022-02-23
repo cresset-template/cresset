@@ -51,3 +51,9 @@ each line of `FILE` while ignoring comments and blank lines.
 
 Note that spaces in a single line may lead to bugs by splitting the line.
 To use spaces, check the `xargs` documentation on how it handles whitespace.
+
+# Adding Custom Code
+
+The project blocks any files other than requirements files from being included in the Dockerfile context.
+To add custom code not available from a download, edit the `.dockerignore` file to include the directory in the context.
+Then `COPY` the directory in the Dockerfile during the build.
