@@ -26,7 +26,7 @@ di:
 
 # Convenience commands for Docker Compose. Also shows examples of best practice.
 # Use `make up` to start the service and `make exec` to enter the container.
-# Use `make build` to rebuild the image and start the service.
+# Use `make rebuild` to rebuild the image and start the service.
 SERVICE = full
 COMMAND = /bin/zsh
 up:
