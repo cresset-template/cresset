@@ -8,7 +8,7 @@
 
 .PHONY: env di cca all build-install build-torch build-train
 .PHONY: all-full build-install-full build-torch-full build-train-full
-.PHONY: build-train-clean build-train-full-clean up exec rebuild down
+.PHONY: build-train-clean build-train-full-clean up exec rebuild start down
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
@@ -24,19 +24,26 @@ DI_FILE = .dockerignore
 di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
-# Convenience commands for Docker Compose. Also shows examples of best practice.
+# Convenience commands for Docker Compose. See URL below for full instructions.
+# https://docs.docker.com/engine/reference/commandline/compose
 # Use `make up` to start the service and `make exec` to enter the container.
 # Use `make rebuild` to rebuild the image and start the service.
+# Use `make start` to start a stopped project without recreating it.
+# `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 SERVICE = full
 COMMAND = /bin/zsh
+PROJECT = "${SERVICE}-$(shell id -u)"
 up:
-	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up -d ${SERVICE}
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
 rebuild:
-	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose up --build -d ${SERVICE}
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
 exec:
-	DOCKER_BUILDKIT=1 docker compose exec ${SERVICE} ${COMMAND}
+	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
+start:
+	docker compose -p ${PROJECT} start ${SERVICE}
 down:
-	docker compose down
+	docker compose -p ${PROJECT} down
+
 # Prevent builds if `CCA` (Compute Capability) is undefined.
 cca:
 	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
