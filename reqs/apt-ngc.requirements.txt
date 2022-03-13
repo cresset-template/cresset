@@ -1,6 +1,6 @@
 # Essential packages.
-libjemalloc2
 git
+libjemalloc2
 openssh-server
 sudo
 tzdata

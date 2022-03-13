@@ -1,13 +1,13 @@
 # Essential packages.
 libjemalloc2
+libjpeg-turbo8
+libpng16-16
 openssh-server
 sudo
 tzdata
 zsh
-libjpeg-turbo8
-libpng16-16
 
-# Add additional packages.
+# Additional packages.
 tmux
 rsync
 nano

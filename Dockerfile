@@ -28,7 +28,7 @@
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
-# Default image is nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04.
+# Default image is nvidia/cuda:11.5.1-cudnn8-devel-ubuntu20.04.
 # Magma version must match the CUDA version of the build image.
 
 # cuDNN minor version is tied to CUDA minor version.
@@ -580,7 +580,7 @@ ARG TRUSTED_HOST=mirror.kakao.com
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist  \
+    python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
 
@@ -676,7 +676,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist/ \
+    python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip-deploy.requirements.txt \
         /tmp/dist/*.whl && \
     ldconfig
