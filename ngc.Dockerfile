@@ -25,7 +25,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 
-# Copy `apt` requirements.
+# Copy and install `apt` requirements.
 COPY reqs/apt-ngc.requirements.txt /tmp/apt-ngc.requirements.txt
 RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update && \
@@ -48,8 +48,8 @@ RUN groupadd -g ${GID} ${GRP} && \
 
 USER ${USR}
 
-# This wierd copy changes the ownership of the `/opt/conda` directory contents.
-# The `base` layer exists solely because `--from` can only take literal values.
+# Change the ownership of the `/opt/conda` directory.
+# `base` exists solely because `--from` can only take literal values.
 COPY --from=base --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ARG HOME=/home/${USR}
@@ -63,7 +63,7 @@ RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
 
 # Separate configuration update necessary because NVIDIA's conda
 # may have its own `pip.conf` file with it.
-ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
+ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH

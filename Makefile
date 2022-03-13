@@ -30,6 +30,7 @@ di:
 # Use `make rebuild` to rebuild the image and start the service.
 # Use `make start` to start a stopped project without recreating it.
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
+# Project names are made unique for each user to prevent name clashes.
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-$(shell id -u)"
@@ -58,7 +59,7 @@ cca:
 # Compute Capability is specified by the `CCA` variable and
 # the build should fail if `CCA` is not specified.
 CCA                     =
-TRAIN_NAME              = train
+IMAGE_NAME              = train
 TZ                      = Asia/Seoul
 PYTORCH_VERSION_TAG     = v1.10.1
 TORCHVISION_VERSION_TAG = v0.11.2
@@ -101,7 +102,7 @@ build-train: cca
 		--target train \
 		--cache-from=pytorch_source:${INSTALL_NAME} \
 		--cache-from=pytorch_source:${TORCH_NAME} \
-		--tag pytorch_source:${TRAIN_NAME} \
+		--tag pytorch_source:${IMAGE_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
@@ -123,7 +124,7 @@ PYTHON_VERSION    = 3.9
 MAGMA_VERSION     = 102  # Magma version must match CUDA version.
 TORCH_NAME_FULL   = build_torch-${PYTORCH_VERSION_TAG}-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
 INSTALL_NAME_FULL = build_install-${LINUX_DISTRO}${DISTRO_VERSION}-cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-py${PYTHON_VERSION}
-TRAIN_NAME_FULL   = full
+IMAGE_NAME_FULL   = full
 
 all-full: env cca build-install-full build-torch-full build-train-full
 
@@ -162,7 +163,7 @@ build-torch-full: cca
 build-train-full: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
-		--tag pytorch_source:${TRAIN_NAME_FULL} \
+		--tag pytorch_source:${IMAGE_NAME_FULL} \
 		--cache-from=pytorch_source:${INSTALL_NAME_FULL} \
 		--cache-from=pytorch_source:${TORCH_NAME_FULL} \
 		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
@@ -187,7 +188,7 @@ build-train-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
-		--tag pytorch_source:${TRAIN_NAME} \
+		--tag pytorch_source:${IMAGE_NAME} \
 		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \
@@ -202,7 +203,7 @@ build-train-full-clean: cca
 	DOCKER_BUILDKIT=1 docker build \
 		--target train \
 		--no-cache \
-		--tag pytorch_source:${TRAIN_NAME_FULL} \
+		--tag pytorch_source:${IMAGE_NAME_FULL} \
 		--build-arg TORCH_CUDA_ARCH_LIST="${CCA}" \
 		--build-arg PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG} \
 		--build-arg TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG} \

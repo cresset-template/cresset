@@ -27,7 +27,7 @@ services:
     # The removed images will remain cached, however.
     # If no image with the specified image name exists,
     # a new image with that name will be created.
-    image: pytorch_source:${TRAIN_NAME:-train}
+    image: pytorch_source:${IMAGE_NAME:-train}
     # `ipc: host` is a known security vulnerability but removes the shared memory cap.
 #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
 #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
@@ -56,10 +56,10 @@ services:
       # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.2}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.3}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.2}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.2}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that it is set properly in `.env`.
         UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that it is set properly in `.env`.
@@ -83,12 +83,14 @@ services:
   # Use a separate `full.env` file for different configurations if necessary.
   full:  # Service for `*-full` installs.
     hostname: full
-    image: pytorch_source:${TRAIN_NAME_FULL:-full}
+    image: pytorch_source:${IMAGE_NAME_FULL:-full}
 #    ipc: host
 #    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
+#    tmpfs:  # Create directory in RAM for fast data IO.
+#      - /opt/data
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if docker-compose.yaml is in a subdirectory of another project.
@@ -119,18 +121,16 @@ services:
         MAGMA_VERSION: ${MAGMA_VERSION:-102}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.2}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.3}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.2}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.2}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
-#    depends_on:
-#      - pull
     environment:
       TZ: ${TZ:-Asia/Seoul}
       CUDA_DEVICE_ORDER: PCI_BUS_ID
@@ -144,7 +144,7 @@ services:
 
   deploy:
     hostname: deploy
-    image: pytorch_source:${DEPLOY_NAME:-deploy}
+    image: pytorch_source:${IMAGE_NAME_DEPLOY:-deploy}
     tty: true
     init: true
     stdin_open: true
@@ -171,10 +171,10 @@ services:
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-exclude}  # `include` or `exclude`. Disabled by default for deployment.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.10.2}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.11.3}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.11.2}
-        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.10.2}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
+        TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
@@ -190,7 +190,7 @@ services:
   # It is also the base for developing new layers for new builds.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
-    image: pytorch_source:${DEVEL_NAME:-devel}
+    image: pytorch_source:${IMAGE_NAME_DEVEL:-devel}
     tty: true
     init: true
     stdin_open: true
@@ -206,7 +206,7 @@ services:
 
   ngc:  # NGC image service.
     hostname: ngc
-    image: pytorch_source:ngc-${YEAR:-22}.${MONTH:-01}
+    image: pytorch_source:ngc-${YEAR:-22}.${MONTH:-02}
 #    ipc: host
 #    shm_size: 1GB
     tty: true
@@ -221,7 +221,7 @@ services:
       args:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         YEAR: ${YEAR:-22}
-        MONTH: ${MONTH:-01}
+        MONTH: ${MONTH:-02}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
@@ -236,10 +236,6 @@ services:
           devices:
             - driver: nvidia
               capabilities: [ gpu ]
-
-
-  pull:  # Simple utility to explicitly pull and save the base Docker image.
-    image: nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 
 
 # https://docs.docker.com/storage/volumes/#use-a-volume-with-docker-compose

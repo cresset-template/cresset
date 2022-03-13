@@ -35,14 +35,16 @@
 # See documentation below for available versions.
 # https://developer.nvidia.com/rdp/cudnn-archive
 
+# `BUILD_MODE` controls whether PyTorch is built or not.
+ARG BUILD_MODE=include
 ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG USE_PRECOMPILED_HEADERS=1
-ARG CLEAN_CACHE_BEFORE_BUILD=0
+#ARG CLEAN_CACHE_BEFORE_BUILD
 ARG MKL_MODE=include
-ARG CUDA_VERSION=11.3.1
-ARG MAGMA_VERSION=113
+ARG CUDA_VERSION=11.5.1
+ARG MAGMA_VERSION=115
 ARG CUDNN_VERSION=8
 ARG PYTHON_VERSION=3.8
 ARG LINUX_DISTRO=ubuntu
@@ -237,31 +239,31 @@ ARG BUILD_TEST=0
 ARG BUILD_CAFFE2=0
 ARG BUILD_CAFFE2_OPS=0
 ARG USE_PRECOMPILED_HEADERS
-ARG CLEAN_CACHE_BEFORE_BUILD
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 
-# The standard method for building PyTorch is shown below.
+# The standard method for building PyTorch is presented below.
 # Build artifacts such as `*.so` files are lost between builds.
 # CCache will speed up builds but identical PyTorch configurations will still require rebuilds.
-# Cleaning the `/opt/_pytorch` cache is equivalent to the example below.
-#RUN --mount=type=cache,target=/opt/ccache \
-#    python setup.py bdist_wheel -d /tmp/dist && \
-#    python setup.py install
-
-WORKDIR /opt/_pytorch
 RUN --mount=type=cache,target=/opt/ccache \
-    --mount=type=cache,target=/opt/_pytorch \
-    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-        find /opt/_pytorch -mindepth 1 -delete; \
-    fi && \
-    rsync -a /opt/pytorch/ /opt/_pytorch/ && \
     python setup.py bdist_wheel -d /tmp/dist && \
-    python setup.py install && \
-    rm -rf .git
+    python setup.py install
+
+## Alternative method for building is shelved due to bugs.
+# ARG CLEAN_CACHE_BEFORE_BUILD
+#WORKDIR /opt/_pytorch
+#RUN --mount=type=cache,target=/opt/ccache \
+#    --mount=type=cache,target=/opt/_pytorch \
+#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
+#        find /opt/_pytorch -mindepth 1 -delete; \
+#    fi && \
+#    rsync -a /opt/pytorch/ /opt/_pytorch/ && \
+#    python setup.py bdist_wheel -d /tmp/dist && \
+#    python setup.py install && \
+#    rm -rf .git
 
 # The following mechanism combines the reproducibility of Docker with the speed of local compilation.
 # The entire directory is used as a BuildKit cache to speed up installation between separate builds.
@@ -299,7 +301,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 # Manually specify conda package versions if older PyTorch versions will not build.
 # PyYAML, MKL-DNN, and SetupTools are known culprits.
 
-# Use this to build with custom CMake settings.
+# Use the following to build with custom CMake settings.
 #RUN --mount=type=cache,target=/opt/ccache \
 #    python setup.py build --cmake-only && \
 #    ccmake build  # or cmake-gui build
@@ -342,23 +344,27 @@ RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip uninstall -y pillow && \
     python -m pip install --force-reinstall --no-deps /tmp/dist/*
 
-
 ARG DEBUG
 ARG USE_CUDA
 ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
-ARG CLEAN_CACHE_BEFORE_BUILD
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
-WORKDIR /opt/_vision
+
 RUN --mount=type=cache,target=/opt/ccache \
-    --mount=type=cache,target=/opt/_vision \
-    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-        find /opt/_vision -mindepth 1 -delete; \
-    fi && \
-    rsync -a /opt/vision/ /opt/_vision/ && \
-    python setup.py bdist_wheel -d /tmp/dist && \
-    rm -rf .git
+    python setup.py bdist_wheel -d /tmp/dist
+
+## Alternative method for building is shelved due to bugs.
+#ARG CLEAN_CACHE_BEFORE_BUILD
+#WORKDIR /opt/_vision
+#RUN --mount=type=cache,target=/opt/ccache \
+#    --mount=type=cache,target=/opt/_vision \
+#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
+#        find /opt/_vision -mindepth 1 -delete; \
+#    fi && \
+#    rsync -a /opt/vision/ /opt/_vision/ && \
+#    python setup.py bdist_wheel -d /tmp/dist && \
+#    rm -rf .git
 
 ########################################################################
 FROM build-torch AS build-text
@@ -375,16 +381,20 @@ RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
 
 # TorchText does not use CUDA.
 ARG USE_PRECOMPILED_HEADERS
-ARG CLEAN_CACHE_BEFORE_BUILD
-WORKDIR /opt/_text
 RUN --mount=type=cache,target=/opt/ccache \
-    --mount=type=cache,target=/opt/_text \
-    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-        find /opt/_text -mindepth 1 -delete; \
-    fi && \
-    rsync -a /opt/text/ /opt/_text/ && \
-    python setup.py bdist_wheel -d /tmp/dist && \
-    rm -rf .git
+    python setup.py bdist_wheel -d /tmp/dist
+
+## Alternative method for building is shelved due to bugs.
+#ARG CLEAN_CACHE_BEFORE_BUILD
+#WORKDIR /opt/_text
+#RUN --mount=type=cache,target=/opt/ccache \
+#    --mount=type=cache,target=/opt/_text \
+#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
+#        find /opt/_text -mindepth 1 -delete; \
+#    fi && \
+#    rsync -a /opt/text/ /opt/_text/ && \
+#    python setup.py bdist_wheel -d /tmp/dist && \
+#    rm -rf .git
 
 ########################################################################
 FROM build-torch AS build-audio
@@ -402,20 +412,26 @@ RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
 ARG USE_CUDA
 ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
-# The cache should be cleaned by default due to a bug in TorchAudio.
-ARG CLEAN_CACHE_BEFORE_BUILD=1
+
 ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
-WORKDIR /opt/_audio
+
 RUN --mount=type=cache,target=/opt/ccache \
-    --mount=type=cache,target=/opt/_audio \
-    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-        find /opt/_audio -mindepth 1 -delete; \
-    fi && \
-    rsync -a /opt/audio/ /opt/_audio/ && \
-    python setup.py bdist_wheel -d /tmp/dist && \
-    rm -rf .git
+    python setup.py bdist_wheel -d /tmp/dist
+
+## Alternative method for building is shelved due to bugs.
+# The cache should be cleaned by default due to a bug in TorchAudio.
+#ARG CLEAN_CACHE_BEFORE_BUILD
+#WORKDIR /opt/_audio
+#RUN --mount=type=cache,target=/opt/ccache \
+#    --mount=type=cache,target=/opt/_audio \
+#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
+#        find /opt/_audio -mindepth 1 -delete; \
+#    fi && \
+#    rsync -a /opt/audio/ /opt/_audio/ && \
+#    python setup.py bdist_wheel -d /tmp/dist && \
+#    rm -rf .git
 
 ########################################################################
 FROM build-base AS build-pure
@@ -426,7 +442,7 @@ RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh/zsh-auto
 RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh/zsh-syntax-highlighting
 
 ########################################################################
-FROM ${BUILD_IMAGE} AS train-builds
+FROM ${BUILD_IMAGE} AS train-builds-include
 # A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
 # If other source builds are included later on, gather them here as well.
 # The train stage should not have any dependencies other than this stage.
@@ -449,6 +465,16 @@ COPY --from=build-text   /tmp/dist  /tmp/dist
 # `COPY` new builds here to minimize the likelihood of cache misses.
 COPY --from=build-pure  /opt/zsh /opt
 
+########################################################################
+FROM ${BUILD_IMAGE} AS train-builds-exclude
+# Only build lightweight libraries.
+
+COPY --from=install-base /opt/conda /opt/conda
+COPY --from=build-pillow /tmp/dist  /tmp/dist
+COPY --from=build-pure   /opt/zsh   /opt
+
+
+FROM train-builds-${BUILD_MODE} AS train-builds
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
 # The files are placed in different directories to allow changing one file
@@ -460,13 +486,13 @@ COPY reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
-# Example training image for Ubuntu on an Intel x86_64 CPU.
-# Edit this image if necessary.
+# Example training image for Ubuntu on an Intel x86_64 CPU. Edit if necessary.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
+ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 # Set as `ARG`s to reduce image footprint but not affect the resulting images.
 ARG PYTHONDONTWRITEBYTECODE=1
