@@ -350,7 +350,6 @@ ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
-
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -412,11 +411,9 @@ RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
 ARG USE_CUDA
 ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
-
 ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
-
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
