@@ -1,14 +1,14 @@
-# Requires the latest version of Docker Compose.
-# Docker Compose V2 is recommended.
-# `docker-compose.yaml` files cannot use shell outputs as their inputs.
+# Requires the Docker Compose V2.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
 # and https://github.com/compose-spec/compose-spec/blob/master/spec.md
 # for details concerning the `docker-compose.yaml` file syntax.
+
 # Variables are in ${VARIABLE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
 # Using a `.env` file to set variables is strongly recommended.
+
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
-# Compute Capability must be specified manually via the `CCA` variable.
+# Compute Capability must be specified via the `CCA` variable.
 
 # Using a `docker-compose.yaml` file has many advantages
 # over creating custom shell scripts for each project.
@@ -22,38 +22,30 @@
 services:
   train:  # Service name. Change the name as necessary for each project.
     hostname: train  # Set to be the same as the service name. Makes terminals easier to tell apart.
-    # Remember to use different image names for different users and projects.
+    # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
-    # If no image with the specified image name exists,
-    # a new image with that name will be created.
     image: pytorch_source:${IMAGE_NAME:-train}
-    # `ipc: host` is a known security vulnerability but removes the shared memory cap.
+    # `ipc: host` removes the shared memory cap but is a known security vulnerability.
 #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
 #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
-    # Docker volumes are the preferred method for connecting to the host filesystem.
+
     # Setting `HOST_PATH:CONTAINER_PATH` allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
     # Current working directory `.` is connected to `PROJECT_ROOT`.
-    # PyCharm cannot recognize the $PWD variable for unknown reasons.
     volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
       - .:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is at the project root.
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is in a subdirectory.
 #      - ~/.ssh:/home/user/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
 #      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:  # Options for building. Used when `--build` is called in `docker compose`.
+      BUILD_MODE: ${BUILD_MODE:-include}
       target: train  # Specify build target.
-      context: .  # `.dockerignore` should remove all context, making this equivalent to the `Makefile` results.
+      context: .
       dockerfile: Dockerfile
-#      cache_from:  # Useful if cache images have been created with the Makefile commands beforehand.
-#        - pytorch_source:${INSTALL_NAME:-build_install}
-#        - pytorch_source:${TORCH_NAME:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.2}}
-      # All arguments given during the build with must be respecified
-      # in `args` to prevent a cache miss from occurring.
-      # Default values of the `Dockerfile` (but not the `Makefile`) may be omitted.
       args:  # Equivalent to `--build-arg`.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
@@ -80,8 +72,7 @@ services:
 #              device_ids: [ "0" ]  # Use only GPU 0.
 
 
-  # Use a separate `full.env` file for different configurations if necessary.
-  full:  # Service for `*-full` installs.
+  full:
     hostname: full
     image: pytorch_source:${IMAGE_NAME_FULL:-full}
 #    ipc: host
@@ -101,18 +92,14 @@ services:
       target: ${TARGET_STAGE_FULL:-train}
       context: .
       dockerfile: Dockerfile
-#      cache_from:
-#        # Using defaults inside defaults, which may be hard to read.
-#        - pytorch_source:${INSTALL_NAME_FULL:-build_install-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
-#        - pytorch_source:${TORCH_NAME_FULL:-build_torch-${PYTORCH_VERSION_TAG:-v1.10.2}-${LINUX_DISTRO:-ubuntu}${DISTRO_VERSION:-18.04}-cuda${CUDA_VERSION:-10.2}-cudnn${CUDNN_VERSION:-8}-py${PYTHON_VERSION:-3.9}}
-      args:  # Equivalent to `--build-arg`. Set to default values for `*-full`.
+      args:  # Equivalent to `--build-arg`.
+        BUILD_MODE: ${BUILD_MODE:-include}
         BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
         BUILD_CAFFE2_OPS: 0
         BUILD_TEST: 0
         USE_NNPACK: 0
         USE_QNNPACK: 0
         DEBUG: ${DEBUG:-0}
-#        CLEAN_CACHE_BEFORE_BUILD: ${CLEAN_CACHE_BEFORE_BUILD:-0}
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
         CUDA_VERSION: ${CUDA_VERSION:-10.2}
@@ -158,6 +145,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        BUILD_MODE: ${BUILD_MODE:-include}
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1  # Enable build tests for deployment.
         BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
@@ -190,7 +178,6 @@ services:
               capabilities: [ gpu ]
 
   # This layer may be useful for PyTorch contributors.
-  # It is also the base for developing new layers for new builds.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
     image: pytorch_source:${IMAGE_NAME_DEVEL:-devel}
@@ -239,11 +226,3 @@ services:
           devices:
             - driver: nvidia
               capabilities: [ gpu ]
-
-
-# https://docs.docker.com/storage/volumes/#use-a-volume-with-docker-compose
-# https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
-# https://github.com/compose-spec/compose-spec/blob/master/spec.md#volumes-top-level-element
-volumes:
-  shared:  # Maybe use later to share data between different containers.
-  # See # https://docs.docker.com/storage/volumes/#share-data-among-machines
