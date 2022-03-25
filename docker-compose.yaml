@@ -42,11 +42,11 @@ services:
 #      - ~/.ssh:/home/user/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
 #      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:  # Options for building. Used when `--build` is called in `docker compose`.
-      BUILD_MODE: ${BUILD_MODE:-include}
       target: train  # Specify build target.
       context: .
       dockerfile: Dockerfile
       args:  # Equivalent to `--build-arg`.
+        BUILD_MODE: ${BUILD_MODE:-include}
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
