@@ -159,8 +159,8 @@ def measure(
         gpu: int = 0,
 ):
     device = get_device(gpu)
-    info = get_cuda_info(device)
-    for k, v in info.items():
+    info = get_cuda_info(device)  # Comment out these lines for Python 3.6.
+    for k, v in info.items():  # The issue exists with `subprocess` on 3.6.
         print(f'{k}: {v}')
     print(f'Automatic Mixed Precision Enabled: {enable_amp}.')
     print(f'TorchScript Enabled: {enable_scripting}.')
