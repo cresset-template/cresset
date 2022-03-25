@@ -1,39 +1,27 @@
-# Basic Makefile for starting projects.
-# For more sophisticated settings, use the Dockerfile directly.
-# See https://developer.nvidia.com/cuda-gpus to find GPU compute capabilities.
-# Also assumes host Linux shell for UID, GID.
-# See https://pytorch.org/docs/stable/cpp_extension.html
-# for an in-depth guide on how to set the `TORCH_CUDA_ARCH_LIST` variable,
-# which is specified by `CCA` in the `Makefile`.
-
-.PHONY: env di cca all build-install build-torch build-train
-.PHONY: all-full build-install-full build-torch-full build-train-full
-.PHONY: build-train-clean build-train-full-clean up exec rebuild start down
+.PHONY: env di up exec rebuild start down
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
-# Note that the `Makefile` does not use the `.env` file.
+# Image names have the user name appended to them for user separation.
 ENV_FILE = .env
+IMAGE_NAME_FULL = full
 env:
-	test -s ${ENV_FILE} || printf "GID=$(shell id -g)\nUID=$(shell id -u)\n" >> ${ENV_FILE}
+	test -s ${ENV_FILE} || printf "GID=$(shell id -g)\nUID=$(shell id -u)\n\
+		IMAGE_NAME_FULL=${IMAGE_NAME_FULL}-$(shell id -un)" >> ${ENV_FILE}
 
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
-# The `.dockerignore` file ignore all context except for requirements during build.
 DI_FILE = .dockerignore
 di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
-# Convenience commands for Docker Compose. See URL below for full instructions.
+# Convenience commands for Docker Compose. See URL below for documentation.
 # https://docs.docker.com/engine/reference/commandline/compose
-# Use `make up` to start the service and `make exec` to enter the container.
-# Use `make rebuild` to rebuild the image and start the service.
-# Use `make start` to start a stopped project without recreating it.
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
 SERVICE = full
 COMMAND = /bin/zsh
-PROJECT = "${SERVICE}-$(shell id -u)"
+PROJECT = "${SERVICE}-$(shell id -un)"
 up:
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
 rebuild:
@@ -45,15 +33,17 @@ start:
 down:
 	docker compose -p ${PROJECT} down
 
-# Prevent builds if `CCA` (Compute Capability) is undefined.
-cca:
-	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
-
 
 ########################################################################
 ########## Building images with the `Makefile` is depricated. ##########
 ########################################################################
 
+.PHONY: cca all all-full build-install-full build-install build-torch build-train
+.PHONY: build-train-clean build-train-full-clean build-torch-full build-train-full
+
+# Prevent builds if `CCA` (Compute Capability) is undefined.
+cca:
+	test -n "${CCA}" || error "CCA variable (Compute Capability) not defined."
 
 # The following are the default builds for the make commands.
 # Compute Capability is specified by the `CCA` variable and
