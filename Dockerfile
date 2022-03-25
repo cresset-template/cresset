@@ -41,7 +41,6 @@ ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG USE_PRECOMPILED_HEADERS=1
-#ARG CLEAN_CACHE_BEFORE_BUILD
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.5.1
 ARG MAGMA_VERSION=115
@@ -58,7 +57,6 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 # Build related packages are pre-installed on CUDA `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
-# Only the Ubuntu image has been tested.
 # The `train` and `deploy` stages are designed for Ubuntu.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
@@ -219,12 +217,8 @@ RUN git clone --recursive --jobs 0 ${TORCH_URL} /opt/pytorch && \
         git submodule update --init --recursive --jobs 0; \
     fi
 
-# PyTorch itself can find the host GPU architecture
-# on its own but its subsidiary libraries cannot,
-# hence the need to specify the architecture list explicitly.
 # Building PyTorch with several optimizations and bugfixes.
 # Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
-# `USE_MKLDNN` is restated to remind users that it has been set.
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
@@ -245,54 +239,18 @@ ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 
-# The standard method for building PyTorch is presented below.
 # Build artifacts such as `*.so` files are lost between builds.
 # CCache will speed up builds but identical PyTorch configurations will still require rebuilds.
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist && \
     python setup.py install
 
-## Alternative method for building is shelved due to bugs.
-# ARG CLEAN_CACHE_BEFORE_BUILD
-#WORKDIR /opt/_pytorch
-#RUN --mount=type=cache,target=/opt/ccache \
-#    --mount=type=cache,target=/opt/_pytorch \
-#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-#        find /opt/_pytorch -mindepth 1 -delete; \
-#    fi && \
-#    rsync -a /opt/pytorch/ /opt/_pytorch/ && \
-#    python setup.py bdist_wheel -d /tmp/dist && \
-#    python setup.py install && \
-#    rm -rf .git
-
-# The following mechanism combines the reproducibility of Docker with the speed of local compilation.
-# The entire directory is used as a BuildKit cache to speed up installation between separate builds.
-# Compilation outputs between different builds must be saved.
-# Otherwise, PyTorch must be rebuilt whenever any previous stage is modified,
-# even if the version of PyTorch being compiled is identical because
-# without whole directory caching, many build artifacts (e.g., `*.so` files) must be rebuilt.
-# Even with CCache accceleration, this is a very slow process.
-
-# Please note that ~20GB of memory for the entire process, which may be larger than the
-# default cache size allowed by the Docker BuildKit garbage collection settings.
-# Disable GC or increase `defaultKeepStorage`, the allowed cache size, to prevent recompiles.
-# See the issue for help. https://github.com/docker/cli/issues/2325
-# If a build failure occurs, try clearing the /opt/_*/ directory cache.
-# Note that new build configuration may not be correctly processed if the cache is not cleared.
-# Use `docker builder prune` to clear all build caches in BuildKit.
-
-# On balance, the additional complexity is worth the increased ease of modifying the build layers.
-# Enable `CLEAN_CACHE_BEFORE_BUILD` if multiple slightly different versions of
-# PyTorch in different environments must be built continuously, such as in CI tests.
-
+###### Additional information for custom builds. ######
 # C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
-
-# The `.git` directory is deleted due to its large size (759MB of 846MB).
 
 # The default configuration removes all files except requirements files from the Docker context.
 # To `COPY` your source files during the build, please edit the `.dockerignore` file.
 
-###### Additional information for custom builds. ######
 # A detailed (but out of date) explanation of the buildsystem can be found below.
 # https://pytorch.org/blog/a-tour-of-pytorch-internals-2
 # The following repository may also be helpful for available options and possible issues.
@@ -312,8 +270,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
 # PyTorch builds with ROCM has not been tested.
-# Note that PyTorch for ROCM is still in beta and
-# the API for enabling ROCM builds may change.
+# Note that PyTorch for ROCM is still in beta and the ROCM build API may change.
 
 # To build for Jetson Nano devices, see the link below for the necessary modifications.
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
@@ -353,18 +310,6 @@ ARG TORCH_CUDA_ARCH_LIST
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
-## Alternative method for building is shelved due to bugs.
-#ARG CLEAN_CACHE_BEFORE_BUILD
-#WORKDIR /opt/_vision
-#RUN --mount=type=cache,target=/opt/ccache \
-#    --mount=type=cache,target=/opt/_vision \
-#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-#        find /opt/_vision -mindepth 1 -delete; \
-#    fi && \
-#    rsync -a /opt/vision/ /opt/_vision/ && \
-#    python setup.py bdist_wheel -d /tmp/dist && \
-#    rm -rf .git
-
 ########################################################################
 FROM build-torch AS build-text
 
@@ -382,18 +327,6 @@ RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
 ARG USE_PRECOMPILED_HEADERS
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
-
-## Alternative method for building is shelved due to bugs.
-#ARG CLEAN_CACHE_BEFORE_BUILD
-#WORKDIR /opt/_text
-#RUN --mount=type=cache,target=/opt/ccache \
-#    --mount=type=cache,target=/opt/_text \
-#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-#        find /opt/_text -mindepth 1 -delete; \
-#    fi && \
-#    rsync -a /opt/text/ /opt/_text/ && \
-#    python setup.py bdist_wheel -d /tmp/dist && \
-#    rm -rf .git
 
 ########################################################################
 FROM build-torch AS build-audio
@@ -416,19 +349,6 @@ ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
-
-## Alternative method for building is shelved due to bugs.
-# The cache should be cleaned by default due to a bug in TorchAudio.
-#ARG CLEAN_CACHE_BEFORE_BUILD
-#WORKDIR /opt/_audio
-#RUN --mount=type=cache,target=/opt/ccache \
-#    --mount=type=cache,target=/opt/_audio \
-#    if [ ${CLEAN_CACHE_BEFORE_BUILD} != 0 ]; then \
-#        find /opt/_audio -mindepth 1 -delete; \
-#    fi && \
-#    rsync -a /opt/audio/ /opt/_audio/ && \
-#    python setup.py bdist_wheel -d /tmp/dist && \
-#    rm -rf .git
 
 ########################################################################
 FROM build-base AS build-pure
@@ -474,10 +394,6 @@ COPY --from=build-pure   /opt/zsh   /opt
 FROM train-builds-${BUILD_MODE} AS train-builds
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
-# The files are placed in different directories to allow changing one file
-# without affecting the bind mount directory of the other files.
-# If all files were placed in the same directory, changing just one file
-# would cause a cache miss, forcing all requirements to reinstall.
 COPY reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
 COPY reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 
@@ -519,8 +435,7 @@ ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
-# Creating user with home directory and password-free sudo permissions.
-# This may cause security issues.
+# Creating user with password-free sudo permissions. This may cause security issues.
 RUN groupadd -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
@@ -537,7 +452,6 @@ COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
-# Path order conveys precedence.
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 
@@ -571,10 +485,9 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
 # Speedups in `pip` for Korean users. Change URLs for other locations.
 # Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
-# Using multiple `pip` installs will break the dependencies of all but the last installation.
+# Using multiple `pip` installs may break the dependencies of all but the last installation.
 # The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
 # Install them from the Intel channel of Anaconda if desired.
-# Including versioning and dependencies is too complicated.
 ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
@@ -599,9 +512,8 @@ ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
-# Temporarily switch to `root` for super-user permissions.
+# Temporarily switch to `root` for to include `conda` in dynamic linking.
 USER root
-# Include `conda` in dynamic linking.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 USER ${USR}
 

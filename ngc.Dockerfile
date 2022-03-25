@@ -1,8 +1,6 @@
-# syntax = docker/dockerfile:1.3.0-labs
+# syntax = docker/dockerfile:1
 # Visit https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
 # for an up-to-date list of all NVIDIA NGC PyTorch images.
-# Default values for `YEAR` and `MONTH` left empty on the Dockerfile by design
-# to ~~force~~encourage users to try out the `docker-compose.yaml` file.
 ARG YEAR
 ARG MONTH
 ARG NGC_IMAGE=nvcr.io/nvidia/pytorch:${YEAR}.${MONTH}-py3

@@ -8,6 +8,7 @@ pandas
 openpyxl  # Read `.xlsx` files in Pandas.
 scikit-learn>=1.0.0
 jupyterlab
+wandb
 seaborn
 black
 pytest

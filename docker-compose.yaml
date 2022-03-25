@@ -129,6 +129,9 @@ services:
         GID: ${GID:-1000}
         UID: ${UID:-1000}
         TZ: ${TZ:-Asia/Seoul}
+        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        INDEX_URL: ${INDEX_URL:-https://mirror.kakao.com/pypi/simple}
+        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
     environment:
