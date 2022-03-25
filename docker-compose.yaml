@@ -46,7 +46,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:  # Equivalent to `--build-arg`.
-        BUILD_MODE: ${BUILD_MODE:-include}
+        BUILD_MODE: ${BUILD_MODE:-exclude}
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
@@ -93,7 +93,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:  # Equivalent to `--build-arg`.
-        BUILD_MODE: ${BUILD_MODE:-include}
+        BUILD_MODE: ${BUILD_MODE:-exclude}
         BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
         BUILD_CAFFE2_OPS: 0
         BUILD_TEST: 0
@@ -145,7 +145,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        BUILD_MODE: ${BUILD_MODE:-include}
+        BUILD_MODE: ${BUILD_MODE:-exclude}
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1  # Enable build tests for deployment.
         BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.

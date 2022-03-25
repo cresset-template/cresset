@@ -36,7 +36,7 @@
 # https://developer.nvidia.com/rdp/cudnn-archive
 
 # `BUILD_MODE` controls whether PyTorch is built or not.
-ARG BUILD_MODE=include
+ARG BUILD_MODE=exclude
 ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
