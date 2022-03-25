@@ -133,3 +133,7 @@ dmypy.json
 
 # PyTorch checkpoints
 *.pt
+
+# Numpy related.
+*.npy
+*.npz
