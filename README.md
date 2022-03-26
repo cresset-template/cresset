@@ -9,6 +9,9 @@
 **Translations:
 [한국어](https://github.com/cresset-template/cresset/blob/main/KOREAN.README.md)**
 
+
+
+
 ## TL;DR
 
 __*A new MLOps paradigm for deep learning development is proposed using Docker Compose.
@@ -83,11 +86,15 @@ MKL_MODE=include                   # For Intel CPUs.
 BUILD_MODE=include                 # Whether to build PyTorch from source.
 ```
 
-6. Run `make up` to start the service. If `BUILD_MODE=include`, this may take a while.
-The `make` commands are defined in the `Makefile` and target the `full` service by default.
-Please read the `Makefile` for implementation details.
+6. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
+These contain project package dependencies. The `apt` requirements are designed to resemble an
+ordinary Python `requirements.txt` file.
 
-7. Run `make exec` to enter the interactive container environment. Then start coding.
+7. Run `make up` to start the service. If `BUILD_MODE=include`, this may take a while.
+The `make` commands are defined in the `Makefile` and target the `full` service by default.
+Please read the `Makefile` for implementation details and usage.
+
+8. Run `make exec` to enter the interactive container environment. Then start coding.
 
 
 ## _Raison d'Être_
