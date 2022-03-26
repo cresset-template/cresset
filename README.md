@@ -1,16 +1,18 @@
 # Cresset: The One Template to Train Them All
 
-[![GitHub stars](https://img.shields.io/github/stars/cresset-template/cresset?style=for-the-badge)](https://github.com/cresset-template/cresset/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/cresset-template/cresset?style=for-the-badge)](https://github.com/cresset-template/cresset/issues)
-[![GitHub forks](https://img.shields.io/github/forks/cresset-template/cresset?style=for-the-badge)](https://github.com/cresset-template/cresset/network)
-[![GitHub license](https://img.shields.io/github/license/cresset-template/cresset?style=for-the-badge)](https://github.com/cresset-template/cresset/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/issues)
+[![GitHub forks](https://img.shields.io/github/forks/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/network)
+[![GitHub license](https://img.shields.io/github/license/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/blob/main/LICENSE)
 [![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)
 
 **Translations:
 [한국어](https://github.com/cresset-template/cresset/blob/main/KOREAN.README.md)**
 
 
+![Cresset Logo](https://github.com/cresset-template/cresset/blob/main/assets/logo.png "Logo")
 
+------------------------------------------------------------------------
 
 ## TL;DR
 
