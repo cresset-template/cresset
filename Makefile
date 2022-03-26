@@ -22,15 +22,15 @@ di:
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-$(shell id -un)"
-up:
+up:  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
-rebuild:
+rebuild:  # Start service. Rebuilds the image before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
-exec:
+exec:  # Execute service. Enter interactive shell.
 	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
-start:
+start:  # Start a stopped service without recreating a new container. Not recommended.
 	docker compose -p ${PROJECT} start ${SERVICE}
-down:
+down:  # Shut down service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
 
 
