@@ -16,8 +16,9 @@
 
 ## TL;DR
 
-__*A new MLOps paradigm for deep learning development is proposed using Docker Compose.
-with the aim of providing reproducible and easy-to-use interactive development environments for deep learning practitioners.
+__*A new MLOps paradigm for deep learning development is proposed using Docker Compose
+with the aim of providing reproducible and easy-to-use interactive 
+development environments for deep learning practitioners.
 Hopefully, the methods presented here will become best practice in both academia and industry.*__
 
 
@@ -60,8 +61,8 @@ allowing different users and machines to set their own variables as required.
 The `.env` file is excluded from version control via `.gitignore` by design.
 
 5. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
-Also edit `docker-compose.yaml` as necessary for your project.
-Feel free to change session names, hostnames, etc. for different projects and configurations.
+Also, feel free to edit `docker-compose.yaml` as necessary by changing 
+session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
 can be overridden by values specified in the `.env` file.
 
