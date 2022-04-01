@@ -119,7 +119,7 @@ services:
         # URL for faster `apt` and `pip` installs. Optimized for Korean users.
         # Use URLs optimized for user location and security requirements.
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        INDEX_URL: ${INDEX_URL:-https://mirror.kakao.com/pypi/simple}
+        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
