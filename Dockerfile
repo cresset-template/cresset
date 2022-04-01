@@ -488,7 +488,7 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
 # The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
 # Install them from the Intel channel of Anaconda if desired.
-ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
+ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
@@ -559,7 +559,7 @@ ENV PYTHONUNBUFFERED=1
 # Use mirror links optimized for user location and security level.
 ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
-ARG INDEX_URL=https://mirror.kakao.com/pypi/simple
+ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
