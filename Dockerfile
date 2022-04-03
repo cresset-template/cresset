@@ -324,8 +324,7 @@ ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
-# Audio build breaks because of the following issue.
-# Read the issue below for a fix.
+# TorchAudio build breaks because of the following issue.
 # https://github.com/pytorch/audio/issues/2295
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
@@ -407,9 +406,11 @@ ENV TZ=Asia/Seoul
 ARG DEBIAN_FRONTEND=noninteractive
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
+# See the `deploy` stage below to see how to add other apt reporitories.
+# `software-properties-common` is required for the `add-apt-repository` command.
 RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
-    apt-get update &&  \
+    apt-get update && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
@@ -528,8 +529,8 @@ COPY --from=install-base /opt/conda /opt/conda
 COPY --from=build-pillow /tmp/dist  /tmp/dist
 COPY --from=build-vision /tmp/dist  /tmp/dist
 
-COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt/requirements.txt
-COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip/requirements.txt
+COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt-requirements.txt
+COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
@@ -556,13 +557,13 @@ ARG TRUSTED_HOST=mirror.kakao.com
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
+RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt/requirements.txt && \
-    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt |  \
+    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt-requirements.txt && \
+    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt |  \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
@@ -572,10 +573,10 @@ RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/apt,target=/tmp/reqs/a
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 # The Kakao mirror is temporarily causing issues. Uncomment to restore functionality.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
+RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
 #    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/reqs/pip/requirements.txt \
+        -r /tmp/reqs/pip-requirements.txt \
         /tmp/dist/*.whl && \
     ldconfig
