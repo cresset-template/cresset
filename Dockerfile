@@ -475,9 +475,10 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 # Install them from the Intel channel of Anaconda if desired.
 ARG INDEX_URL=http://mirror.kakao.com/pypi/simple
 ARG TRUSTED_HOST=mirror.kakao.com
+# The Kakao mirror is causing issues currently. PyPI mirroring will be restored soon.
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
+#    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
@@ -570,8 +571,9 @@ RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/apt,target=/tmp/reqs/a
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
+# The Kakao mirror is temporarily causing issues. Uncomment to restore functionality.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
+#    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
