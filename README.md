@@ -22,34 +22,36 @@ development environments for deep learning practitioners.
 Hopefully, the methods presented here will become best practice in both academia and industry.*__
 
 
-### Initial Setup
+## Initial Setup
 If this is your first time using this project, follow these steps:
 
 1. Install the NVIDIA CUDA driver appropriate for the target hardware. 
 The CUDA toolkit is not necessary. If the driver has already been installed, 
 check that the installed version is compatible with the target CUDA version.
-CUDA driver version mismatch is the most common issue for new users. See the 
+CUDA driver version mismatch is the single most common issue for new users. See the 
 [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit.
 
-2. Install [Docker](https://docs.docker.com/get-docker). 
+2. Install [Docker](https://docs.docker.com/get-docker) if not installed
+and update to a recent version compatible with Docker Compose V2.
+Docker incompatibility with Docker Compose V2 is a common issue as well.
 Note that Windows users may use WSL (Windows Subsystem for Linux).
 Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docker Desktop.
 There is no need to install a separate WSL CUDA driver or Docker for Linux inside WSL.
 _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
 Disable any active antivirus programs on Windows for best performance.
 
-3. Install Docker Compose V2 for Linux as described in 
+3. Linux host users should install Docker Compose V2 for Linux as described in 
 https://docs.docker.com/compose/cli-command/#install-on-linux.
 Visit the website for the latest installation information.
 Installation does _**not**_ require `root` permissions. 
 Please check the version and architecture tags in the URL before installing.
-WSL users should enable "Use Docker Compose V2" on Docker Desktop for Windows.
 The following commands will install Docker Compose V2 (v2.3.4, Linux x86_64) 
 for a single user on Linux hosts.
 Visit https://github.com/docker/compose/releases to find the latest versions.
 
 ```shell
+# WSL users should instead enable "Use Docker Compose V2" on Docker Desktop for Windows.
 mkdir -p ~/.docker/cli-plugins/
 curl -SL https://github.com/docker/compose/releases/download/v2.3.4/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
@@ -60,7 +62,16 @@ The `.env` file provides environment variables for `docker-compose.yaml`,
 allowing different users and machines to set their own variables as required.
 The `.env` file is excluded from version control via `.gitignore` by design.
 
-5. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
+5. To build from source, set `BUILD_MODE=include` and set the
+CUDA Compute Capability (CCA) of the target hardware.
+Visit https://developer.nvidia.com/cuda-gpus#compute
+to find compute capabilities of NVIDIA GPUs. Visit
+https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities
+for an explanation of compute capability and its relevance.
+Note that the Docker cache will save previously built binaries
+if the given configurations are identical.
+
+6. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
 Also, feel free to edit `docker-compose.yaml` as necessary by changing 
 session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
@@ -73,12 +84,18 @@ GID=1000
 UID=1000
 IMAGE_NAME_FULL=full-me
 
-# Fill in this part manually.
+# Fill in the below manually.
+
+# `*_TAG` variables are used only if `BUILD_MODE=include`.
+BUILD_MODE=include                 # Whether to build PyTorch from source.
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
+# CCA="7.5 8.6"                    # Example for multiple compute capabilities. Makes build slower.
 PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.12.0
 TORCHTEXT_VERSION_TAG=v0.12.0
 TORCHAUDIO_VERSION_TAG=v0.11.0
+
+# Environment configurations.
 LINUX_DISTRO=ubuntu
 DISTRO_VERSION=20.04
 CUDA_VERSION=11.5.1                # Must be compatible with hardware and CUDA driver.
@@ -86,18 +103,17 @@ CUDNN_VERSION=8
 PYTHON_VERSION=3.9
 MAGMA_VERSION=115                  # Must match CUDA version.
 MKL_MODE=include                   # For Intel CPUs.
-BUILD_MODE=include                 # Whether to build PyTorch from source.
 ```
 
-6. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
+7. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
 These contain project package dependencies. The `apt` requirements are designed to resemble an
 ordinary Python `requirements.txt` file.
 
-7. Run `make up` to start the service. If `BUILD_MODE=include`, this may take a while.
+8. Run `make up` to start the service. If `BUILD_MODE=include`, this may take a while.
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
 Please read the `Makefile` for implementation details and usage.
 
-8. Run `make exec` to enter the interactive container environment. Then start coding.
+9. Run `make exec` to enter the interactive container environment. Then start coding.
 
 
 ## _Raison d'Être_
@@ -240,7 +256,7 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. WSL users using Compose must disable `ipc: host`. WSL cannot use this option.
+2. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
 
 3. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
 or the image will simply not start if the CUDA driver on the host 
@@ -256,12 +272,16 @@ The CUDA driver version can be found using the `nvidia-smi` command.
 
 1. **MORE STARS**. _**No Contribution Without Appreciation!**_
 
-2. Only the latest versions has been tested rigorously.
-Please go to the discussions or raise an issue if there are any versions that do not build properly. 
+2. A method of building `Magma` from source would be appreciated.
+Currently, Cresset depends on the `magma-cudaXXX` package
+provided in the PyTorch channel of Anaconda.
+
+3. Bug reports are welcome. Only the latest versions has been tested rigorously.
+Please raise an issue if there are any versions that do not build properly. 
 However, please check that your host Docker, Docker Compose, 
 and especially NVIDIA Driver are up-to-date before doing so.
-Note that some combinations of PyTorch version and CUDA environment 
+Also, note that some combinations of PyTorch version and CUDA environment 
 may simply be impossible to build because of issues in the underlying source code.
 
-3. Translations into other languages and updates to existing translations are welcome. 
+4. Translations into other languages and updates to existing translations are welcome. 
 Please make a separate `LANG.README.md` file and create a PR.

@@ -4,22 +4,18 @@
 # Use `export BUILDKIT_PROGRESS=plain` in the host to see full build logs.
 # See the link below for documentation on BuildKit syntax.
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
-# Perhaps the BuildKit dependency is not a good idea since not everyone can use it.
-# However, the Dockerfile in the official PyTorch repository also uses BuildKit.
 
 # This image uses multi-stage builds. See the link below for a detailed description.
 # https://docs.docker.com/develop/develop-images/multistage-build
 # The build process is similar to a neural network with complicated control flow.
 # The `stages` are like blocks in the network, with control flow implemented
-# by the names of arguments and stages. This allows muh greater modularity in the build.
-# It also makes the final image much more compact and efficient.
+# by the names of arguments and stages.
 
 # All `ARG` variables must be redefined for every stage,
 # `ARG`s defined before `FROM` transfer their values to layers that redefine them.
 # `ENV` and `LABEL` variables are inherited only by child stages.
 # See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
-# https://docs.docker.com/develop/develop-images/dockerfile_best-practices
-# for best practices.
+# https://docs.docker.com/develop/develop-images/dockerfile_best-practices for best practices.
 
 # Style guide: variables specified in the Dockerfile are written as ${ARGUMENT}
 # while variables not specified by ARG/ENV are written as $ARGUMENT.
@@ -31,8 +27,7 @@
 # Default image is nvidia/cuda:11.5.1-cudnn8-devel-ubuntu20.04.
 # Magma version must match the CUDA version of the build image.
 
-# cuDNN minor version is tied to CUDA minor version.
-# See documentation below for available versions.
+# See documentation to specify cuDNN minor version.
 # https://developer.nvidia.com/rdp/cudnn-archive
 
 # `BUILD_MODE` controls whether PyTorch is built or not.
@@ -54,7 +49,7 @@ ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 
-# Build related packages are pre-installed on CUDA `devel` images.
+# Build-related packages are pre-installed on CUDA `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
 # The `train` and `deploy` stages are designed for Ubuntu.
@@ -86,10 +81,10 @@ ENV PYTHONIOENCODING=UTF-8
 
 # Conda always uses the specified version of Python, regardless of Miniconda version.
 # Use a different conda URL for a different CPU architecture or specific version.
-# The default CPU architecture is x86_64.
+# The default CPU architecture is Intel x86_64.
 # The Anaconda `defaults` channel is no longer free for commercial use.
 # Anaconda (including Miniconda) itself is still open-source.
-# Removing `defaults` as a result. Viva la Open Source!
+# Removing `defaults` channel as a result. Viva la Open Source!
 # https://conda.io/en/latest/license.html
 # https://www.anaconda.com/terms-of-service
 # https://www.anaconda.com/end-user-license-agreement-miniconda
@@ -144,10 +139,10 @@ RUN $conda install -y \
 
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_WARNINGS=0
-ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV KMP_BLOCKTIME=0
+ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 ########################################################################
 FROM install-conda AS install-exclude-mkl
@@ -198,26 +193,21 @@ RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 # Use LLD as the default linker for faster linking.
 RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
 
-# Include `conda` in dynamic linking.
-# Use `ldconfig` to update link directories.
+# Use `ldconfig` to update link directories and include `conda` in dynamic linking.
 # Setting `LD_LIBRARY_PATH` directly is bad practice.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM build-base AS build-torch
 
-# Checkout to specific version and update submodules.
+# Minimize downloads by only cloning shallow branches and not the full `git` history.
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
-RUN git clone --recursive --jobs 0 ${TORCH_URL} /opt/pytorch && \
-    if [ -n ${PYTORCH_VERSION_TAG} ]; then \
-        git checkout ${PYTORCH_VERSION_TAG} && \
-        git submodule sync && \
-        git submodule update --init --recursive --jobs 0; \
-    fi
+RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
+        --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
+        ${TORCH_URL} /opt/pytorch
 
-# Building PyTorch with several optimizations and bugfixes.
 # Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
@@ -238,14 +228,20 @@ ARG CMAKE_PREFIX_PATH=/opt/conda
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
-
-# Build artifacts such as `*.so` files are lost between builds.
-# CCache will speed up builds but identical PyTorch configurations will still require rebuilds.
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist && \
     python setup.py install
 
 ###### Additional information for custom builds. ######
+
+# Use the following to build with custom CMake settings.
+#RUN --mount=type=cache,target=/opt/ccache \
+#    python setup.py build --cmake-only && \
+#    ccmake build  # or cmake-gui build
+
+# See the SetupTools documentation for more setup.py options.
+# https://setuptools.pypa.io/en/latest
+
 # C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
 
 # The default configuration removes all files except requirements files from the Docker context.
@@ -259,14 +255,6 @@ RUN --mount=type=cache,target=/opt/ccache \
 # Manually specify conda package versions if older PyTorch versions will not build.
 # PyYAML, MKL-DNN, and SetupTools are known culprits.
 
-# Use the following to build with custom CMake settings.
-#RUN --mount=type=cache,target=/opt/ccache \
-#    python setup.py build --cmake-only && \
-#    ccmake build  # or cmake-gui build
-
-# See the SetupTools documentation for more setup.py options.
-# https://setuptools.pypa.io/en/latest
-
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
 # PyTorch builds with ROCM has not been tested.
@@ -275,10 +263,9 @@ RUN --mount=type=cache,target=/opt/ccache \
 # To build for Jetson Nano devices, see the link below for the necessary modifications.
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
 
-
 ########################################################################
 FROM build-base AS build-pillow
-# Specify the version if necessary.
+# Specify the version of `Pillow-SIMD` if necessary.
 # This may not work on older CPUs as it requires SSE4 and AVX2.
 RUN CC="cc -mavx2" python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD
 
@@ -288,14 +275,11 @@ FROM build-torch AS build-vision
 WORKDIR /opt/vision
 ARG TORCHVISION_VERSION_TAG
 ARG VISION_URL=https://github.com/pytorch/vision.git
-RUN git clone --recursive --jobs 0 ${VISION_URL} /opt/vision && \
-    if [ -n ${TORCHVISION_VERSION_TAG} ]; then \
-        git checkout ${TORCHVISION_VERSION_TAG} && \
-        git submodule sync && \
-        git submodule update --init --recursive --jobs 0; \
-    fi
+RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
+        --recurse-submodules --branch ${TORCHVISION_VERSION_TAG} \
+        ${VISION_URL} /opt/vision
 
-# Install Pillow SIMD before TorchVision build and add it to `/tmp/dist`.
+# Install Pillow-SIMD before TorchVision build and add it to `/tmp/dist`.
 # Pillow will be uninstalled if it is present.
 RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip uninstall -y pillow && \
@@ -316,12 +300,9 @@ FROM build-torch AS build-text
 WORKDIR /opt/text
 ARG TORCHTEXT_VERSION_TAG
 ARG TEXT_URL=https://github.com/pytorch/text.git
-RUN git clone --recursive --jobs 0 ${TEXT_URL} /opt/text && \
-    if [ -n ${TORCHTEXT_VERSION_TAG} ]; then \
-        git checkout ${TORCHTEXT_VERSION_TAG} && \
-        git submodule sync && \
-        git submodule update --init --recursive --jobs 0; \
-    fi
+RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
+        --recurse-submodules --branch ${TORCHTEXT_VERSION_TAG} \
+        ${TEXT_URL} /opt/text
 
 # TorchText does not use CUDA.
 ARG USE_PRECOMPILED_HEADERS
@@ -334,19 +315,18 @@ FROM build-torch AS build-audio
 WORKDIR /opt/audio
 ARG TORCHAUDIO_VERSION_TAG
 ARG AUDIO_URL=https://github.com/pytorch/audio.git
-RUN git clone --recursive --jobs 0 ${AUDIO_URL} /opt/audio && \
-    if [ -n ${TORCHAUDIO_VERSION_TAG} ]; then \
-        git checkout ${TORCHAUDIO_VERSION_TAG} && \
-        git submodule sync && \
-        git submodule update --init --recursive --jobs 0; \
-    fi
+RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
+        --recurse-submodules --branch ${TORCHAUDIO_VERSION_TAG} \
+        ${AUDIO_URL} /opt/audio
 
 ARG USE_CUDA
 ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
-ARG BUILD_TORCHAUDIO_PYTHON_EXTENSION=1
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
+# Audio build breaks because of the following issue.
+# Read the issue below for a fix.
+# https://github.com/pytorch/audio/issues/2295
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -354,9 +334,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM build-base AS build-pure
 
 # Z-Shell related libraries.
-RUN git clone https://github.com/sindresorhus/pure.git /opt/zsh/pure
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions /opt/zsh/zsh-autosuggestions
-RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /opt/zsh/zsh-syntax-highlighting
+ARG PURE_URL=https://github.com/sindresorhus/pure.git
+ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
+ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
+
+RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
+RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
+RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include
@@ -376,11 +360,11 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 COPY --from=install-base /opt/conda /opt/conda
 COPY --from=build-pillow /tmp/dist  /tmp/dist
 COPY --from=build-vision /tmp/dist  /tmp/dist
-COPY --from=build-audio  /tmp/dist  /tmp/dist
+#COPY --from=build-audio  /tmp/dist  /tmp/dist
 COPY --from=build-text   /tmp/dist  /tmp/dist
 
 # `COPY` new builds here to minimize the likelihood of cache misses.
-COPY --from=build-pure  /opt/zsh /opt
+COPY --from=build-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
@@ -394,6 +378,7 @@ COPY --from=build-pure   /opt/zsh   /opt
 FROM train-builds-${BUILD_MODE} AS train-builds
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
+# Files are placed in separate directories to prevent them from affecting one another.
 COPY reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
 COPY reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 
@@ -505,14 +490,14 @@ ENV OMP_SCHEDULE=STATIC
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_WARNINGS=0
 ENV KMP_BLOCKTIME=0
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for faster and more efficient memory management.
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
-# Temporarily switch to `root` for to include `conda` in dynamic linking.
+# Temporarily switch to `root` to include `conda` in dynamic linking.
 USER root
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 USER ${USR}
@@ -542,8 +527,8 @@ COPY --from=install-base /opt/conda /opt/conda
 COPY --from=build-pillow /tmp/dist  /tmp/dist
 COPY --from=build-vision /tmp/dist  /tmp/dist
 
-COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt-deploy.requirements.txt
-COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-deploy.requirements.txt
+COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt/requirements.txt
+COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip/requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
@@ -570,13 +555,13 @@ ARG TRUSTED_HOST=mirror.kakao.com
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
     sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt-deploy.requirements.txt && \
-    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-deploy.requirements.txt |  \
+    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt/requirements.txt && \
+    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt |  \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
@@ -585,10 +570,10 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=deploy-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/reqs/pip-deploy.requirements.txt \
+        -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl && \
     ldconfig

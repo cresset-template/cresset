@@ -32,7 +32,6 @@ services:
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
     stdin_open: true  # equivalent to `-i` flag in `docker run`.
-
     # Setting `HOST_PATH:CONTAINER_PATH` allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
     # Current working directory `.` is connected to `PROJECT_ROOT`.
@@ -74,7 +73,7 @@ services:
 
   full:
     hostname: full
-    image: pytorch_source:${IMAGE_NAME_FULL:-full}
+    image: pytorch_source:${IMAGE_NAME:-full}
 #    ipc: host
 #    shm_size: 1GB
     tty: true
@@ -88,8 +87,8 @@ services:
 #      - ~/.ssh:/home/user/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
 #      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:
-      # Set `TARGET_STAGE_FULL` to `train-builds` to get just the wheels in `/tmp/dist`.
-      target: ${TARGET_STAGE_FULL:-train}
+      # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
+      target: ${TARGET_STAGE:-train}
       context: .
       dockerfile: Dockerfile
       args:  # Equivalent to `--build-arg`.
@@ -136,7 +135,7 @@ services:
 
   deploy:
     hostname: deploy
-    image: pytorch_source:${IMAGE_NAME_DEPLOY:-deploy}
+    image: pytorch_source:${IMAGE_NAME:-deploy}
     tty: true
     init: true
     stdin_open: true
@@ -154,7 +153,6 @@ services:
         BUILD_CAFFE2_OPS: 1
         USE_NNPACK: 1  # Enable NNPack for deployment.
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
-        CLEAN_CACHE_BEFORE_BUILD: 1  # Cache should not affect reproducibility.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
@@ -182,7 +180,7 @@ services:
   # This layer may be useful for PyTorch contributors.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
-    image: pytorch_source:${IMAGE_NAME_DEVEL:-devel}
+    image: pytorch_source:${IMAGE_NAME:-devel}
     tty: true
     init: true
     stdin_open: true
