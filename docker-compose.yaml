@@ -55,6 +55,9 @@ services:
         GID: ${GID:-1000}  # Run `id -g` on the terminal to find your GID. Check that it is set properly in `.env`.
         UID: ${UID:-1000}  # Run `id -u` on the terminal to find your UID. Check that it is set properly in `.env`.
         TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during the build.
+        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Uncomment if ports are necessary.
 #      - ${PORT:-8080}:22
@@ -118,6 +121,7 @@ services:
         # URL for faster `apt` and `pip` installs. Optimized for Korean users.
         # Use URLs optimized for user location and security requirements.
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        # Comment out the PyPI mirrors to use the default PyPI repository.
         INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
@@ -167,6 +171,9 @@ services:
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
