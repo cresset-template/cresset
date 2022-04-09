@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1
+# syntax = docker/dockerfile:1.4
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 
 # Use `export BUILDKIT_PROGRESS=plain` in the host to see full build logs.
@@ -25,20 +25,17 @@
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
 # Default image is nvidia/cuda:11.5.1-cudnn8-devel-ubuntu20.04.
-# Magma version must match the CUDA version of the build image.
 
 # See documentation to specify cuDNN minor version.
 # https://developer.nvidia.com/rdp/cudnn-archive
 
 # `BUILD_MODE` controls whether PyTorch is built or not.
 ARG BUILD_MODE=exclude
-ARG DEBUG=0
 ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG USE_PRECOMPILED_HEADERS=1
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.5.1
-ARG MAGMA_VERSION=115
 ARG CUDNN_VERSION=8
 ARG PYTHON_VERSION=3.8
 ARG LINUX_DISTRO=ubuntu
@@ -113,7 +110,7 @@ RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
 FROM install-base AS install-conda
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
-COPY reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
+COPY --link reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
 RUN conda install -y mamba && conda clean -ya
@@ -129,10 +126,12 @@ ENV USE_MKLDNN=1
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
 # Use fixed version numbers if versioning issues cause build failures.
-ARG MAGMA_VERSION
+# `sed 's/\.//; s/\..*//'` extracts `magma` versions from CUDA versions.
+# For example, 11.5.1 becomes 115 and 10.2 becomes 102.
+ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/reqs/conda-build.requirements.txt \
-        magma-cuda${MAGMA_VERSION} \
+        magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         mkl-include \
         mkl && \
     conda clean -ya
@@ -156,10 +155,10 @@ ENV USE_MKLDNN=0
 # Intel End User License Agreement for Developer Tools. See URL below for Intel licenses & EULAs.
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
 # Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
-ARG MAGMA_VERSION
+ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/reqs/conda-build.requirements.txt \
-        magma-cuda${MAGMA_VERSION} \
+        magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         nomkl && \
     conda clean -ya
 
@@ -201,6 +200,9 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 FROM build-base AS build-torch
 
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
+# If the build fails during `git clone`, just try again. Updating git submodules is not fail-safe.
+# The reason for failure is probably networking issues during installation.
+# https://stackoverflow.com/a/8573310/9289275
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
@@ -212,7 +214,6 @@ RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
-ARG DEBUG
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_MKLDNN=${USE_MKLDNN}
@@ -285,7 +286,6 @@ RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip uninstall -y pillow && \
     python -m pip install --force-reinstall --no-deps /tmp/dist/*
 
-ARG DEBUG
 ARG USE_CUDA
 ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
@@ -324,8 +324,15 @@ ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
-# TorchAudio build breaks because of the following issue.
-# https://github.com/pytorch/audio/issues/2295
+
+# Fix for https://github.com/pytorch/audio/issues/2295
+ARG BUG_FILE=/opt/audio/third_party/zlib/CMakeLists.txt
+ARG BUG_URL=https://zlib.net/zlib-1.2.11.tar.gz
+ARG FIX_URL=https://zlib.net/zlib-1.2.12.tar.gz
+ARG BUG_HASH=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
+ARG FIX_HASH=91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9
+RUN sed -i "s%${BUG_URL}%${FIX_URL}%; s%${BUG_HASH}%${FIX_HASH}%" ${BUG_FILE}
+
 RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
@@ -358,9 +365,11 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # The order of `COPY` instructions is chosen to minimize cache misses.
 COPY --from=install-base /opt/conda /opt/conda
 COPY --from=build-pillow /tmp/dist  /tmp/dist
-COPY --from=build-vision /tmp/dist  /tmp/dist
-#COPY --from=build-audio  /tmp/dist  /tmp/dist
-COPY --from=build-text   /tmp/dist  /tmp/dist
+
+# Heavy builds use the new `link` feature.
+COPY --link --from=build-vision /tmp/dist  /tmp/dist
+COPY --link --from=build-audio  /tmp/dist  /tmp/dist
+COPY --link --from=build-text   /tmp/dist  /tmp/dist
 
 # `COPY` new builds here to minimize the likelihood of cache misses.
 COPY --from=build-pure   /opt/zsh   /opt
@@ -378,8 +387,8 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 # Copying requirements files from context so that the `train` image
 # can be built from this stage with no dependency on the Docker context.
 # Files are placed in separate directories to prevent them from affecting one another.
-COPY reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
-COPY reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
+COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
+COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
@@ -399,7 +408,7 @@ ARG PYTHONUNBUFFERED=1
 # http://archive.ubuntu.com/ubuntu is specific to NVIDIA's CUDA Ubuntu images.
 # Check `/etc/apt/sources.list` of the base image to find the Ubuntu URL.
 ARG DEB_OLD=http://archive.ubuntu.com
-ARG DEB_NEW=http://mirror.kakao.com
+ARG DEB_NEW
 
 # `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
@@ -409,7 +418,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # See the `deploy` stage below to see how to add other apt reporitories.
 # `software-properties-common` is required for the `add-apt-repository` command.
 RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
-    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
+    if [ ${DEB_NEW} ]; then  \
+        sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list;  \
+    fi && \
     apt-get update && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
@@ -456,15 +467,15 @@ RUN conda config --append channels intel && \
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-COPY --from=train-builds --chown=${UID}:${GID} /opt/pure $HOME/.zsh/pure
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure $HOME/.zsh/pure
 RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
-#COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
+#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
 #RUN echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-COPY --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
 RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
@@ -474,14 +485,21 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
 # The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
 # Install them from the Intel channel of Anaconda if desired.
-# Comment out writing to `pip.conf` if the mirror is broken and standard PyPI must be used.
+# Write empty `INDEX_URL` & `TRUSTED_HOST` to `pip.conf` if the mirror is broken and standard PyPI must be used.
+# Using `PIP_CACHE_DIR` to cache previous installations.
 ARG INDEX_URL
 ARG TRUSTED_HOST
-# TODO: Reinstate pip caching.
+ARG PIP_CACHE_DIR=$HOME/.cache/pip
+WORKDIR ${PIP_CACHE_DIR}
+ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /opt/conda/pip.conf && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist \
+    --mount=type=cache,id=pip-${UID},gid=${GID},uid=${UID},target=${PIP_CACHE_DIR} \
+    printf "[global]\ncache-dir=${PIP_CACHE_DIR}\n" > ${PIP_CONFIG_FILE} && \
+    if [ ${INDEX_URL} ]; then  \
+        printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE};  \
+    fi && \
+    python -m pip install --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
 
@@ -574,7 +592,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
+#    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip-requirements.txt \

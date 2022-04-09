@@ -77,32 +77,33 @@ session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
 can be overridden by values specified in the `.env` file.
 
-Example `.env` file for user with username `me`, user id `1000`,  group id `1000`.
+Example `.env` file for user with username `USERNAME`, user id `1000`,  group id `1000` on service `full`.
 ```text
-# Generated automatically by `make up`
+# Generated automatically by `make up`.
 GID=1000
 UID=1000
-IMAGE_NAME_FULL=full-me
+IMAGE_NAME_FULL=full-USERNAME
 
 # Fill in the below manually.
 
-# `*_TAG` variables are used only if `BUILD_MODE=include`.
-BUILD_MODE=include                 # Whether to build PyTorch from source.
-CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
-# CCA="7.5 8.6"                    # Example for multiple compute capabilities. Makes build slower.
-PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
-TORCHVISION_VERSION_TAG=v0.12.0
-TORCHTEXT_VERSION_TAG=v0.12.0
-TORCHAUDIO_VERSION_TAG=v0.11.0
-
 # Environment configurations.
+CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
+# CCA="7.5 8.6+PTX"                # See https://pytorch.org/docs/stable/cpp_extension.html
+
 LINUX_DISTRO=ubuntu
 DISTRO_VERSION=20.04
 CUDA_VERSION=11.5.1                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8
 PYTHON_VERSION=3.9
-MAGMA_VERSION=115                  # Must match CUDA version.
 MKL_MODE=include                   # For Intel CPUs.
+
+# Use only if building PyTorch from source (`BUILD_MODE=include`).
+# The `*_TAG` variables are used only if `BUILD_MODE=include`.
+BUILD_MODE=include                 # Whether to build PyTorch from source.
+PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
+TORCHVISION_VERSION_TAG=v0.12.0
+TORCHTEXT_VERSION_TAG=v0.12.0
+TORCHAUDIO_VERSION_TAG=v0.11.0
 ```
 
 7. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
@@ -114,6 +115,44 @@ The `make` commands are defined in the `Makefile` and target the `full` service 
 Please read the `Makefile` for implementation details and usage.
 
 9. Run `make exec` to enter the interactive container environment. Then start coding.
+
+
+## Project Overview
+The main components of the project are as follows. The other files are utilities.
+1) Dockerfile 
+2) docker-compose.yaml 
+3) reqs/*requirements.txt 
+4) .env
+
+When the user inputs `make up` or another `make` command, 
+commands specified in the `Makefile` are executed.
+The `Makefile` is used to specify shorthand commands and variables.
+
+When a command related to Docker Compose (e.g., `make rebuild`) is executed,
+The `docker-compose.yaml` file and the `.env` file are read by Docker Compose.
+The `docker-compose.yaml` file specifies reasonable default values
+but users may wish to change them as per their needs.
+The values specified in the `.env` file take precedence over 
+the defaults specified in the `docker-compose.yaml` file.
+Environment variables specified in the shell 
+take precedence over those in the `.env` file.
+The `.env` file is deliberately excluded from source control
+to allow different users and machines to use different configurations.
+
+The `docker-compose.yaml` file manages configurations, builds, runs, etc. using the `Dockerfile`.
+See the Docker Compose [Specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
+and the Docker Compose [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) for details.
+
+The `Dockerfile` is configured to read only requirements files in the `reqs` directory.
+Edit `reqs/pip-train.requirements.txt` to specify Python package requirements.
+Edit `reqs/apt-train.requirements.txt` to specify Ubuntu package requirements.
+Users must edit the `.dockerignore` file to `COPY` other files into the Docker build.
+
+The `Dockerfile` uses Docker Buildkit and a multi-stage build where
+control flow is specified via stage names and build-time 
+environment variables given through `docker-compose.yaml`.
+The `full` service specified in the `docker-compose.yaml` file uses 
+the `train` stage specified in the `Dockerfile`, which assumes an Ubuntu image.
 
 
 ## _Raison d'Être_
@@ -258,7 +297,15 @@ Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 2. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
 
-3. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
+3. PyTorch source builds require a corresponding `magma-cudaXXX` package in the PyTorch anaconda channel.
+CUDA 11.4.x is not available as `magma-cuda114` is unavailable. 
+Nor can new versions of CUDA be used until a `magma` package is published.
+
+4. If the build fails during `git clone`, simply try `make rebuild` again.
+Most of the build will be cached. Failure is probably due to networking issues during installation.
+Updating git submodules is [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
+
+5. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
 or the image will simply not start if the CUDA driver on the host 
 is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
@@ -266,6 +313,9 @@ Check the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-relea
 to see if the host CUDA driver is compatible with the desired version of CUDA.
 Also check if the CUDA driver has been configured correctly on the host.
 The CUDA driver version can be found using the `nvidia-smi` command.
+
+6. Docker Compose V2 will silently fail if the installed Docker version is too low.
+Update Docker to the latest version (20.10+) to use Docker Compose V2.
 
 
 # Desiderata
@@ -284,4 +334,4 @@ Also, note that some combinations of PyTorch version and CUDA environment
 may simply be impossible to build because of issues in the underlying source code.
 
 4. Translations into other languages and updates to existing translations are welcome. 
-Please make a separate `LANG.README.md` file and create a PR.
+Please create a separate `LANG.README.md` file and request a PR.

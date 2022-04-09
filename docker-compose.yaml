@@ -74,7 +74,7 @@ services:
 #              device_ids: [ "0" ]  # Use only GPU 0.
 
 
-  full:
+  full:  # Default service name. Change the name as necessary for each project.
     hostname: full
     image: pytorch_source:${IMAGE_NAME:-full}
 #    ipc: host
@@ -101,13 +101,11 @@ services:
         BUILD_TEST: 0
         USE_NNPACK: 0
         USE_QNNPACK: 0
-        DEBUG: ${DEBUG:-0}
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
         CUDA_VERSION: ${CUDA_VERSION:-10.2}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
-        MAGMA_VERSION: ${MAGMA_VERSION:-102}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
@@ -122,8 +120,8 @@ services:
         # Use URLs optimized for user location and security requirements.
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
         # Comment out the PyPI mirrors to use the default PyPI repository.
-        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
     environment:
@@ -162,7 +160,6 @@ services:
         CUDA_VERSION: ${CUDA_VERSION:-11.3.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
-        MAGMA_VERSION: ${MAGMA_VERSION:-113}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-exclude}  # `include` or `exclude`. Disabled by default for deployment.
         TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
@@ -172,8 +169,8 @@ services:
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID

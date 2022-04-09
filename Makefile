@@ -10,6 +10,7 @@ di:
 # https://docs.docker.com/engine/reference/commandline/compose
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
+# Change `SERVICE` to specify other services and projects.
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-$(shell id -un)"
@@ -23,6 +24,8 @@ start:  # Start a stopped service without recreating the container. Useful if th
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
+ls:
+	docker compose ls -a
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
