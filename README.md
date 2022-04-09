@@ -22,6 +22,11 @@ development environments for deep learning practitioners.
 Hopefully, the methods presented here will become best practice in both academia and industry.*__
 
 
+## Introductory Video
+[![Weights and Biases Presentation]({https://github.com/cresset-template/cresset/blob/main/assets/WB.png})]({https://youtu.be/sW3VxlJl46o?t=6865} "W&B")
+
+------------------------------------------------------------------------
+
 ## Initial Setup
 If this is your first time using this project, follow these steps:
 
@@ -78,7 +83,7 @@ The `docker-compose.yaml` file provides reasonable default values but these
 can be overridden by values specified in the `.env` file.
 
 Example `.env` file for user with username `USERNAME`, user id `1000`,  group id `1000` on service `full`.
-Edit `docker-compose.yaml` and `Makefile` to specify services other than `full`.
+Edit the `docker-compose.yaml` file and the `Makefile` to specify services other than `full`.
 ```text
 # Generated automatically by `make up`.
 GID=1000
@@ -168,7 +173,8 @@ and [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) f
 The `Dockerfile` is configured to read only requirements files in the `reqs` directory.
 Edit `reqs/pip-train.requirements.txt` to specify Python package requirements.
 Edit `reqs/apt-train.requirements.txt` to specify Ubuntu package requirements.
-Users must edit the `.dockerignore` file to `COPY` other files into the Docker build.
+Users must edit the `.dockerignore` file to `COPY` other files into the Docker build,
+for example, when building from private code during the Docker build.
 
 The `Dockerfile` uses Docker Buildkit and a multi-stage build where
 control flow is specified via stage names and build-time environment variables 
@@ -287,7 +293,7 @@ To use the NGC images, use the following commands:
 1. `docker compose up -d ngc`
 2. `docker compose exec ngc zsh`
 
-The only difference with the previous example is the session name.
+The only difference with the previous example is the service name.
 
 
 ### Using Compose with PyCharm and VSCode
@@ -358,4 +364,4 @@ Also, note that some combinations of PyTorch version and CUDA environment
 may simply be impossible to build because of issues in the underlying source code.
 
 4. Translations into other languages and updates to existing translations are welcome. 
-Please create a separate `LANG.README.md` file and request a PR.
+Please create a separate `LANG.README.md` file and make a Pull Request.
