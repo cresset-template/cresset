@@ -41,14 +41,14 @@ There is no need to install a separate WSL CUDA driver or Docker for Linux insid
 _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
 Disable any active antivirus programs on Windows for best performance.
 
-3. Linux host users should install Docker Compose V2 for Linux as described in 
-https://docs.docker.com/compose/cli-command/#install-on-linux.
-Visit the website for the latest installation information.
+3. Linux host users should install Docker Compose V2 for Linux as described in the
+[documentation](https://docs.docker.com/compose/cli-command/#install-on-linux).
+Visit the documentation for the latest installation information.
 Installation does _**not**_ require `root` permissions. 
 Please check the version and architecture tags in the URL before installing.
 The following commands will install Docker Compose V2 (v2.3.4, Linux x86_64) 
-for a single user on Linux hosts.
-Visit https://github.com/docker/compose/releases to find the latest versions.
+for a single user on Linux hosts assuming that the installed Docker version is not too old.
+Visit this [link](https://github.com/docker/compose/releases) to find the latest versions.
 
 ```shell
 # WSL users should instead enable "Use Docker Compose V2" on Docker Desktop for Windows.
@@ -64,9 +64,9 @@ The `.env` file is excluded from version control via `.gitignore` by design.
 
 5. To build from source, set `BUILD_MODE=include` and set the
 CUDA Compute Capability (CCA) of the target hardware.
-Visit https://developer.nvidia.com/cuda-gpus#compute
-to find compute capabilities of NVIDIA GPUs. Visit
-https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities
+Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
+to find compute capabilities of NVIDIA GPUs. Visit the
+[documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
 for an explanation of compute capability and its relevance.
 Note that the Docker cache will save previously built binaries
 if the given configurations are identical.
@@ -78,24 +78,25 @@ The `docker-compose.yaml` file provides reasonable default values but these
 can be overridden by values specified in the `.env` file.
 
 Example `.env` file for user with username `USERNAME`, user id `1000`,  group id `1000` on service `full`.
+Edit `docker-compose.yaml` and `Makefile` to specify services other than `full`.
 ```text
 # Generated automatically by `make up`.
 GID=1000
 UID=1000
 IMAGE_NAME_FULL=full-USERNAME
 
-# Fill in the below manually.
+# Environment configurations users must fill in manually.
 
-# Environment configurations.
+# NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
 # CCA="7.5 8.6+PTX"                # See https://pytorch.org/docs/stable/cpp_extension.html
 
-LINUX_DISTRO=ubuntu
-DISTRO_VERSION=20.04
+LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
+DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
 CUDA_VERSION=11.5.1                # Must be compatible with hardware and CUDA driver.
-CUDNN_VERSION=8
-PYTHON_VERSION=3.9
-MKL_MODE=include                   # For Intel CPUs.
+CUDNN_VERSION=8                    # Only major version specifications are available.
+PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
+MKL_MODE=include                   # Enable for Intel CPUs.
 
 # Use only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`.
@@ -110,12 +111,33 @@ TORCHAUDIO_VERSION_TAG=v0.11.0
 These contain project package dependencies. The `apt` requirements are designed to resemble an
 ordinary Python `requirements.txt` file.
 
-8. Run `make up` to start the service. If `BUILD_MODE=include`, this may take a while.
+8. Run `make up` or `make rebuild` to start the service. 
+This may take some time if `BUILD_MODE=include`, especially for the first time.
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
 Please read the `Makefile` for implementation details and usage.
+If the build fails during `git clone`, try `make rebuild` again with a stable internet connection.
+If the build fails during `pip install`, check the PyPI mirror and package requirements.
 
 9. Run `make exec` to enter the interactive container environment. Then start coding.
 
+## Makefile Instructions
+1. To create a new container without rebuilding the image, use `make up`.
+2. To force build a new image from the Dockerfile, use `make rebuild`.
+3. To enter a running container in an interactive terminal, use `make exec`.
+4. To show services on the system, use `make ls`.
+5. To delete all containers and networks (but not images), use `make down`.
+
+Read the `Makefile` for all instructions and their implementations.
+
+
+### Tips
+
+1. Configurations such as connected volumes and network ports cannot 
+be changed in a running container, requiring a new container.
+
+2. Docker automatically caches all builds up to `defaultKeepStorage`.
+Builds use caches from previous builds by default, 
+greatly speeding up later builds by only building modified layers.
 
 ## Project Overview
 The main components of the project are as follows. The other files are utilities.
@@ -140,8 +162,8 @@ The `.env` file is deliberately excluded from source control
 to allow different users and machines to use different configurations.
 
 The `docker-compose.yaml` file manages configurations, builds, runs, etc. using the `Dockerfile`.
-See the Docker Compose [Specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
-and the Docker Compose [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) for details.
+Visit the Docker Compose [Specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
+and [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) for details.
 
 The `Dockerfile` is configured to read only requirements files in the `reqs` directory.
 Edit `reqs/pip-train.requirements.txt` to specify Python package requirements.
@@ -149,8 +171,10 @@ Edit `reqs/apt-train.requirements.txt` to specify Ubuntu package requirements.
 Users must edit the `.dockerignore` file to `COPY` other files into the Docker build.
 
 The `Dockerfile` uses Docker Buildkit and a multi-stage build where
-control flow is specified via stage names and build-time 
-environment variables given through `docker-compose.yaml`.
+control flow is specified via stage names and build-time environment variables 
+given via `docker-compose.yaml`. See the Docker Buildkit 
+[Syntax](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md)
+for more information on Docker Buildkit.
 The `full` service specified in the `docker-compose.yaml` file uses 
 the `train` stage specified in the `Dockerfile`, which assumes an Ubuntu image.
 
