@@ -199,8 +199,8 @@ that many readers of this article will have experienced at first-hand.
 Docker containers are the standard method for providing reproducible programs 
 across different computing environments. 
 They create isolated environments where programs 
-can run without interference from the host or from one another.
-See https://www.docker.com/resources/what-container for details.
+can run without interference from the host or from one another. See the 
+[documentation](https://www.docker.com/resources/what-container) for details.
 
 But in practice, Docker containers are often misused. 
 Containers are meant to be transient and best practice dictates 
@@ -253,13 +253,15 @@ adding a line in the `docker-compose.yaml` file, then running `make up`
 to create a new container from the same image. 
 Build caches allow new images to be built very quickly,
 removing another barrier to Docker adoption, the long initial build time.
-For more information on Compose, visit the [documentation](https://docs.docker.com/compose).
+For more information on Compose, visit the 
+[documentation](https://docs.docker.com/compose).
 
-Docker Compose can also be used directly for deployment, including on the cloud,
-which is useful for small-scale deployments. See https://www.compose-spec.io.
-If and when large-scale deployments using Kubernetes becomes necessary,
-using reproducible Docker environments from the very beginning will accelerate 
-the development process and smooth the path to MLOps adoption.
+Docker [Compose](https://www.compose-spec.io) can also be used for deployment,
+which is useful for small to medium-sized deployments.
+If and when large-scale deployments using container orchestration such as 
+Kubernetes becomes necessary, using reproducible Docker environments from 
+the very beginning will accelerate the development process 
+and smooth the path to MLOps adoption.
 Accelerating time-to-market by streamlining the development process
 is a competitive edge for any firm, whether lean startup or tech titan.
 

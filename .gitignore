@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# PyCharm configuration files
+# IDE configuration files
 .idea/
+.vscode/
 
 # PyTorch checkpoints
 *.pt

@@ -1,6 +1,6 @@
 # Packages to be installed in `Dockerfile` in `train` or `full` modes.
 # torch==1.11.0 --extra-index-url https://download.pytorch.org/whl/cu113  # Use this if BUILD_MODE=exclude and CUDA_VERSION is 11.2+.
-mkl  # Essential package if BUILD_MODE=include. Remove this if MKL_MODE=exclude.
+mkl  # Essential package if BUILD_MODE=include and MKL_MODE=include. Remove this if MKL_MODE=exclude.
 pytorch-lightning
 torchmetrics
 hydra-core==1.1.0
