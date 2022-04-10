@@ -38,7 +38,7 @@ for compatible versions of the CUDA driver and CUDA Toolkit.
 
 2. Install [Docker](https://docs.docker.com/get-docker) if not installed
 and update to a recent version compatible with Docker Compose V2.
-Docker incompatibility with Docker Compose V2 is a common issue as well.
+Docker incompatibility with Docker Compose V2 is also a common issue for new users.
 Note that Windows users may use WSL (Windows Subsystem for Linux).
 Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docker Desktop.
 There is no need to install a separate WSL CUDA driver or Docker for Linux inside WSL.
@@ -47,8 +47,8 @@ Disable any active antivirus programs on Windows for best performance.
 
 3. Linux host users should install Docker Compose V2 for Linux as described in the
 [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux).
+Installation does _**not**_ require `root` permissions.
 Visit the documentation for the latest installation information.
-Installation does _**not**_ require `root` permissions. 
 Please check the version and architecture tags in the URL before installing.
 The following commands will install Docker Compose V2 (v2.3.4, Linux x86_64) 
 for a single user on Linux hosts assuming that the installed Docker version is not too old.
@@ -81,30 +81,32 @@ session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
 can be overridden by values specified in the `.env` file.
 
-Example `.env` file for user with username `USERNAME`, user id `1000`,  group id `1000` on service `full`.
+Example `.env` file for user with username `USERNAME`, group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
 Edit the `docker-compose.yaml` file and the `Makefile` to specify services other than `full`.
 ```text
 # Generated automatically by `make up`.
 GID=1000
 UID=1000
+GRP=GROUPNAME
+USR=USERNAME
 IMAGE_NAME_FULL=full-USERNAME
 
 # Environment configurations users must fill in manually.
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
-# CCA="7.5 8.6+PTX"                # See https://pytorch.org/docs/stable/cpp_extension.html
+# CCA="7.5 8.6+PTX"                # Visit the documentation for multi-architecture builds. https://pytorch.org/docs/stable/cpp_extension.html
 
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
 DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.5.1                # Must be compatible with hardware and CUDA driver.
+CUDA_VERSION=11.6.1                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                    # Only major version specifications are available.
 PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
 MKL_MODE=include                   # Enable for Intel CPUs.
 
 # Use only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`.
-BUILD_MODE=include                 # Whether to build PyTorch from source.
+BUILD_MODE=exclude                 # Whether to build PyTorch from source.
 PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.12.0
 TORCHTEXT_VERSION_TAG=v0.12.0
@@ -120,18 +122,18 @@ This may take some time if `BUILD_MODE=include`, especially for the first time.
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
 Please read the `Makefile` for implementation details and usage.
 If the build fails during `git clone`, try `make rebuild` again with a stable internet connection.
-If the build fails during `pip install`, check the PyPI mirror and package requirements.
+If the build fails during `pip install`, check the PyPI mirror URLs and package requirements.
 
 9. Run `make exec` to enter the interactive container environment. Then start coding.
 
 ## Makefile Instructions
 1. To create a new container without rebuilding the image, use `make up`.
-2. To force build a new image from the Dockerfile, use `make rebuild`.
-3. To enter a running container in an interactive terminal, use `make exec`.
+2. To build a new image from the Dockerfile and create a container from this new image, use `make rebuild`.
+3. To enter a running service's container in an interactive terminal, use `make exec`.
 4. To show services on the system, use `make ls`.
 5. To delete all containers and networks (but not images), use `make down`.
 
-Read the `Makefile` for all instructions and their implementations.
+Read the `Makefile` for all recipes and their implementations.
 
 
 ### Tips
@@ -330,7 +332,7 @@ Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 3. PyTorch source builds require a corresponding `magma-cudaXXX` package in the PyTorch anaconda channel.
 CUDA 11.4.x is not available as `magma-cuda114` is unavailable. 
-Nor can new versions of CUDA be used until a `magma` package is published.
+Neither can new versions of CUDA be used until a `magma` package is published.
 
 4. If the build fails during `git clone`, simply try `make rebuild` again.
 Most of the build will be cached. Failure is probably due to networking issues during installation.
@@ -361,8 +363,6 @@ provided in the PyTorch channel of Anaconda.
 Please raise an issue if there are any versions that do not build properly. 
 However, please check that your host Docker, Docker Compose, 
 and especially NVIDIA Driver are up-to-date before doing so.
-Also, note that some combinations of PyTorch version and CUDA environment 
-may simply be impossible to build because of issues in the underlying source code.
 
 4. Translations into other languages and updates to existing translations are welcome. 
 Please create a separate `LANG.README.md` file and make a Pull Request.

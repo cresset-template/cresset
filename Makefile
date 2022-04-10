@@ -6,7 +6,8 @@ DI_FILE = .dockerignore
 di:
 	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
 
-# Convenience commands for Docker Compose. See URL below for documentation.
+# Convenience `make` recipes for Docker Compose.
+# See URL below for documentation on Docker Compose.
 # https://docs.docker.com/engine/reference/commandline/compose
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
@@ -24,7 +25,7 @@ start:  # Start a stopped service without recreating the container. Useful if th
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
-ls:
+ls:  # List all services.
 	docker compose ls -a
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
@@ -34,6 +35,8 @@ ls:
 ENV_FILE = .env
 GID = $(shell id -g)
 UID = $(shell id -u)
-IMAGE_NAME = "${SERVICE}-$(shell id -un)"
+GRP = $(shell id -gn)
+USR = $(shell id -un)
+IMAGE_NAME = "${SERVICE}-${USR}"
 env:
-	test -s ${ENV_FILE} || printf "GID=${GID}\nUID=${UID}\nIMAGE_NAME=${IMAGE_NAME}" >> ${ENV_FILE}
+	test -s ${ENV_FILE} || printf "GID=${GID}\nUID=${UID}\nGRP=${GRP}\nUSR=${USR}\nIMAGE_NAME=${IMAGE_NAME}\n" >> ${ENV_FILE}
