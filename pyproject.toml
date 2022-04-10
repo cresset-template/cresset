@@ -1,0 +1,22 @@
+[tool.black]
+line-length = 100
+#target-version = ['py37', 'py38', 'py39']
+include = '\.pyi?$'
+exclude = '''
+(
+      __pycache__
+    | \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | \.vscode
+    | \.idea
+    | \.venv
+    | \bdist\b
+    | \bdoc\b
+)
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
