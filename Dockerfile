@@ -138,9 +138,7 @@ RUN $conda install -y \
 
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
-ENV KMP_WARNINGS=0
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 ########################################################################
@@ -171,10 +169,6 @@ ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
-
-# Settings common to both gomp and iomp.
-ENV OMP_PROC_BIND=CLOSE
-ENV OMP_SCHEDULE=STATIC
 
 # The Docker Daemon cache memory may be insufficient to hold the entire cache.
 # A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
@@ -503,15 +497,9 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
 
-# Settings common to both gomp and iomp.
-ENV OMP_PROC_BIND=CLOSE
-ENV OMP_SCHEDULE=STATIC
 # Use Intel OpenMP with optimizations. See documentation for details.
-# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-ENV KMP_WARNINGS=0
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for faster and more efficient memory management.
