@@ -24,7 +24,7 @@
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 
 # See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
-# Default image is nvidia/cuda:11.5.1-cudnn8-devel-ubuntu20.04.
+# Default image is nvidia/cuda:11.6.2-cudnn8-devel-ubuntu20.04.
 
 # See documentation to specify cuDNN minor version.
 # https://developer.nvidia.com/rdp/cudnn-archive
@@ -35,7 +35,7 @@ ARG USE_CUDA=1
 ARG USE_ROCM=0
 ARG USE_PRECOMPILED_HEADERS=1
 ARG MKL_MODE=include
-ARG CUDA_VERSION=11.6.1
+ARG CUDA_VERSION=11.6.2
 ARG CUDNN_VERSION=8
 ARG PYTHON_VERSION=3.9
 ARG LINUX_DISTRO=ubuntu
@@ -490,9 +490,7 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     --mount=type=cache,id=pip-${UID},gid=${GID},uid=${UID},target=${PIP_CACHE_DIR} \
     printf "[global]\ncache-dir=${PIP_CACHE_DIR}\n" > ${PIP_CONFIG_FILE} && \
-    if [ ${INDEX_URL} ]; then  \
-        printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE};  \
-    fi && \
+    printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE} && \
     python -m pip install --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
@@ -565,7 +563,9 @@ ARG TRUSTED_HOST
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
-    sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
+    if [ ${DEB_NEW} ]; then  \
+        sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list;  \
+    fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
@@ -580,7 +580,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
-#    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
+    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip-requirements.txt \

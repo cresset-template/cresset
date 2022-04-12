@@ -1,4 +1,4 @@
-.PHONY: env di up exec rebuild start down
+.PHONY: env di up exec rebuild start down ls
 
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
 # Set to ignore all files except requirements files at project root or `reqs`.
