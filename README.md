@@ -89,7 +89,7 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-IMAGE_NAME_FULL=full-USERNAME
+IMAGE_NAME=full-USERNAME
 
 # Environment configurations users must fill in manually.
 
