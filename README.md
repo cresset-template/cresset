@@ -95,7 +95,7 @@ IMAGE_NAME=full-USERNAME
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
-# CCA="7.5 8.6+PTX"                # Visit the documentation for multi-architecture builds. https://pytorch.org/docs/stable/cpp_extension.html
+# CCA="7.5 8.6+PTX"                # The '+PTX' enables forward compatibility. Visit the documentation for multi-architecture builds. https://pytorch.org/docs/stable/cpp_extension.html
 
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
 DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
