@@ -95,11 +95,12 @@ IMAGE_NAME=full-USERNAME
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
-# CCA="7.5 8.6+PTX"                # Visit the documentation for multi-architecture builds. https://pytorch.org/docs/stable/cpp_extension.html
+# CCA='8.6+PTX'                    # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
+# CCA='7.5 8.6+PTX'                # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
 DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.6.1                # Must be compatible with hardware and CUDA driver.
+CUDA_VERSION=11.6.2                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                    # Only major version specifications are available.
 PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
 MKL_MODE=include                   # Enable for Intel CPUs.
