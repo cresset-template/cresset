@@ -16,20 +16,7 @@
 # `ENV` and `LABEL` variables are inherited only by child stages.
 # See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices for best practices.
-
-# Style guide: variables specified in the Dockerfile are written as ${ARGUMENT}
-# while variables not specified by ARG/ENV are written as $ARGUMENT.
-
-# See https://pytorch.org/docs/stable/cpp_extension.html for an
-# explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
-
-# See https://hub.docker.com/r/nvidia/cuda for all CUDA images.
-# Default image is nvidia/cuda:11.6.2-cudnn8-devel-ubuntu20.04.
-
-# See documentation to specify cuDNN minor version.
-# https://developer.nvidia.com/rdp/cudnn-archive
-
-# `BUILD_MODE` controls whether PyTorch is built or not.
+# See https://hub.docker.com/r/nvidia/cuda for all available CUDA images.
 ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
 ARG USE_ROCM=0
@@ -49,7 +36,6 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 # Build-related packages are pre-installed on CUDA `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
-# The `train` and `deploy` stages are designed for Ubuntu.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
@@ -196,7 +182,7 @@ FROM build-base AS build-torch
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
 # If the build fails during `git clone`, just try again. Updating git submodules is not fail-safe.
 # The reason for failure is probably networking issues during installation.
-# https://stackoverflow.com/a/8573310/9289275
+# See https://stackoverflow.com/a/8573310/9289275
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
@@ -401,7 +387,7 @@ ARG PYTHONUNBUFFERED=1
 # Speedups in `apt` installs for Korean users. Change URLs for other locations.
 # http://archive.ubuntu.com/ubuntu is specific to NVIDIA's CUDA Ubuntu images.
 # Check `/etc/apt/sources.list` of the base image to find the Ubuntu URL.
-ARG DEB_OLD=http://archive.ubuntu.com
+ARG DEB_OLD
 ARG DEB_NEW
 
 # `tzdata` requires a timezone and noninteractive mode.
@@ -412,9 +398,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # See the `deploy` stage below to see how to add other apt reporitories.
 # `software-properties-common` is required for the `add-apt-repository` command.
 RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
-    if [ ${DEB_NEW} ]; then  \
-        sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list;  \
-    fi && \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
@@ -474,12 +458,10 @@ RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-# Speedups in `pip` for Korean users. Change URLs for other locations.
 # Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
 # The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
 # Install them from the Intel channel of Anaconda if desired.
-# Write empty `INDEX_URL` & `TRUSTED_HOST` to `pip.conf` if the mirror is broken and standard PyPI must be used.
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG INDEX_URL
 ARG TRUSTED_HOST
@@ -490,7 +472,7 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
     --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     --mount=type=cache,id=pip-${UID},gid=${GID},uid=${UID},target=${PIP_CACHE_DIR} \
     printf "[global]\ncache-dir=${PIP_CACHE_DIR}\n" > ${PIP_CONFIG_FILE} && \
-    printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE} && \
+    if [ ${INDEX_URL} ]; then printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE}; fi && \
     python -m pip install --find-links /tmp/dist \
         -r /tmp/reqs/pip/requirements.txt \
         /tmp/dist/*.whl
@@ -549,7 +531,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Use mirror links optimized for user location and security level.
-ARG DEB_OLD=http://archive.ubuntu.com
+ARG DEB_OLD
 ARG DEB_NEW
 ARG INDEX_URL
 ARG TRUSTED_HOST
@@ -563,11 +545,8 @@ ARG TRUSTED_HOST
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
-    if [ ${DEB_NEW} ]; then  \
-        sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list;  \
-    fi && \
-    apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common && \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
     printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt-requirements.txt && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt |  \

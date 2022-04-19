@@ -18,6 +18,10 @@
 # Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
 # https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
 
+# See https://pytorch.org/docs/stable/cpp_extension.html for an
+# explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
+# The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
+
 
 services:
   train:  # Service name. Change the name as necessary for each project.
@@ -46,7 +50,7 @@ services:
       dockerfile: Dockerfile
       args:  # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+        TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
@@ -57,6 +61,7 @@ services:
         GRP: ${GRP:-user}  # `id -gn`
         USR: ${USR:-user}  # `id -un`
         TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during the build.
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
         INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
@@ -109,7 +114,7 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+        TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
@@ -122,6 +127,7 @@ services:
         TZ: ${TZ:-Asia/Seoul}
         # URL for faster `apt` and `pip` installs. Optimized for Korean users.
         # Use URLs optimized for user location and security requirements.
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
         # Comment out the PyPI mirrors to use the default PyPI repository.
 #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
@@ -166,12 +172,13 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-exclude}  # `include` or `exclude`. Disabled by default for deployment.
-        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+        TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
         TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
         TORCHAUDIO_VERSION_TAG: ${TORCHAUDIO_VERSION_TAG:-v0.11.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
 #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
 #        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
@@ -199,7 +206,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        TORCH_CUDA_ARCH_LIST: ${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}
+        TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
 
 
   ngc:  # NGC image service. Demonstrates the generality of the template.
