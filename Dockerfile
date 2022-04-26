@@ -19,7 +19,6 @@
 # See https://hub.docker.com/r/nvidia/cuda for all available CUDA images.
 ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
-ARG USE_ROCM=0
 ARG USE_PRECOMPILED_HEADERS=1
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.6.2
@@ -197,7 +196,6 @@ RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_MKLDNN=${USE_MKLDNN}
-ARG USE_ROCM
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
@@ -300,7 +298,6 @@ RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         ${AUDIO_URL} /opt/audio
 
 ARG USE_CUDA
-ARG USE_ROCM
 ARG USE_PRECOMPILED_HEADERS
 ARG BUILD_FFMPEG=1
 ARG TORCH_CUDA_ARCH_LIST
