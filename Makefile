@@ -1,4 +1,4 @@
-.PHONY: env di up exec rebuild start down ls
+.PHONY: env di up exec rebuild start down run ls
 
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
 # Set to ignore all files except requirements files at project root or `reqs`.
@@ -15,7 +15,7 @@ di:
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-$(shell id -un)"
-up:  # Start service. Creates a new container from the image. Recommended method of starting services.
+up:  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
 rebuild:  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
@@ -25,6 +25,8 @@ start:  # Start a stopped service without recreating the container. Useful if th
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
+run:  # Used for debugging cases where service will not start.
+	docker compose -p ${PROJECT} run ${SERVICE}
 ls:  # List all services.
 	docker compose ls -a
 
