@@ -128,13 +128,15 @@ If the build fails during `pip install`, check the PyPI mirror URLs and package 
 9. Run `make exec` to enter the interactive container environment. Then start coding.
 
 ## Makefile Instructions
-1. To create a new container without rebuilding the image, use `make up`.
-2. To build a new image from the Dockerfile and create a container from this new image, use `make rebuild`.
-3. To enter a running service's container in an interactive terminal, use `make exec`.
-4. To show services on the system, use `make ls`.
-5. To delete all containers and networks (but not images), use `make down`.
+The Makefile contains shortcuts for common docker compose commands. Please read the Makefile to see the exact commands.
 
-Read the `Makefile` for all recipes and their implementations.
+1. `make up` recreates a container, creating a fresh container from the image, undoing any changes to the container made by the user. Allows changing container settings as network ports, mounted volumes, shared memory configurations, etc. Recommended method for using this project.
+2. `make rebuild` rebuilds the Docker image, which will reinstall packages to the updated requirements files, and recreate the container.
+3. `make exec` executes the created container. Interactive terminal is enabled by project configurations.
+4. `make down` stops Compose containers and deletes networks. Necessary for cleaning out services.
+5. `make start` restarts a stopped container without recreating it. Similar to docker start.
+6. `make ls` shows all Docker Compose services, both active and inactive.
+7. `make run` is used for debugging. If a service fails to start, use it to find the error.
 
 
 ### Tips

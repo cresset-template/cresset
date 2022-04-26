@@ -33,7 +33,8 @@ ls:  # List all services.
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
-# Image names have the user name appended to them for user separation.
+# Image names have the usernames appended to them to prevent
+# name collisions between different users.
 ENV_FILE = .env
 GID = $(shell id -g)
 UID = $(shell id -u)
