@@ -447,14 +447,14 @@ COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
 RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG AUTO_PATH=$HOME/.zsh/zsh-autosuggestions
-#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${AUTO_PATH}
-#RUN echo "source ${AUTO_PATH}/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+#ARG ZSHA_PATH=$HOME/.zsh/zsh-autosuggestions
+#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${ZSHA_PATH}
+#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> $HOME/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-ARG SNTX_PATH=$HOME/.zsh/zsh-syntax-highlighting
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${SNTX_PATH}
-RUN echo "source ${SNTX_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
+ARG ZSHS_PATH=$HOME/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
@@ -482,7 +482,7 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
 ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
-# Use Jemalloc for faster and more efficient memory management.
+# Use Jemalloc for efficient memory management.
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
@@ -559,7 +559,9 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
-    printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf && \
+    if [ ${INDEX_URL} ]; then \
+        printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf; \
+    fi && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip-requirements.txt \
