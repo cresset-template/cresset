@@ -442,16 +442,19 @@ RUN conda config --append channels intel && \
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure $HOME/.zsh/pure
-RUN printf "fpath+=$HOME/.zsh/pure\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
+ARG PURE_PATH=$HOME/.zsh/pure
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
+RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
-#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions
-#RUN echo "source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+#ARG AUTO_PATH=$HOME/.zsh/zsh-autosuggestions
+#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${AUTO_PATH}
+#RUN echo "source ${AUTO_PATH}/zsh-autosuggestions.zsh" >> $HOME/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting $HOME/.zsh/zsh-syntax-highlighting
-RUN echo "source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
+ARG SNTX_PATH=$HOME/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${SNTX_PATH}
+RUN echo "source ${SNTX_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
