@@ -333,7 +333,7 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # This stage does not have anything installed. No variables are specified either.
 # This stage is simply the `BUILD_IMAGE` with additional files and directories.
 # All pip wheels are located in `/tmp/dist`.
-# Using an image other than `BUILD_IMAGE` may contaminate the `/opt/conda` and other key directories.
+# Using an image other than `BUILD_IMAGE` may contaminate `/opt/conda` and other key directories.
 
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,

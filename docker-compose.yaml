@@ -29,7 +29,7 @@ services:
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
-    image: pytorch_source:${IMAGE_NAME:-train}
+    image: cresset:${IMAGE_NAME:-train}
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
 #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
 #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
@@ -39,10 +39,13 @@ services:
     # Setting `HOST_PATH:CONTAINER_PATH` allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
     # Current working directory `.` is connected to `PROJECT_ROOT`.
+    # Always use the ${HOME} variable to specify the host home directory.
+    # The `~` expands to the directory inside the image, not the user home directory.
+    # See https://github.com/docker/compose/issues/6506 for details.
     volumes:  # Add volumes as necessary. Equivalent to `-v` flag in `docker run`.
       - .:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is at the project root.
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is in a subdirectory.
-#      - ~/.ssh:/home/${USR}/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
+#      - ${HOME}/.ssh:/home/${USR}/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
 #      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       target: train  # Specify build target.
@@ -61,10 +64,10 @@ services:
         GRP: ${GRP:-user}  # `id -gn`
         USR: ${USR:-user}  # `id -un`
         TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during the build.
-        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+#        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Uncomment if ports are necessary.
 #      - ${PORT:-8080}:22
@@ -83,7 +86,7 @@ services:
 
   full:  # Default service name. Change the name as necessary for each project.
     hostname: full
-    image: pytorch_source:${IMAGE_NAME:-full}
+    image: cresset:${IMAGE_NAME:-full}
 #    ipc: host
 #    shm_size: 1GB
     tty: true
@@ -94,8 +97,8 @@ services:
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if docker-compose.yaml is in a subdirectory of another project.
-#      - ~/.vscode-server:/home/${USR}/.vscode-server  # VSCode extensions can be preserved between containers this way.
-#      - ~/.ssh:/home/${USR}/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
+#      - ${HOME}/.vscode-server:/home/${USR}/.vscode-server  # VSCode extensions can be preserved between containers this way.
+#      - ${HOME}/.ssh:/home/${USR}/.ssh  # Bind host SSH configurations to the container for SSH port local forwarding.
 #      - ${DATA_PATH_1}:/mnt/data1  # Configurable data path settings for different host data locations.
     build:
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
@@ -148,7 +151,7 @@ services:
 
   deploy:
     hostname: deploy
-    image: pytorch_source:${IMAGE_NAME:-deploy}
+    image: cresset:${IMAGE_NAME:-deploy}
     tty: true
     init: true
     stdin_open: true
@@ -196,7 +199,7 @@ services:
   # This layer may be useful for PyTorch contributors.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
-    image: pytorch_source:${IMAGE_NAME:-devel}
+    image: cresset:${IMAGE_NAME:-devel}
     tty: true
     init: true
     stdin_open: true
@@ -212,9 +215,8 @@ services:
 
   ngc:  # NGC image service. Demonstrates the generality of the template.
     hostname: ngc
-    image: pytorch_source:ngc-${YEAR:-22}.${MONTH:-02}
+    image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
 #    ipc: host
-#    shm_size: 1GB
     tty: true
     init: true
     stdin_open: true
