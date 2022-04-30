@@ -21,7 +21,7 @@ ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
 ARG USE_PRECOMPILED_HEADERS=1
 ARG MKL_MODE=include
-ARG CUDA_VERSION=11.6.2
+ARG CUDA_VERSION=11.5.2
 ARG CUDNN_VERSION=8
 ARG PYTHON_VERSION=3.9
 ARG LINUX_DISTRO=ubuntu
@@ -340,8 +340,8 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # with only the build artifacts (e.g., pip wheels) copied over.
 
 # The order of `COPY` instructions is chosen to minimize cache misses.
-COPY --from=install-base /opt/conda /opt/conda
-COPY --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 
 # Heavy builds use the new `link` feature.
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
@@ -349,15 +349,15 @@ COPY --link --from=build-audio  /tmp/dist  /tmp/dist
 COPY --link --from=build-text   /tmp/dist  /tmp/dist
 
 # `COPY` new builds here to minimize the likelihood of cache misses.
-COPY --from=build-pure   /opt/zsh   /opt
+COPY --link --from=build-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
 # Only build lightweight libraries.
 
-COPY --from=install-base /opt/conda /opt/conda
-COPY --from=build-pillow /tmp/dist  /tmp/dist
-COPY --from=build-pure   /opt/zsh   /opt
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=build-pure   /opt/zsh   /opt
 
 
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -420,7 +420,7 @@ ARG HOME=/home/${USR}
 
 # Get conda with the directory ownership given to the user.
 # Using conda for the virtual environment but not package installation.
-COPY --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
@@ -512,12 +512,12 @@ FROM ${BUILD_IMAGE} AS deploy-builds
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
 # This may also be useful for non-Intel CPUs.
 
-COPY --from=install-base /opt/conda /opt/conda
-COPY --from=build-pillow /tmp/dist  /tmp/dist
-COPY --from=build-vision /tmp/dist  /tmp/dist
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=build-vision /tmp/dist  /tmp/dist
 
-COPY reqs/apt-deploy.requirements.txt /tmp/reqs/apt-requirements.txt
-COPY reqs/pip-deploy.requirements.txt /tmp/reqs/pip-requirements.txt
+COPY --link reqs/apt-deploy.requirements.txt /tmp/reqs/apt-requirements.txt
+COPY --link reqs/pip-deploy.requirements.txt /tmp/reqs/pip-requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.

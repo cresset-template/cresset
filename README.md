@@ -26,18 +26,19 @@ Hopefully, the methods presented here will become best practice in both academia
 [![Weights and Biases Presentation](https://res.cloudinary.com/marcomontalbano/image/upload/v1649474431/video_to_markdown/images/youtube--sW3VxlJl46o-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/sW3VxlJl46o?t=6865 "Weights and Biases Presentation")
 ------------------------------------------------------------------------
 
-## Initial Setup
+## Installation on a New Host
 If this is your first time using this project, follow these steps:
 
-1. Install the NVIDIA CUDA driver appropriate for the target hardware. 
+1. Install the NVIDIA CUDA [Driver](https://www.nvidia.com/download/index.aspx) 
+appropriate for the target host and NVIDIA GPU. 
 The CUDA toolkit is not necessary. If the driver has already been installed, 
 check that the installed version is compatible with the target CUDA version.
 CUDA driver version mismatch is the single most common issue for new users. See the 
 [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit.
 
-2. Install [Docker](https://docs.docker.com/get-docker) if not installed
-and update to a recent version compatible with Docker Compose V2.
+2. Install [Docker](https://docs.docker.com/get-docker) if not already installed
+and update to a recent version compatible with Docker Compose V2 (v20.10+ is recommended).
 Docker incompatibility with Docker Compose V2 is also a common issue for new users.
 Note that Windows users may use WSL (Windows Subsystem for Linux).
 Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docker Desktop.
@@ -45,29 +46,22 @@ There is no need to install a separate WSL CUDA driver or Docker for Linux insid
 _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
 Disable any active antivirus programs on Windows for best performance.
 
-3. Linux host users should install Docker Compose V2 for Linux as described in the
-[documentation](https://docs.docker.com/compose/cli-command/#install-on-linux).
+3. Run `. install_compose.sh` to install Docker Compose V2 for Linux hosts. 
+Docker Desktop has Docker Compose V2 activated by default.
 Installation does _**not**_ require `root` permissions.
-Visit the documentation for the latest installation information.
-Please check the version and architecture tags in the URL before installing.
-The following commands will install Docker Compose V2 (v2.3.4, Linux x86_64) 
-for a single user on Linux hosts assuming that the installed Docker version is not too old.
-Visit this [link](https://github.com/docker/compose/releases) to find the latest versions.
-
-```shell
-# WSL users should instead enable "Use Docker Compose V2" on Docker Desktop for Windows.
-mkdir -p ~/.docker/cli-plugins/
-curl -SL https://github.com/docker/compose/releases/download/v2.3.4/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-chmod +x ~/.docker/cli-plugins/docker-compose
-```
+Visit the [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
+for the latest installation information.
 
 4. Run `make env` on the terminal at project root to create a basic `.env` file. 
 The `.env` file provides environment variables for `docker-compose.yaml`,
 allowing different users and machines to set their own variables as required.
-The `.env` file is excluded from version control via `.gitignore` by design.
+Each host should have its separate `.env` file for configurations unique to each host.
 
-5. To build from source, set `BUILD_MODE=include` and set the
-CUDA Compute Capability (CCA) of the target hardware.
+
+## Project Configuration
+
+1. To build PyTorch from source, set `BUILD_MODE=include` and set the
+CUDA Compute Capability (CCA) of the target NVIDIA GPU.
 Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
 to find compute capabilities of NVIDIA GPUs. Visit the
 [documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
@@ -75,11 +69,15 @@ for an explanation of compute capability and its relevance.
 Note that the Docker cache will save previously built binaries
 if the given configurations are identical.
 
-6. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
+2. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
 Also, feel free to edit `docker-compose.yaml` as necessary by changing 
 session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
 can be overridden by values specified in the `.env` file.
+
+3. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
+These contain project package dependencies. The `apt` requirements are designed to resemble an
+ordinary Python `requirements.txt` file.
 
 Example `.env` file for user with username `USERNAME`, group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
 Edit the `docker-compose.yaml` file and the `Makefile` to specify services other than `full`.
@@ -91,19 +89,13 @@ GRP=GROUPNAME
 USR=USERNAME
 IMAGE_NAME=full-USERNAME
 
-# Environment configurations users must fill in manually.
-
+# `CCA` is a mandatory variable regardless of `BUILD_MODE``.
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
 # CCA='8.6+PTX'                    # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
 # CCA='7.5 8.6+PTX'                # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
-LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
-DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.6.2                # Must be compatible with hardware and CUDA driver.
-CUDNN_VERSION=8                    # Only major version specifications are available.
-PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
-MKL_MODE=include                   # Enable for Intel CPUs.
+# [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
 # Use only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`.
@@ -112,20 +104,23 @@ PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.12.0
 TORCHTEXT_VERSION_TAG=v0.12.0
 TORCHAUDIO_VERSION_TAG=v0.11.0
+
+# General environment configurations.
+LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
+DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
+CUDA_VERSION=11.5.2                # Must be compatible with hardware and CUDA driver.
+CUDNN_VERSION=8                    # Only major version specifications are available.
+PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
+MKL_MODE=include                   # Enable for Intel CPUs.
 ```
 
-7. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
-These contain project package dependencies. The `apt` requirements are designed to resemble an
-ordinary Python `requirements.txt` file.
+## General Usage After Initial Installation and Configuration
 
-8. Run `make up` or `make rebuild` to start the service. 
-This may take some time if `BUILD_MODE=include`, especially for the first time.
+1. Run `make up` or `make rebuild` to start the service. 
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
-Please read the `Makefile` for implementation details and usage.
-If the build fails during `git clone`, try `make rebuild` again with a stable internet connection.
-If the build fails during `pip install`, check the PyPI mirror URLs and package requirements.
 
-9. Run `make exec` to enter the interactive container environment. Then start coding.
+2. Run `make exec` to enter the interactive container environment. Then start coding.
+
 
 ## Makefile Instructions
 The Makefile contains shortcuts for common docker compose commands. Please read the Makefile to see the exact commands.
@@ -134,19 +129,29 @@ The Makefile contains shortcuts for common docker compose commands. Please read 
 2. `make rebuild` rebuilds the Docker image, which will reinstall packages to the updated requirements files, and recreate the container.
 3. `make exec` executes the created container. Interactive terminal is enabled by project configurations.
 4. `make down` stops Compose containers and deletes networks. Necessary for cleaning out services.
-5. `make start` restarts a stopped container without recreating it. Similar to docker start.
+5. `make start` restarts a stopped container without recreating it. Similar to docker start but does not delete the current container.
 6. `make ls` shows all Docker Compose services, both active and inactive.
 7. `make run` is used for debugging. If a service fails to start, use it to find the error.
 
 
 ### Tips
 
-1. Configurations such as connected volumes and network ports cannot 
+- `make up` is akin to rebooting a computer.
+The current container is removed and a new container is created from the current image.
+- `make rebuild` is akin to resetting/formatting a computer.
+The current image is removed and a new image is built from the Dockerfile,
+after which a container is created from the resulting image.
+In contrast, `make up` only creates an image from source if the specified image is not present.
+- `make exec` is akin to logging into a computer.
+It is the most important command and allows the user to access the container's terminal interactively.
+- Configurations such as connected volumes and network ports cannot 
 be changed in a running container, requiring a new container.
-
-2. Docker automatically caches all builds up to `defaultKeepStorage`.
+- Docker automatically caches all builds up to `defaultKeepStorage`.
 Builds use caches from previous builds by default, 
 greatly speeding up later builds by only building modified layers.
+- If the build fails during `git clone`, try `make rebuild` again with a stable internet connection.
+- If the build fails during `pip install`, check the PyPI mirror URLs and package requirements.
+
 
 ## Project Overview
 The main components of the project are as follows. The other files are utilities.
