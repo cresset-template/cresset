@@ -359,13 +359,9 @@ COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-pure   /opt/zsh   /opt
 
-
+########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
-# Copying requirements files from context so that the `train` image
-# can be built from this stage with no dependency on the Docker context.
-# Files are placed in separate directories to prevent them from affecting one another.
-COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
-COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
+# Placeholder stage to collect all build artifacts.
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
@@ -394,8 +390,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
 # `software-properties-common` is required for the `add-apt-repository` command.
-RUN --mount=type=bind,from=train-builds,source=/tmp/reqs/apt,target=/tmp/reqs/apt \
-    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
+RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && \
     sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
@@ -468,8 +464,8 @@ ARG TRUSTED_HOST
 ARG PIP_CACHE_DIR=$HOME/.cache/pip
 WORKDIR ${PIP_CACHE_DIR}
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
+COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
 RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
-    --mount=type=bind,from=train-builds,source=/tmp/reqs/pip,target=/tmp/reqs/pip \
     --mount=type=cache,id=pip-${UID},gid=${GID},uid=${UID},target=${PIP_CACHE_DIR} \
     printf "[global]\ncache-dir=${PIP_CACHE_DIR}\n" > ${PIP_CONFIG_FILE} && \
     if [ ${INDEX_URL} ]; then printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE}; fi && \
