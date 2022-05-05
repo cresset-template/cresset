@@ -73,7 +73,7 @@ ENV PYTHONIOENCODING=UTF-8
 ARG MKL_MODE
 ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
-ENV PATH=/opt/conda/bin:$PATH
+ENV PATH=/opt/conda/bin:${PATH}
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 # Channel priority: `intel`, `conda-forge`, `pytorch`.
 # Cannot set strict priority because of installation conflicts.
@@ -124,7 +124,7 @@ RUN $conda install -y \
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
 ENV KMP_BLOCKTIME=0
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 ########################################################################
 FROM install-conda AS install-exclude-mkl
@@ -361,39 +361,57 @@ COPY --link --from=build-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
-# Placeholder stage to collect all build artifacts.
+
+# Add a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
+ARG INDEX_URL
+ARG TRUSTED_HOST
+ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
+RUN if [ ${INDEX_URL} ]; then \
+        printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > ${PIP_CONFIG_FILE}; \
+    fi
+
+ARG PATH=/opt/conda/bin:${PATH}
+# Using `PIP_CACHE_DIR` to cache previous installations.
+ARG PIP_CACHE_DIR=/tmp/.cache/pip
+COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt-requirements.txt
+COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip-requirements.txt
+# The `/tmp/dist/*.whl` files are the wheels built in previous stages.
+# `--find-links` gives higher priority to the wheels in `/tmp/dist`.
+# Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
+# Using multiple `pip` installs may break the dependencies of all but the last installation.
+RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
+    python -m pip install --find-links /tmp/dist \
+        -r /tmp/reqs/pip-requirements.txt \
+        /tmp/dist/*.whl
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
-# Example training image for Ubuntu on an Intel x86_64 CPU. Edit if necessary.
+# Example training image for Ubuntu 20.04 on an Intel x86_64 CPU. Edit if necessary.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
-
-# Set as `ARG`s to reduce image footprint but not affect the resulting images.
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
-
-# Speedups in `apt` installs for Korean users. Change URLs for other locations.
-# http://archive.ubuntu.com/ubuntu is specific to NVIDIA's CUDA Ubuntu images.
-# Check `/etc/apt/sources.list` of the base image to find the Ubuntu URL.
 ARG DEB_OLD
 ARG DEB_NEW
-
-# `tzdata` requires a timezone and noninteractive mode.
 ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo ${TZ} > /etc/timezone
+# `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
+# Install `software-properties-common` which is required for the `add-apt-repository` command.
+RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+    rm -rf /var/lib/apt/lists/*
+
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
-# `software-properties-common` is required for the `add-apt-repository` command.
-COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt/requirements.txt
-RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && \
-    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt/requirements.txt | \
+RUN --mount=type=bind,from=train-builds,source=/tmp/reqs,target=/tmp/reqs  \
+    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -409,30 +427,29 @@ RUN groupadd -g ${GID} ${GRP} && \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# Get conda with the directory ownership given to the user.
+# Using conda for the virtual environment but not package installation.
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+
+# Use Intel OpenMP with optimizations. See documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
+ENV KMP_BLOCKTIME=0
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+
+# Use Jemalloc for efficient memory management.
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
+ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
+
 USER ${USR}
 # Docker must use absolute paths in `COPY` and cannot find `$HOME`.
 # Setting $HOME to its default value explicitly as a fix.
 ARG HOME=/home/${USR}
 
-# Get conda with the directory ownership given to the user.
-# Using conda for the virtual environment but not package installation.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
-
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
+ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
-
-# Configure channels in case anyone uses `conda`.
-# The configurations are not copied with `/opt/conda`.
-ARG MKL_MODE
-RUN conda config --append channels intel && \
-    conda config --append channels conda-forge && \
-    conda config --append channels pytorch && \
-    conda config --remove channels defaults && \
-    if [ ${MKL_MODE} != include ]; then \
-        conda config --remove channels intel; \
-    fi
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
@@ -451,41 +468,6 @@ RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pur
 ARG ZSHS_PATH=$HOME/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
-
-# The `/tmp/dist/*.whl` files are the wheels built in previous stages.
-# `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-# Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
-# Using multiple `pip` installs may break the dependencies of all but the last installation.
-# The numpy, scipy, and numba libraries are not MKL optimized when installed from PyPI.
-# Install them from the Intel channel of Anaconda if desired.
-# Using `PIP_CACHE_DIR` to cache previous installations.
-ARG INDEX_URL
-ARG TRUSTED_HOST
-ARG PIP_CACHE_DIR=$HOME/.cache/pip
-WORKDIR ${PIP_CACHE_DIR}
-ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
-COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip/requirements.txt
-RUN --mount=type=bind,from=train-builds,source=/tmp/dist,target=/tmp/dist \
-    --mount=type=cache,id=pip-${UID},gid=${GID},uid=${UID},target=${PIP_CACHE_DIR} \
-    printf "[global]\ncache-dir=${PIP_CACHE_DIR}\n" > ${PIP_CONFIG_FILE} && \
-    if [ ${INDEX_URL} ]; then printf "index-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" >> ${PIP_CONFIG_FILE}; fi && \
-    python -m pip install --find-links /tmp/dist \
-        -r /tmp/reqs/pip/requirements.txt \
-        /tmp/dist/*.whl
-
-# Use Intel OpenMP with optimizations. See documentation for details.
-# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-ENV KMP_BLOCKTIME=0
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-
-# Use Jemalloc for efficient memory management.
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
-ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
-
-# Temporarily switch to `root` to include `conda` in dynamic linking.
-USER root
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
-USER ${USR}
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
@@ -529,8 +511,6 @@ ENV PYTHONUNBUFFERED=1
 # Use mirror links optimized for user location and security level.
 ARG DEB_OLD
 ARG DEB_NEW
-ARG INDEX_URL
-ARG TRUSTED_HOST
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
 # The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
@@ -555,9 +535,6 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
-    if [ ${INDEX_URL} ]; then \
-        printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > /etc/pip.conf; \
-    fi && \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
         -r /tmp/reqs/pip-requirements.txt \

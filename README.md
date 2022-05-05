@@ -45,6 +45,7 @@ Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docke
 There is no need to install a separate WSL CUDA driver or Docker for Linux inside WSL.
 _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
 Disable any active antivirus programs on Windows for best performance.
+_N.B._ Linux hosts may also install via this [repo](https://github.com/docker/docker-install).
 
 3. Run `. install_compose.sh` to install Docker Compose V2 for Linux hosts. 
 Docker Desktop has Docker Compose V2 activated by default.
