@@ -175,7 +175,7 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
-        MKL_MODE: ${MKL_MODE:-exclude}  # `include` or `exclude`. Disabled by default for deployment.
+        MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
         TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
