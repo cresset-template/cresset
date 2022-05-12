@@ -75,12 +75,8 @@ RUN printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
         -r /tmp/pip-ngc.requirements.txt && \
     rm /tmp/pip-ngc.requirements.txt
 
-ENV OMP_PROC_BIND=CLOSE
-ENV OMP_SCHEDULE=STATIC
-ENV KMP_WARNINGS=0
 ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-ENV KMP_AFFINITY="granularity=fine,nonverbose,compact,1,0"
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
