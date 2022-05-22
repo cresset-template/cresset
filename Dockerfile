@@ -124,7 +124,6 @@ RUN $conda install -y \
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 ########################################################################
@@ -435,7 +434,6 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for efficient memory management.
