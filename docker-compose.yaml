@@ -196,6 +196,7 @@ services:
             - driver: nvidia
               capabilities: [ gpu ]
 
+
   # This layer may be useful for PyTorch contributors.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
@@ -209,8 +210,6 @@ services:
       target: ${TARGET_STAGE:-build-base}  # All builds begin at `build-base`.
       context: .
       dockerfile: Dockerfile
-      args:
-        TORCH_CUDA_ARCH_LIST: "${CCA:?CCA (Compute Capability) is undefined. Check if the .env file exists.}"
 
 
   ngc:  # NGC image service. Demonstrates the generality of the template.

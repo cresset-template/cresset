@@ -8,7 +8,9 @@ tzdata
 zsh
 
 # Additional packages.
-tmux
-rsync
-nano
+at
 git
+nano
+parallel
+rsync
+tmux

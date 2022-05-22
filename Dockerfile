@@ -48,6 +48,10 @@ FROM ${BUILD_IMAGE} AS install-ubi
 RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
 
 ########################################################################
+FROM ${BUILD_IMAGE} AS install-rockylinux
+RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
+
+########################################################################
 FROM install-${LINUX_DISTRO} AS install-base
 
 LABEL maintainer=veritas9872@gmail.com
@@ -338,17 +342,11 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
 # with only the build artifacts (e.g., pip wheels) copied over.
-
-# The order of `COPY` instructions is chosen to minimize cache misses.
 COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-
-# Heavy builds use the new `link` feature.
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
 COPY --link --from=build-audio  /tmp/dist  /tmp/dist
 COPY --link --from=build-text   /tmp/dist  /tmp/dist
-
-# `COPY` new builds here to minimize the likelihood of cache misses.
 COPY --link --from=build-pure   /opt/zsh   /opt
 
 ########################################################################
@@ -373,15 +371,15 @@ RUN if [ ${INDEX_URL} ]; then \
 ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-COPY --link reqs/apt-train.requirements.txt /tmp/reqs/apt-requirements.txt
-COPY --link reqs/pip-train.requirements.txt /tmp/reqs/pip-requirements.txt
+COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
+COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
 # Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
     python -m pip install --find-links /tmp/dist \
-        -r /tmp/reqs/pip-requirements.txt \
+        -r /tmp/pip/requirements.txt \
         /tmp/dist/*.whl
 
 ########################################################################
@@ -409,8 +407,8 @@ RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
-RUN --mount=type=bind,from=train-builds,source=/tmp/reqs,target=/tmp/reqs \
-    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt | \
+RUN --mount=type=bind,from=train-builds,source=/tmp/apt,target=/tmp/apt \
+    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -470,6 +468,9 @@ ARG ZSHS_PATH=$HOME/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
 
+# Enable mouse scrolling for tmux.
+RUN echo 'set -g mouse on' >> $HOME/.tmux.conf
+
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
@@ -495,8 +496,8 @@ COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
 
-COPY --link reqs/apt-deploy.requirements.txt /tmp/reqs/apt-requirements.txt
-COPY --link reqs/pip-deploy.requirements.txt /tmp/reqs/pip-requirements.txt
+COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
+COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
@@ -521,12 +522,12 @@ ARG DEB_NEW
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/apt \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION} \n" >> /tmp/reqs/apt-requirements.txt && \
-    sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt |  \
+    printf "\n python${PYTHON_VERSION} \n" >> /tmp/apt/requirements.txt && \
+    sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt |  \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
@@ -535,9 +536,10 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp,target=/tmp \
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp,target=/tmp \
+RUN --mount=type=bind,from=deploy-builds,source=/tmp/pip,target=/tmp/pip \
+    --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/reqs/pip-requirements.txt \
+        -r /tmp/pip/requirements.txt \
         /tmp/dist/*.whl && \
     ldconfig
