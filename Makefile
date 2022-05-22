@@ -26,12 +26,13 @@ di:
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
 # Change `SERVICE` to specify other services and projects.
+# The `up` and `restart` recipes call `env` automatically for convenience.
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-${USR}"
-up:  # Start service. Creates a new container from the image.
+up: env  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
-rebuild:  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
+rebuild: env  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
 exec:  # Execute service. Enter interactive shell.
 	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}

@@ -90,15 +90,14 @@ GRP=GROUPNAME
 USR=USERNAME
 IMAGE_NAME=full-USERNAME
 
-# `CCA` is a mandatory variable regardless of `BUILD_MODE``.
+# [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
+
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and A100.
 # CCA='8.6+PTX'                    # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
 # CCA='7.5 8.6+PTX'                # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
-# [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
-
-# Use only if building PyTorch from source (`BUILD_MODE=include`).
+# Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`.
 BUILD_MODE=exclude                 # Whether to build PyTorch from source.
 PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
@@ -337,17 +336,21 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 This is because `sshd` starts a new environment, wiping out all previous variables.
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
-2. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
+2. `pip install package[option]` will fail on the terminal because of Z-shell globbing.
+Characters such as `[`,`]`,`*`, etc. will be interpreted by Z-shell as special commands.
+To disable with behavior add `noglob` in front of the command, e.g., `noglob pip install package[option]`.
 
-3. PyTorch source builds require a corresponding `magma-cudaXXX` package in the PyTorch anaconda channel.
+3. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
+
+4. PyTorch source builds require a corresponding `magma-cudaXXX` package in the PyTorch anaconda channel.
 CUDA 11.4.x is not available as `magma-cuda114` is unavailable. 
 Neither can new versions of CUDA be used until a `magma` package is published.
 
-4. If the build fails during `git clone`, simply try `make rebuild` again.
+5. If the build fails during `git clone`, simply try `make rebuild` again.
 Most of the build will be cached. Failure is probably due to networking issues during installation.
 Updating git submodules is [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
-5. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
+6. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
 or the image will simply not start if the CUDA driver on the host 
 is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
@@ -356,7 +359,7 @@ to see if the host CUDA driver is compatible with the desired version of CUDA.
 Also check if the CUDA driver has been configured correctly on the host.
 The CUDA driver version can be found using the `nvidia-smi` command.
 
-6. Docker Compose V2 will silently fail if the installed Docker version is too low.
+7. Docker Compose V2 will silently fail if the installed Docker version is too low.
 Update Docker to the latest version (20.10+) to use Docker Compose V2.
 
 

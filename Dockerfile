@@ -399,8 +399,7 @@ ARG PYTHONUNBUFFERED=1
 ARG DEB_OLD
 ARG DEB_NEW
 ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && \
-    echo ${TZ} > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common` which is required for the `add-apt-repository` command.
@@ -411,7 +410,7 @@ RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
-RUN --mount=type=bind,from=train-builds,source=/tmp/reqs,target=/tmp/reqs  \
+RUN --mount=type=bind,from=train-builds,source=/tmp/reqs,target=/tmp/reqs \
     apt-get update && sed 's/#.*//g; s/\r//g' /tmp/reqs/apt-requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
