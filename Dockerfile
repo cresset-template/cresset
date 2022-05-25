@@ -249,8 +249,13 @@ RUN --mount=type=cache,target=/opt/ccache \
 ########################################################################
 FROM build-base AS build-pillow
 # Specify the version of `Pillow-SIMD` if necessary.
-# This may not work on older CPUs as it requires SSE4 and AVX2.
-RUN CC="cc -mavx2" python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD
+# Condition ensures that AVX2 instructions are built only if available.
+RUN if [ -n "$(lscpu | grep avx2)" ]; then \
+        CC="cc -mavx2" \
+        python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD; \
+    else \
+        python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD; \
+    fi
 
 ########################################################################
 FROM build-torch AS build-vision
@@ -371,6 +376,7 @@ RUN if [ ${INDEX_URL} ]; then \
 ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
+COPY --link reqs/deb /tmp/deb
 COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
 COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
@@ -399,9 +405,13 @@ ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
-# Install `software-properties-common` which is required for the `add-apt-repository` command.
-RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
+# Install `software-properties-common`, a requirement for the `add-apt-repository` command.
+# Install `.deb` packages placed in `reqs/deb`.
+RUN --mount=type=bind,from=train-builds,source=/tmp/deb,target=/tmp/deb \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        software-properties-common \
+        /tmp/deb/*.deb && \
     rm -rf /var/lib/apt/lists/*
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
@@ -449,6 +459,8 @@ ARG HOME=/home/${USR}
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
+
+# UI/UX related
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).

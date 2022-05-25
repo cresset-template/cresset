@@ -3,5 +3,6 @@
 # Remove all build context by ignoring everything except for requirements files.
 # Edit this file to allow external files into the Docker build.
 **
-!reqs/*requirements*.txt
+!*/*requirements*.txt
 !*requirements*.txt
+!reqs/deb/*.deb
