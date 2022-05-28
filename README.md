@@ -37,8 +37,8 @@ CUDA driver version mismatch is the single most common issue for new users. See 
 [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit.
 
-2. Install [Docker](https://docs.docker.com/get-docker) if not already installed
-and update to a recent version compatible with Docker Compose V2 (v20.10+ is recommended).
+2. Install [Docker](https://docs.docker.com/get-docker) (v20.10+ is recommended)
+or update to a recent version compatible with Docker Compose V2.
 Docker incompatibility with Docker Compose V2 is also a common issue for new users.
 Note that Windows users may use WSL (Windows Subsystem for Linux).
 Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docker Desktop.
@@ -116,20 +116,29 @@ MKL_MODE=include                   # Enable for Intel CPUs.
 
 ## General Usage After Initial Installation and Configuration
 
-1. Run `make up` or `make rebuild` to start the service. 
+1. Run `make build` to build the image from the Dockerfile and start the service. 
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
+Run `make up` if the image has already been built and
+rebuilding the image from the Dockerfile is not necessary.
 
-2. Run `make exec` to enter the interactive container environment. Then start coding.
+2. Run `make exec` to enter the interactive container environment.
+
+3. There is no step 3. Just start coding.
 
 
 ## Makefile Instructions
 The Makefile contains shortcuts for common docker compose commands. Please read the Makefile to see the exact commands.
 
-1. `make up` recreates a container, creating a fresh container from the image, undoing any changes to the container made by the user. Allows changing container settings as network ports, mounted volumes, shared memory configurations, etc. Recommended method for using this project.
-2. `make rebuild` rebuilds the Docker image, which will reinstall packages to the updated requirements files, and recreate the container.
-3. `make exec` executes the created container. Interactive terminal is enabled by project configurations.
-4. `make down` stops Compose containers and deletes networks. Necessary for cleaning out services.
-5. `make start` restarts a stopped container without recreating it. Similar to docker start but does not delete the current container.
+1. `make build` builds the Docker image from the Dockerfile regardless of whether the image already exists.
+This will reinstall packages to the updated requirements files, and then recreate the container.
+2. `make up` creates a fresh container from the image, undoing any changes to the container made by the user.
+Allows changing container settings as network ports, mounted volumes, shared memory configurations, etc.
+Recommended method for using this project.
+3. `make exec` enters the interactive terminal of the container created by `make build` and `make up`.
+4. `make down` stops Compose containers and deletes networks. Necessary for service teardown.
+5. `make start` restarts a stopped container without recreating it.
+Similar to `make up` but does not delete the current container.
+Not recommended unless data saved in container is absolutely necessary.
 6. `make ls` shows all Docker Compose services, both active and inactive.
 7. `make run` is used for debugging. If a service fails to start, use it to find the error.
 
@@ -138,8 +147,8 @@ The Makefile contains shortcuts for common docker compose commands. Please read 
 
 - `make up` is akin to rebooting a computer.
 The current container is removed and a new container is created from the current image.
-- `make rebuild` is akin to resetting/formatting a computer.
-The current image is removed and a new image is built from the Dockerfile,
+- `make build` is akin to resetting/formatting a computer.
+The current image, if present, is removed and a new image is built from the Dockerfile,
 after which a container is created from the resulting image.
 In contrast, `make up` only creates an image from source if the specified image is not present.
 - `make exec` is akin to logging into a computer.
@@ -339,6 +348,7 @@ Using `docker`/`docker compose` to enter containers is strongly recommended.
 2. `pip install package[option]` will fail on the terminal because of Z-shell globbing.
 Characters such as `[`,`]`,`*`, etc. will be interpreted by Z-shell as special commands.
 To disable with behavior add `noglob` in front of the command, e.g., `noglob pip install package[option]`.
+Alternatively, one may also use string literals, e.g., `pip install 'package[option]'`.
 
 3. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
 
