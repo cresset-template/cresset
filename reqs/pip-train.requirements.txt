@@ -5,6 +5,9 @@ mkl  # Essential package if BUILD_MODE=include and MKL_MODE=include. Unnecessary
 pytorch-lightning
 torchmetrics
 hydra-core==1.1.0
+# Packages with square brackets need to be inside single quotes when installed on Zsh.
+# This is because Zsh interprets square brackets as regular expressions, unlike bash.
+# Example: `python -m pip install 'ray[tune]'`.
 ray[tune]
 pandas
 openpyxl  # Read `.xlsx` files in Pandas.

@@ -41,15 +41,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-centos
-RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubi
-RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-rockylinux
-RUN yum -y install curl && yum -y clean all  && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM install-${LINUX_DISTRO} AS install-base
@@ -78,6 +78,7 @@ ARG MKL_MODE
 ARG PYTHON_VERSION
 # Conda packages have higher priority than system packages during build.
 ENV PATH=/opt/conda/bin:${PATH}
+# Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 # Channel priority: `intel`, `conda-forge`, `pytorch`.
 # Cannot set strict priority because of installation conflicts.
@@ -99,7 +100,7 @@ RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
 FROM install-base AS install-conda
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
-COPY --link reqs/conda-build.requirements.txt /tmp/reqs/conda-build.requirements.txt
+COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
 RUN conda install -y mamba && conda clean -ya
@@ -109,9 +110,6 @@ ENV conda=/opt/conda/bin/mamba
 ########################################################################
 FROM install-conda AS install-include-mkl
 
-# Roundabout method to enable MKLDNN in PyTorch build when MKL is included.
-ENV USE_MKLDNN=1
-
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
 # Use fixed version numbers if versioning issues cause build failures.
@@ -119,11 +117,18 @@ ENV USE_MKLDNN=1
 # For example, 11.5.1 becomes 115 and 10.2 becomes 102.
 ARG CUDA_VERSION
 RUN $conda install -y \
-        --file /tmp/reqs/conda-build.requirements.txt \
+        --file /tmp/conda/build-requirements.txt \
         magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         mkl-include \
         mkl && \
     conda clean -ya
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV MKL_DEBUG_CPU_TYPE=5
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 # Use Intel OpenMP with optimizations enabled.
 # Some compilers can use OpenMP for faster builds.
@@ -133,9 +138,6 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 ########################################################################
 FROM install-conda AS install-exclude-mkl
 
-# Roundabout method to disable MKLDNN in PyTorch build when MKL is excluded.
-ENV USE_MKLDNN=0
-
 # The Intel(R) Math Kernel Library (MKL) places some restrictions on its use, though there are no
 # restrictions on commercial use. See the Intel(R) Simplified Software License (ISSL) for details.
 # Other Intel software such as the Intel OpenMP^* Runtime Library (iomp) are licensed under the
@@ -144,7 +146,7 @@ ENV USE_MKLDNN=0
 # Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
 ARG CUDA_VERSION
 RUN $conda install -y \
-        --file /tmp/reqs/conda-build.requirements.txt \
+        --file /tmp/conda/build-requirements.txt \
         magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         nomkl && \
     conda clean -ya
@@ -193,13 +195,12 @@ RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
         ${TORCH_URL} /opt/pytorch
 
-# Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
+# Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
-ARG USE_MKLDNN=${USE_MKLDNN}
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
@@ -297,32 +298,6 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-torch AS build-audio
-
-WORKDIR /opt/audio
-ARG TORCHAUDIO_VERSION_TAG
-ARG AUDIO_URL=https://github.com/pytorch/audio.git
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${TORCHAUDIO_VERSION_TAG} \
-        ${AUDIO_URL} /opt/audio
-
-ARG USE_CUDA
-ARG USE_PRECOMPILED_HEADERS
-ARG BUILD_FFMPEG=1
-ARG TORCH_CUDA_ARCH_LIST
-
-# Fix for https://github.com/pytorch/audio/issues/2295
-ARG BUG_FILE=/opt/audio/third_party/zlib/CMakeLists.txt
-ARG BUG_URL=https://zlib.net/zlib-1.2.11.tar.gz
-ARG FIX_URL=https://zlib.net/zlib-1.2.12.tar.gz
-ARG BUG_HASH=c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1
-ARG FIX_HASH=91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9
-RUN sed -i "s%${BUG_URL}%${FIX_URL}%; s%${BUG_HASH}%${FIX_HASH}%" ${BUG_FILE}
-
-RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
-
-########################################################################
 FROM build-base AS build-pure
 
 # Z-Shell related libraries.
@@ -338,11 +313,9 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 FROM ${BUILD_IMAGE} AS train-builds-include
 # A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
 # If other source builds are included later on, gather them here as well.
-# The train stage should not have any dependencies other than this stage.
-# This stage does not have anything installed. No variables are specified either.
-# This stage is simply the `BUILD_IMAGE` with additional files and directories.
 # All pip wheels are located in `/tmp/dist`.
-# Using an image other than `BUILD_IMAGE` may contaminate `/opt/conda` and other key directories.
+# Using an image other than `BUILD_IMAGE` may contaminate
+# `/opt/conda` and other key directories.
 
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
@@ -350,7 +323,6 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
-COPY --link --from=build-audio  /tmp/dist  /tmp/dist
 COPY --link --from=build-text   /tmp/dist  /tmp/dist
 COPY --link --from=build-pure   /opt/zsh   /opt
 
@@ -364,6 +336,10 @@ COPY --link --from=build-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
+# Gather Python packages built in previous stages and
+# install into a conda virtual environment using pip.
+# Using a separate stage allows for build modularity
+# and and parallel installation with system packages.
 
 # Add a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
 ARG INDEX_URL
@@ -376,8 +352,6 @@ RUN if [ ${INDEX_URL} ]; then \
 ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-COPY --link reqs/deb /tmp/deb
-COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
 COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
 # The `/tmp/dist/*.whl` files are the wheels built in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
@@ -387,6 +361,11 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
     python -m pip install --find-links /tmp/dist \
         -r /tmp/pip/requirements.txt \
         /tmp/dist/*.whl
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
@@ -406,8 +385,8 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezo
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common`, a requirement for the `add-apt-repository` command.
-# Install `.deb` packages placed in `reqs/deb`.
-RUN --mount=type=bind,from=train-builds,source=/tmp/deb,target=/tmp/deb \
+# Install `.deb` packages placed in `reqs/deb` on the project root directory.
+RUN --mount=type=bind,source=reqs/deb,target=/tmp/deb \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common \
@@ -417,8 +396,8 @@ RUN --mount=type=bind,from=train-builds,source=/tmp/deb,target=/tmp/deb \
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
-RUN --mount=type=bind,from=train-builds,source=/tmp/apt,target=/tmp/apt \
-    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
+COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
+RUN apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -439,6 +418,11 @@ RUN groupadd -g ${GID} ${GRP} && \
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV MKL_DEBUG_CPU_TYPE=5
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_BLOCKTIME=0
@@ -451,8 +435,8 @@ ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 USER ${USR}
-# Docker must use absolute paths in `COPY` and cannot find `$HOME`.
-# Setting $HOME to its default value explicitly as a fix.
+# Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
+# Setting ${HOME} to its default value explicitly as a fix.
 ARG HOME=/home/${USR}
 
 # `PROJECT_ROOT` is where the project code will reside.
@@ -460,28 +444,26 @@ ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 
-# UI/UX related
-
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-ARG PURE_PATH=$HOME/.zsh/pure
+ARG PURE_PATH=${HOME}/.zsh/pure
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
-RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> $HOME/.zshrc
+RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> ${HOME}/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG ZSHA_PATH=$HOME/.zsh/zsh-autosuggestions
+#ARG ZSHA_PATH=${HOME}/.zsh/zsh-autosuggestions
 #COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${ZSHA_PATH}
-#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> $HOME/.zshrc
+#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${HOME}/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=$HOME/.zsh/zsh-syntax-highlighting
+ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> $HOME/.zshrc
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Enable mouse scrolling for tmux.
-RUN echo 'set -g mouse on' >> $HOME/.tmux.conf
+RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.

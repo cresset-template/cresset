@@ -1,4 +1,4 @@
-.PHONY: env di up exec rebuild start down run ls guard
+.PHONY: env di up exec build rebuild start down run ls guard
 
 # Creates a `.env` file in PWD if it does not exist already or is empty.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
@@ -34,8 +34,9 @@ COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-${USR}"
 up: guard  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
-rebuild: guard  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
+build: guard  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
+rebuild: build  # Deprecated alias for `build`.
 exec:  # Execute service. Enter interactive shell.
 	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
 start:  # Start a stopped service without recreating the container. Useful if the previous container must not deleted.
