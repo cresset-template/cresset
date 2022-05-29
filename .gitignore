@@ -132,6 +132,10 @@ dmypy.json
 .idea/
 .vscode/
 
+# Cresset specific convention.
+# The override file is meant to hold user-specific such as host volume paths or ports.
+docker-compose.override.yaml
+
 # PyTorch checkpoints
 *.pt
 

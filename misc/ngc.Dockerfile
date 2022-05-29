@@ -24,7 +24,7 @@ ARG DEB_OLD=http://archive.ubuntu.com
 ARG DEB_NEW=http://mirror.kakao.com
 
 # Copy and install `apt` requirements.
-COPY reqs/apt-ngc.requirements.txt /tmp/apt-ngc.requirements.txt
+COPY ../reqs/apt-ngc.requirements.txt /tmp/apt-ngc.requirements.txt
 RUN sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list && \
     apt-get update && \
     sed 's/#.*//g; s/\r//g' /tmp/apt-ngc.requirements.txt | \
@@ -68,7 +68,7 @@ ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:$PATH
 ENV PYTHONPATH=${PROJECT_ROOT}
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
-COPY --chown=${UID}:${GID} reqs/pip-ngc.requirements.txt /tmp/pip-ngc.requirements.txt
+COPY --chown=${UID}:${GID} ../reqs/pip-ngc.requirements.txt /tmp/pip-ngc.requirements.txt
 RUN printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" \
         > /opt/conda/pip.conf && \
     python -m pip install --no-cache-dir \
