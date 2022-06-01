@@ -398,7 +398,7 @@ RUN --mount=type=bind,source=reqs/deb,target=/tmp/deb \
 # See the `deploy` stage below to see how to add other apt reporitories.
 COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
 RUN apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
-    xargs -r apt-get install -y --no-install-recommends && \
+    xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 ARG GID
@@ -462,8 +462,8 @@ ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
-# Enable mouse scrolling for tmux.
-RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
+# Enable mouse scrolling for tmux. This also disables copying text from the terminal.
+# RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
@@ -522,7 +522,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/a
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
     printf "\n python${PYTHON_VERSION} \n" >> /tmp/apt/requirements.txt && \
     sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt |  \
-    xargs -r apt-get install -y --no-install-recommends && \
+    xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
     update-alternatives --install /usr/bin/python  python  /usr/bin/python${PYTHON_VERSION} 1

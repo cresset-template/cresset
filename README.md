@@ -7,7 +7,7 @@
 [![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)
 
 **Translations:
-[한국어](https://github.com/cresset-template/cresset/blob/main/KOREAN.README.md)**
+[한국어](https://github.com/cresset-template/cresset/blob/main/assets/KOREAN.README.md)**
 
 
 ![Cresset Logo](https://github.com/cresset-template/cresset/blob/main/assets/logo.png "Logo")
