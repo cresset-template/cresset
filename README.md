@@ -103,7 +103,6 @@ BUILD_MODE=exclude                 # Whether to build PyTorch from source.
 PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.12.0
 TORCHTEXT_VERSION_TAG=v0.12.0
-TORCHAUDIO_VERSION_TAG=v0.11.0
 
 # General environment configurations.
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
