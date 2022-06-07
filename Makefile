@@ -1,4 +1,4 @@
-.PHONY: env di up exec build rebuild start down run ls guard overrides init
+.PHONY: di up exec build rebuild start down run ls check overrides init
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
@@ -10,7 +10,7 @@ SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-${USR}"
 
-# Creates a `.env` file in PWD if it does not exist already or is empty.
+# Creates a `.env` file in PWD if it does not exist.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
@@ -21,11 +21,27 @@ UID = $(shell id -u)
 GRP = $(shell id -gn)
 USR = $(shell id -un)
 IMAGE_NAME = "${SERVICE}-${USR}"
-env:
-	test -s ${ENV_FILE} || printf "GID=${GID}\nUID=${UID}\nGRP=${GRP}\nUSR=${USR}\nIMAGE_NAME=${IMAGE_NAME}\n" >> ${ENV_FILE}
 
-guard:  # Checks if the `.env` file exists.
-	@test -s ${ENV_FILE} || echo "File \`${ENV_FILE}\` does not exist. Run \`make env\` to create \`${ENV_FILE}\`" && test -s ${ENV_FILE}
+# Makefiles require `$\` at the end of a line for multi-line string values.
+# https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
+ENV_TEXT = "$\
+GID=${GID}\n$\
+UID=${UID}\n$\
+GRP=${GRP}\n$\
+USR=${USR}\n$\
+IMAGE_NAME=${IMAGE_NAME}\n$\
+"
+${ENV_FILE}:  # Creates the `.env` file if it does not exist.
+	printf ${ENV_TEXT} >> ${ENV_FILE}
+
+env: ${ENV_FILE}
+
+check:  # Checks if the `.env` file exists.
+	@if [ ! -f "${ENV_FILE}" ]; then \
+		printf "File \`${ENV_FILE}\` does not exist. " && \
+		printf "Run \`make env\` to create \`${ENV_FILE}\`.\n" && \
+		exit 1; \
+	fi
 
 OVERRIDE_FILE = docker-compose.override.yaml
 OVERRIDE_BASE = "services:\n  ${SERVICE}:\n    volumes:"
@@ -34,10 +50,10 @@ OVERRIDE_BASE = "services:\n  ${SERVICE}:\n    volumes:"
 overrides:
 	test -s ${OVERRIDE_FILE} || printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
 
-build: guard  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
+build: check  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
 rebuild: build  # Deprecated alias for `build`.
-up: guard  # Start service. Creates a new container from the image.
+up: check  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
 exec:  # Execute service. Enter interactive shell.
 	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
@@ -45,7 +61,7 @@ start:  # Start a stopped service without recreating the container. Useful if th
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
-run: guard  # Used for debugging cases where service will not start.
+run: check  # Used for debugging cases where service will not start.
 	docker compose -p ${PROJECT} run ${SERVICE}
 ls:  # List all services.
 	docker compose ls -a

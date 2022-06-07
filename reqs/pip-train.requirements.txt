@@ -1,6 +1,6 @@
 # Packages to be installed in `Dockerfile` in `train` or `full` modes.
-
---extra-index-url https://download.pytorch.org/whl/cu113  # Must be on its separate line.
+# `--extra-index-url` Must be on its separate line.
+--extra-index-url https://download.pytorch.org/whl/cu113  # Assumes CUDA 11.
 mkl  # Essential package if BUILD_MODE=include and MKL_MODE=include. Unnecessary if MKL_MODE=exclude.
 pytorch-lightning
 torchmetrics
