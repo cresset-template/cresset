@@ -103,9 +103,10 @@ FROM install-base AS install-conda
 COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
-RUN conda install -y mamba && conda clean -ya
+# RUN conda install -y mamba && conda clean -ya
 # Using Mamba instead of Conda as the package manager for faster installation.
-ENV conda=/opt/conda/bin/mamba
+# ENV conda=/opt/conda/bin/mamba
+ENV conda=/opt/conda/bin/conda
 
 ########################################################################
 FROM install-conda AS install-include-mkl
