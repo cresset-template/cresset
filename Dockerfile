@@ -103,9 +103,10 @@ FROM install-base AS install-conda
 COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 
 # Comment out the lines below if Mamba causes any issues.
-RUN conda install -y mamba && conda clean -ya
+# RUN conda install -y mamba && conda clean -ya
 # Using Mamba instead of Conda as the package manager for faster installation.
-ENV conda=/opt/conda/bin/mamba
+# ENV conda=/opt/conda/bin/mamba
+ENV conda=/opt/conda/bin/conda
 
 ########################################################################
 FROM install-conda AS install-include-mkl
@@ -385,12 +386,12 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezo
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common`, a requirement for the `add-apt-repository` command.
-# Install `.deb` packages placed in `reqs/deb` on the project root directory.
+# Install `.deb` packages placed in `reqs/deb` on the project root directory by including `/tmp/deb/*.deb` in the apt package installs.
+# Temporarily disabled `/tmp/deb/*.deb` installation due to git-lfs issues.
 RUN --mount=type=bind,source=reqs/deb,target=/tmp/deb \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-        /tmp/deb/*.deb && \
+        software-properties-common && \
     rm -rf /var/lib/apt/lists/*
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
