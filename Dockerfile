@@ -20,6 +20,7 @@
 ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
 ARG USE_PRECOMPILED_HEADERS=1
+ARG CONDA_MANAGER=mamba
 ARG MKL_MODE=include
 ARG CUDA_VERSION=11.5.2
 ARG CUDNN_VERSION=8
@@ -101,15 +102,22 @@ FROM install-base AS install-conda
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
 COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
-
-# Comment out the lines below if Mamba causes any issues.
-# RUN conda install -y mamba && conda clean -ya
-# Using Mamba instead of Conda as the package manager for faster installation.
-# ENV conda=/opt/conda/bin/mamba
 ENV conda=/opt/conda/bin/conda
 
+FROM install-conda AS install-mamba
+
+# Using Mamba instead of Conda as the package manager for faster installation.
+RUN conda install -y mamba && conda clean -ya
+ENV conda=/opt/conda/bin/mamba
+
 ########################################################################
-FROM install-conda AS install-include-mkl
+FROM install-${CONDA_MANAGER} AS install-include-mkl
+
+# The `CONDA_MANAGER` variable may be either `mamba` (the default) or `conda`.
+# Mamba is a faster reimplementation of conda in C++.
+# However, there are occasions where mamba is unable to
+# resolve conflicts that conda can resolve.
+# In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
@@ -386,10 +394,7 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezo
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common`, a requirement for the `add-apt-repository` command.
-# Install `.deb` packages placed in `reqs/deb` on the project root directory by including `/tmp/deb/*.deb` in the apt package installs.
-# Temporarily disabled `/tmp/deb/*.deb` installation due to git-lfs issues.
-RUN --mount=type=bind,source=reqs/deb,target=/tmp/deb \
-    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
     rm -rf /var/lib/apt/lists/*

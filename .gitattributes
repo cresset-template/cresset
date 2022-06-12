@@ -1,2 +1,0 @@
-# Enable Git LFS for .deb files, e.g., NVIDIA NSight.
-*.deb filter=lfs diff=lfs merge=lfs -text
