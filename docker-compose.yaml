@@ -164,7 +164,7 @@ services:
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.5.2}
+        CUDA_VERSION: ${CUDA_VERSION:-11.6.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
