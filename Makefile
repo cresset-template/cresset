@@ -5,10 +5,11 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
-# Change `SERVICE` to specify other services and projects.
+# **Change `SERVICE` to specify other services and projects.**
 SERVICE = full
 COMMAND = /bin/zsh
 PROJECT = "${SERVICE}-${USR}"
+PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
@@ -30,6 +31,7 @@ UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
+PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
 ${ENV_FILE}:  # Creates the `.env` file if it does not exist.
 	printf ${ENV_TEXT} >> ${ENV_FILE}

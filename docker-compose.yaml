@@ -52,9 +52,9 @@ services:
       args:  # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.0}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.13.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}  # `id -g`
         UID: ${UID:-1000}  # `id -u`
@@ -113,9 +113,9 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.0}
+        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.13.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
