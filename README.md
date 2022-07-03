@@ -371,6 +371,9 @@ The CUDA driver version can be found using the `nvidia-smi` command.
 7. Docker Compose V2 will silently fail if the installed Docker version is too low.
 Update Docker to the latest version (20.10+) to use Docker Compose V2.
 
+8. Packages with square brackets need to be inside single quotes when installed on Z-shell.
+This is because Z-shell interprets square brackets as regular expressions, unlike bash.
+Example: `python -m pip install 'ray[tune]'`.
 
 # Desiderata
 

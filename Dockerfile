@@ -292,21 +292,6 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-torch AS build-text
-
-WORKDIR /opt/text
-ARG TORCHTEXT_VERSION_TAG
-ARG TEXT_URL=https://github.com/pytorch/text.git
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${TORCHTEXT_VERSION_TAG} \
-        ${TEXT_URL} /opt/text
-
-# TorchText does not use CUDA.
-ARG USE_PRECOMPILED_HEADERS
-RUN --mount=type=cache,target=/opt/ccache \
-    python setup.py bdist_wheel -d /tmp/dist
-
-########################################################################
 FROM build-base AS build-pure
 
 # Z-Shell related libraries.
@@ -332,7 +317,6 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
-COPY --link --from=build-text   /tmp/dist  /tmp/dist
 COPY --link --from=build-pure   /opt/zsh   /opt
 
 ########################################################################

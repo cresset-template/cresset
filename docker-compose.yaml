@@ -45,6 +45,7 @@ services:
     volumes:  # Equivalent to `-v` flag in `docker run`.
       - .:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is at the project root.
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is in a subdirectory.
+#      - ${HOME}/.vscode-server:~/.vscode-server  # Preserve VSCode extensions between containers.
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       target: train  # Specify build target.
       context: .
@@ -54,7 +55,6 @@ services:
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.0}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.13.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}  # `id -g`
         UID: ${UID:-1000}  # `id -u`
@@ -93,7 +93,7 @@ services:
 #      - /opt/data
     volumes:  # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
-#      - ${HOME}/.vscode-server:/home/${USR}/.vscode-server  # VSCode extensions can be preserved between containers this way.
+#      - ${HOME}/.vscode-server:~/.vscode-server  # Preserve VSCode extensions between containers.
     build:
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
       target: ${TARGET_STAGE:-train}
@@ -112,10 +112,9 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
+        TORCH_CUDA_ARCH_LIST: ${CCA}  # Fails if BUILD_MODE=include but CCA is not set explicitly.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.0}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.13.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -172,7 +171,6 @@ services:
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.11.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.12.0}
-        TORCHTEXT_VERSION_TAG: ${TORCHTEXT_VERSION_TAG:-v0.12.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}

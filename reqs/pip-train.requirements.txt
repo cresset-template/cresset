@@ -2,20 +2,11 @@
 # `--extra-index-url` Must be on its separate line.
 --extra-index-url https://download.pytorch.org/whl/cu116  # Assumes CUDA 11.
 mkl  # Essential package if BUILD_MODE=include and MKL_MODE=include. Unnecessary if MKL_MODE=exclude.
-pytorch-lightning
-torchmetrics
+torch
+torchvision
 hydra-core==1.1.0
-# Packages with square brackets need to be inside single quotes when installed on Zsh.
-# This is because Zsh interprets square brackets as regular expressions, unlike bash.
-# Example: `python -m pip install 'ray[tune]'`.
-ray[tune]
 pandas
-openpyxl  # Read `.xlsx` files in Pandas.
-scikit-learn>=1.0.0
 jupyterlab
-wandb
-seaborn
 black
 pytest
-pre-commit
 rich
