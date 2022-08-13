@@ -3,11 +3,13 @@
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
 # https://docs.docker.com/engine/reference/commandline/compose
-# `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
-# Project names are made unique for each user to prevent name clashes.
+
 # **Change `SERVICE` to specify other services and projects.**
 SERVICE = full
 COMMAND = /bin/zsh
+
+# `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
+# Project names are made unique for each user to prevent name clashes.
 PROJECT = "${SERVICE}-${USR}"
 PROJECT_ROOT = /opt/project
 
@@ -68,9 +70,8 @@ run: check  # Used for debugging cases where service will not start.
 ls:  # List all services.
 	docker compose ls -a
 
-
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
 # Set to ignore all files except requirements files at project root or `reqs`.
 DI_FILE = .dockerignore
 di:
-	test -s ${DI_FILE} || printf "*\n!reqs/*requirements*.txt\n!*requirements*.txt\n" >> ${DI_FILE}
+	test -s ${DI_FILE} || printf "*\n!*requirements*.txt\n!**/*requirements*.txt\n" >> ${DI_FILE}

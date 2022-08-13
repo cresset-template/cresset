@@ -80,6 +80,14 @@ can be overridden by values specified in the `.env` file.
 These contain project package dependencies. The `apt` requirements are designed to resemble an
 ordinary Python `requirements.txt` file.
 
+4. Edit the `volumes` section of a service to include external directories in the container environment.
+Run `make overrides` to create a `docker-compose.override.yaml` file to add custom volumes and configurations.
+The `docker-compose.override.yaml` file is excluded from version control to allow per-user/per-server settings.
+
+5. (Advanced) If an external file must be included in the Docker image build process,
+edit the `.dockerignore` file to allow the Docker context to find the external file.
+By default, all files except requirements files are excluded from the Docker build context.
+
 Example `.env` file for user with username `USERNAME`, group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
 Edit the `docker-compose.yaml` file and the `Makefile` to specify services other than `full`.
 ```text
@@ -119,9 +127,7 @@ MKL_MODE=include                   # Enable for Intel CPUs.
 The `make` commands are defined in the `Makefile` and target the `full` service by default.
 Run `make up` if the image has already been built and
 rebuilding the image from the Dockerfile is not necessary.
-
 2. Run `make exec` to enter the interactive container environment.
-
 3. There is no step 3. Just start coding.
 
 
@@ -157,7 +163,7 @@ be changed in a running container, requiring a new container.
 - Docker automatically caches all builds up to `defaultKeepStorage`.
 Builds use caches from previous builds by default, 
 greatly speeding up later builds by only building modified layers.
-- If the build fails during `git clone`, try `make rebuild` again with a stable internet connection.
+- If the build fails during `git clone`, try `make build` again with a stable internet connection.
 - If the build fails during `pip install`, check the PyPI mirror URLs and package requirements.
 
 
@@ -172,7 +178,7 @@ When the user inputs `make up` or another `make` command,
 commands specified in the `Makefile` are executed.
 The `Makefile` is used to specify shorthand commands and variables.
 
-When a command related to Docker Compose (e.g., `make rebuild`) is executed,
+When a command related to Docker Compose (e.g., `make build`) is executed,
 The `docker-compose.yaml` file and the `.env` file are read by Docker Compose.
 The `docker-compose.yaml` file specifies reasonable default values
 but users may wish to change them as per their needs.
@@ -355,7 +361,7 @@ Alternatively, one may also use string literals, e.g., `pip install 'package[opt
 CUDA 11.4.x is not available as `magma-cuda114` is unavailable. 
 Neither can new versions of CUDA be used until a `magma` package is published.
 
-5. If the build fails during `git clone`, simply try `make rebuild` again.
+5. If the build fails during `git clone`, simply try `make build` again.
 Most of the build will be cached. Failure is probably due to networking issues during installation.
 Updating git submodules is [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 

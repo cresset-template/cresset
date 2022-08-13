@@ -206,16 +206,19 @@ if __name__ == '__main__':
         ),
         Config(
             name='fcn_resnet50',
+            # Update to `weights_backbone=None` in v0.15+.
             network=fcn_resnet50(pretrained_backbone=False),
             input_shapes=((1, 3, 512, 512),)
         ),
         Config(
             name='deeplabv3_resnet50',
+            # Update to `weights_backbone=None` in v0.15+.
             network=deeplabv3_resnet50(pretrained_backbone=False),
             input_shapes=((1, 3, 512, 512),)
         ),
         Config(
             name='retinanet_resnet50_fpn',
+            # Update to `weights_backbone=None` in v0.15+.
             network=retinanet_resnet50_fpn(pretrained_backbone=False),
             input_shapes=((1, 3, 512, 512),)
         ),

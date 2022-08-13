@@ -22,11 +22,11 @@ ARG USE_CUDA=1
 ARG USE_PRECOMPILED_HEADERS=1
 ARG CONDA_MANAGER=mamba
 ARG MKL_MODE=include
-ARG CUDA_VERSION=11.6.1
+ARG CUDA_VERSION=11.7.1
 ARG CUDNN_VERSION=8
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG LINUX_DISTRO=ubuntu
-ARG DISTRO_VERSION=20.04
+ARG DISTRO_VERSION=22.04
 ARG TORCH_CUDA_ARCH_LIST
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
@@ -362,7 +362,7 @@ RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c &&
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
-# Example training image for Ubuntu 20.04 on an Intel x86_64 CPU. Edit if necessary.
+# Example training image for Ubuntu 22.04 on an Intel x86_64 CPU. Edit if necessary.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -454,6 +454,9 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Enable mouse scrolling for tmux. This also disables copying text from the terminal.
 # RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
+
+# For GLIBC version mismatch between the system and Anaconda.
+# RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /opt/conda/bin/../lib/libstdc++.so.6
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
