@@ -355,6 +355,9 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
         -r /tmp/pip/requirements.txt \
         /tmp/dist/*.whl
 
+# Solve libncurses version mismatch bug.
+RUN unlink /opt/conda/lib/libncursesw.so.6
+
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
