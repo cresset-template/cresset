@@ -396,3 +396,8 @@ and especially NVIDIA Driver are up-to-date before doing so.
 
 4. Translations into other languages and updates to existing translations are welcome. 
 Please create a separate `LANG.README.md` file and make a Pull Request.
+
+
+### Infrastructure model
+
+![Insfrastructure model](.infragenie/infrastructure_model.png)
