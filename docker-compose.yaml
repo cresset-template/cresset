@@ -30,6 +30,7 @@ services:
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: cresset:${IMAGE_NAME:-train}
+#    network_mode: host  # Use the same network as the host.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
 #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this for WSL.
 #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
@@ -84,6 +85,7 @@ services:
   full:  # Default service name. Change the name as necessary for each project.
     hostname: full
     image: cresset:${IMAGE_NAME:-full}
+#    network_mode: host  # Use the same network as the host.
 #    ipc: host
 #    shm_size: 1GB
     tty: true

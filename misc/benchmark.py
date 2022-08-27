@@ -234,6 +234,6 @@ if __name__ == '__main__':
             cfgs=configs,
             num_steps=1024,
             enable_amp=False,
-            enable_scripting=True,
+            enable_scripting=False,
             gpu=0,
         )

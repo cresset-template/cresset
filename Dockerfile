@@ -11,6 +11,8 @@
 # The `stages` are like blocks in the network, with control flow implemented
 # by the names of arguments and stages.
 
+# Use `export BUILDKIT_PROGRESS=plain` to see full outputs during debugging.
+
 # All `ARG` variables must be redefined for every stage,
 # `ARG`s defined before `FROM` transfer their values to layers that redefine them.
 # `ENV` and `LABEL` variables are inherited only by child stages.
@@ -68,32 +70,25 @@ ENV PYTHONIOENCODING=UTF-8
 
 # Conda always uses the specified version of Python, regardless of Miniconda version.
 # Use a different conda URL for a different CPU architecture or specific version.
-# The default CPU architecture is Intel x86_64.
 # The Anaconda `defaults` channel is no longer free for commercial use.
-# Anaconda (including Miniconda) itself is still open-source.
+# Miniconda itself is still open-source.
 # Removing `defaults` channel as a result. Viva la Open Source!
 # https://conda.io/en/latest/license.html
 # https://www.anaconda.com/terms-of-service
 # https://www.anaconda.com/end-user-license-agreement-miniconda
 ARG MKL_MODE
 ARG PYTHON_VERSION
-# Conda packages have higher priority than system packages during build.
+# Conda packages have higher priority than system packages during the build.
 ENV PATH=/opt/conda/bin:${PATH}
 # Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
+# Cannot set strict channel priority because of installation conflicts.
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# Channel priority: `intel`, `conda-forge`, `pytorch`.
-# Cannot set strict priority because of installation conflicts.
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     chmod +x /tmp/miniconda.sh && \
     /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh && \
-    conda config --append channels intel && \
-    conda config --append channels conda-forge && \
-    conda config --append channels pytorch && \
     conda config --remove channels defaults && \
-    if [ ${MKL_MODE} != include ]; then \
-        conda config --remove channels intel; \
-    fi && \
+    conda config --append channels conda-forge && \
     conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya
 
@@ -124,10 +119,13 @@ FROM install-${CONDA_MANAGER} AS install-include-mkl
 # Use fixed version numbers if versioning issues cause build failures.
 # `sed 's/\.//; s/\..*//'` extracts `magma` versions from CUDA versions.
 # For example, 11.5.1 becomes 115 and 10.2 becomes 102.
+# Using the MatchSpec syntax for the magma-cuda package,
+# which is only available from the PyTorch channel.
+# All other packages should come from the conda-forge channel.
 ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/conda/build-requirements.txt \
-        magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
+        pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         mkl-include \
         mkl && \
     conda clean -ya
@@ -156,7 +154,7 @@ FROM install-conda AS install-exclude-mkl
 ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/conda/build-requirements.txt \
-        magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
+        pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         nomkl && \
     conda clean -ya
 
@@ -355,9 +353,6 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
         -r /tmp/pip/requirements.txt \
         /tmp/dist/*.whl
 
-# Solve libncurses version mismatch bug.
-RUN unlink /opt/conda/lib/libncursesw.so.6
-
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
@@ -433,9 +428,18 @@ USER ${USR}
 ARG HOME=/home/${USR}
 
 # `PROJECT_ROOT` is where the project code will reside.
+# The conda root path must be placed at the end of the
+# PATH variable to prevent system program search errors.
+# This is the opposite of the build stage.
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
+ENV PATH=${PROJECT_ROOT}:${PATH}:/opt/conda/bin
 ENV PYTHONPATH=${PROJECT_ROOT}
+
+# Conda configurations are not carried with the directory.
+# Resetting configurations in case conda packages are needed.
+RUN conda config --append channels conda-forge && \
+    conda config --remove channels defaults && \
+    conda config --set channel_priority strict
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
@@ -455,10 +459,14 @@ ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
+# Solve libncurses version mismatch bug.
+#RUN rm /opt/conda/lib/libncursesw.so.6
+
 # Enable mouse scrolling for tmux. This also disables copying text from the terminal.
 # RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # For GLIBC version mismatch between the system and Anaconda.
+# Remove later when Anaconda fully supports Python 3.10.
 # RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /opt/conda/bin/../lib/libstdc++.so.6
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.

@@ -106,19 +106,18 @@ CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and
 # CCA='7.5 8.6+PTX'                # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
-# The `*_TAG` variables are used only if `BUILD_MODE=include`.
+# The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude                 # Whether to build PyTorch from source.
 PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.12.0
-TORCHTEXT_VERSION_TAG=v0.12.0
 
 # General environment configurations.
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
-DISTRO_VERSION=20.04               # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.5.2                # Must be compatible with hardware and CUDA driver.
+DISTRO_VERSION=22.04               # https://hub.docker.com/r/nvidia/cuda/tags
+CUDA_VERSION=11.7.1                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                    # Only major version specifications are available.
-PYTHON_VERSION=3.9                 # Minor version specifications are not guaranteed to work.
-MKL_MODE=include                   # Enable for Intel CPUs.
+PYTHON_VERSION=3.10                # Minor version specifications are not guaranteed to work.
+MKL_MODE=include                   # Enable MKL for Intel CPUs.
 ```
 
 ## General Usage After Initial Installation and Configuration
@@ -327,11 +326,8 @@ The Docker Compose container environment can be used with popular Python IDEs, n
 PyCharm and Visual Studio Code, both very popular in the deep learning community,
 are compatible with Docker Compose.
 
-1. If you are using a remote server, first create a Docker 
-[context](https://docs.docker.com/engine/context/working-with-contexts)
-to connect your local Docker with the remote Docker.
-
-2. **PyCharm** (Professional only): Both Docker and Docker Compose are natively available as Python interpreters. 
+#### PyCharm (Professional only)
+Both Docker and Docker Compose are natively available as Python interpreters. 
 See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) and 
 [Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
 JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
@@ -340,7 +336,8 @@ JetBrains Fleet IDE, with much more advanced features, will become available in 
 _N.B._ PyCharm Professional and other JetBrains IDEs are available 
 free of charge to anyone with a valid university e-mail address.
 
-3. **VSCode**: Install the Remote Development extension pack. 
+#### VSCode 
+Install the Remote Development extension pack. 
 See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
 
 
