@@ -7,7 +7,7 @@
 [![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)
 
 **Translations:
-[한국어](https://github.com/cresset-template/cresset/blob/main/assets/KOREAN.README.md)**
+[한국어](https://github.com/cresset-template/cresset/blob/main/misc/KOREAN.README.md)**
 
 
 ![Cresset Logo](https://github.com/cresset-template/cresset/blob/main/assets/logo.png "Logo")
@@ -47,8 +47,8 @@ _N.B._ Windows Security real-time protection causes significant slowdown if enab
 Disable any active antivirus programs on Windows for best performance.
 _N.B._ Linux hosts may also install via this [repo](https://github.com/docker/docker-install).
 
-3. Run `. install_compose.sh` to install Docker Compose V2 for Linux hosts. 
-Docker Desktop has Docker Compose V2 activated by default.
+3. Run `. misc/install_compose.sh` to install Docker Compose V2 for Linux hosts. 
+Docker Desktop has Docker Compose V2 activated by default for WSL users.
 Installation does _**not**_ require `root` permissions.
 Visit the [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
 for the latest installation information.
@@ -96,7 +96,7 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-IMAGE_NAME=full-USERNAME
+IMAGE_NAME=train-USERNAME
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
@@ -123,7 +123,7 @@ MKL_MODE=include                   # Enable MKL for Intel CPUs.
 ## General Usage After Initial Installation and Configuration
 
 1. Run `make build` to build the image from the Dockerfile and start the service. 
-The `make` commands are defined in the `Makefile` and target the `full` service by default.
+The `make` commands are defined in the `Makefile` and target the `train` service by default.
 Run `make up` if the image has already been built and
 rebuilding the image from the Dockerfile is not necessary.
 2. Run `make exec` to enter the interactive container environment.
@@ -349,8 +349,7 @@ Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 2. `pip install package[option]` will fail on the terminal because of Z-shell globbing.
 Characters such as `[`,`]`,`*`, etc. will be interpreted by Z-shell as special commands.
-To disable with behavior add `noglob` in front of the command, e.g., `noglob pip install package[option]`.
-Alternatively, one may also use string literals, e.g., `pip install 'package[option]'`.
+Use string literals, e.g., `pip install 'package[option]'` for cross-shell consistency.
 
 3. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
 

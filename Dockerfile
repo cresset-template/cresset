@@ -19,6 +19,13 @@
 # See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
 # https://docs.docker.com/develop/develop-images/dockerfile_best-practices for best practices.
 # See https://hub.docker.com/r/nvidia/cuda for all available CUDA images.
+
+# Note that the CUDA 11+ now uses semantic versioning.
+# Until CUDA 10.2, there are only the major and minor version numbers.
+# From CUDA 11.0.0 onwards, the major, minor, and patch versions are included.
+# A CUDA version such as 11.2 is therefore invalid.
+# Users must specify the full version, e.g., 11.2.2.
+
 ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
 ARG USE_PRECOMPILED_HEADERS=1
@@ -256,8 +263,9 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 ########################################################################
 FROM build-base AS build-pillow
-# Specify the version of `Pillow-SIMD` if necessary.
+# Specify the version of `Pillow-SIMD` if necessary. Variable is not used yet.
 # Condition ensures that AVX2 instructions are built only if available.
+ARG PILLOW_SIMD_VERSION
 RUN if [ -n "$(lscpu | grep avx2)" ]; then \
         CC="cc -mavx2" \
         python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD; \
@@ -360,13 +368,13 @@ RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c &&
 
 ########################################################################
 FROM ${TRAIN_IMAGE} AS train
-# Example training image for Ubuntu 22.04 on an Intel x86_64 CPU. Edit if necessary.
+# Example training image for Ubuntu 20.04+ on Intel x86_64 CPUs.
+# Edit this section if necessary but use `docker-compose.yaml` if possible.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
-ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 ARG DEB_OLD
@@ -417,8 +425,7 @@ ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for efficient memory management.
-# This configuration only works for Ubuntu 20.04 or greater.
-# Fix by building Jemalloc from source later.
+# This configuration only works for Ubuntu 20.04+.
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 

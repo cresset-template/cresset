@@ -24,7 +24,7 @@
 
 
 services:
-  train:  # Service name. Change the name as necessary for each project.
+  train:  # Default service name. Change the name as necessary for each project.
     hostname: train  # Set to be the same as the service name. Makes terminals easier to tell apart.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
@@ -47,25 +47,42 @@ services:
       - .:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is at the project root.
 #      - ..:${PROJECT_ROOT:-/opt/project}  # Use this if the docker-compose.yaml file is in a subdirectory.
 #      - ${HOME}/.vscode-server:~/.vscode-server  # Preserve VSCode extensions between containers.
+#    tmpfs:  # Create directory in RAM for fast data IO.
+#      - /opt/data
     build:  # Options for building. Used when `--build` is called in `docker compose`.
-      target: train  # Specify build target.
+      # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
+      target: ${TARGET_STAGE:-train}  # Specify build target.
       context: .
       dockerfile: Dockerfile
-      args:  # Equivalent to `--build-arg`.
+      args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
+        BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
+        BUILD_CAFFE2_OPS: 0
+        BUILD_TEST: 0
+        USE_NNPACK: 0
+        USE_QNNPACK: 0
+        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
+        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
+        CUDA_VERSION: ${CUDA_VERSION:-10.2}
+        CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
+        MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
+        TORCH_CUDA_ARCH_LIST: ${CCA}  # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}  # `id -g`
-        UID: ${UID:-1000}  # `id -u`
-        GRP: ${GRP:-user}  # `id -gn`
-        USR: ${USR:-user}  # `id -un`
-        TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during the build.
-#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-#        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+        GRP: ${GRP:-user}
+        USR: ${USR:-user}
+        TZ: ${TZ:-Asia/Seoul}
+        # URL for faster `apt` and `pip` installs. Optimized for Korean users.
+        # Use URLs optimized for user location and security requirements.
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        # Comment out the PyPI mirrors to use the default PyPI repository.
+        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
 #    ports:  # Uncomment if ports are necessary.
 #      - ${PORT:-8080}:22
@@ -80,67 +97,6 @@ services:
             - driver: nvidia
               capabilities: [ gpu ]
 #              device_ids: [ "0" ]  # Use only GPU 0.
-
-
-  full:  # Default service name. Change the name as necessary for each project.
-    hostname: full
-    image: cresset:${IMAGE_NAME:-full}
-#    network_mode: host  # Use the same network as the host.
-#    ipc: host
-#    shm_size: 1GB
-    tty: true
-    init: true
-    stdin_open: true
-#    tmpfs:  # Create directory in RAM for fast data IO.
-#      - /opt/data
-    volumes:  # Place user-specific directories in `docker-compose.override.yaml`.
-      - .:${PROJECT_ROOT:-/opt/project}
-#      - ${HOME}/.vscode-server:~/.vscode-server  # Preserve VSCode extensions between containers.
-    build:
-      # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
-      target: ${TARGET_STAGE:-train}
-      context: .
-      dockerfile: Dockerfile
-      args:  # Equivalent to `--build-arg`.
-        BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
-        BUILD_CAFFE2_OPS: 0
-        BUILD_TEST: 0
-        USE_NNPACK: 0
-        USE_QNNPACK: 0
-        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-18.04}
-        CUDA_VERSION: ${CUDA_VERSION:-10.2}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
-        MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        TORCH_CUDA_ARCH_LIST: ${CCA}  # Fails if BUILD_MODE=include but CCA is not set explicitly.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}
-        UID: ${UID:-1000}
-        GRP: ${GRP:-user}
-        USR: ${USR:-user}
-        TZ: ${TZ:-Asia/Seoul}
-        # URL for faster `apt` and `pip` installs. Optimized for Korean users.
-        # Use URLs optimized for user location and security requirements.
-        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        # Comment out the PyPI mirrors to use the default PyPI repository.
-#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      TZ: ${TZ:-Asia/Seoul}
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [ gpu ]
 
 
   deploy:
@@ -164,10 +120,10 @@ services:
         USE_NNPACK: 1  # Enable NNPack for deployment.
         USE_QNNPACK: 1  # Enable QNNPack for deployment.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.6.1}
+        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
+        CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
@@ -176,8 +132,8 @@ services:
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID

@@ -5,7 +5,7 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 
 # **Change `SERVICE` to specify other services and projects.**
-SERVICE = full
+SERVICE = train
 COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
@@ -73,5 +73,10 @@ ls:  # List all services.
 # Create a `.dockerignore` file in PWD if it does not exist already or is empty.
 # Set to ignore all files except requirements files at project root or `reqs`.
 DI_FILE = .dockerignore
+DI_TEXT = "$\
+*\n$\
+!*requirements*.txt\n$\
+!**/*requirements*.txt\n$\
+"
 di:
-	test -s ${DI_FILE} || printf "*\n!*requirements*.txt\n!**/*requirements*.txt\n" >> ${DI_FILE}
+	test -s ${DI_FILE} || printf ${DI_TEXT} >> ${DI_FILE}

@@ -1,10 +1,11 @@
 #!/bin/sh
 
-# Utility for installing Docker Compose on Linux systems.
+# Utility for installing Docker Compose on Linux systems. Do not use for WSL.
 # Visit https://docs.docker.com/compose/install for the full documentation.
-# This script is separate from the Makefile because downloads are very slow in `make` commands.
+# This script is separate from the Makefile because
+# downloads are sometimes very slow in `make` commands.
 
-COMPOSE_VERSION=v2.9.0
+COMPOSE_VERSION=v2.10.2
 COMPOSE_OS_ARCH=linux-x86_64
 COMPOSE_URL=https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-${COMPOSE_OS_ARCH}
 COMPOSE_PATH=${HOME}/.docker/cli-plugins
