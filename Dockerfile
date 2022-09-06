@@ -199,8 +199,9 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 FROM build-base AS build-torch
 
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
-# If the build fails during `git clone`, just try again. Updating git submodules is not fail-safe.
-# The reason for failure is probably networking issues during installation.
+# If the build fails during `git clone`, just try again.
+# Updating git submodules is not fail-safe.
+# The reason for failure is likely due to networking issues during installation.
 # See https://stackoverflow.com/a/8573310/9289275
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
@@ -245,7 +246,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 # The default configuration removes all files except requirements files from the Docker context.
 # To `COPY` your source files during the build, please edit the `.dockerignore` file.
 
-# A detailed (but out of date) explanation of the buildsystem can be found below.
+# A detailed (if out of date) explanation of the buildsystem can be found below.
 # https://pytorch.org/blog/a-tour-of-pytorch-internals-2
 # The following repository may also be helpful for available options and possible issues.
 # https://github.com/mratsim/Arch-Data-Science/blob/master/frameworks/python-pytorch-magma-mkldnn-cudnn-git/PKGBUILD
@@ -298,7 +299,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-base AS build-pure
+FROM build-base AS download-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
@@ -308,6 +309,21 @@ ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
 RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
+
+
+FROM build-base AS download-torch
+
+# For users who wish to download wheels instead of building them.
+# PyTorch and related libraries are downloaded here.
+ARG PYTORCH_URL=https://download.pytorch.org/whl/cu116
+ARG PYTORCH_VERSION=1.12.1
+ARG TORCHVISION_VERSION=0.13.1
+
+RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+        --index-url ${PYTORCH_URL} \
+        torch==${PYTORCH_VERSION} \
+        torchvision==${TORCHVISION_VERSION}
+
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include
@@ -320,18 +336,19 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
 # with only the build artifacts (e.g., pip wheels) copied over.
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-vision /tmp/dist  /tmp/dist
-COPY --link --from=build-pure   /opt/zsh   /opt
+COPY --link --from=install-base  /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
+COPY --link --from=download-pure /opt/zsh   /opt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
 # Only build lightweight libraries.
 
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-pure   /opt/zsh   /opt
+COPY --link --from=install-base   /opt/conda /opt/conda
+COPY --link --from=build-pillow   /tmp/dist  /tmp/dist
+COPY --link --from=download-torch /tmp/dist  /tmp/dist
+COPY --link --from=download-pure  /opt/zsh   /opt
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -352,9 +369,9 @@ ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
 COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
-# The `/tmp/dist/*.whl` files are the wheels built in previous stages.
+# The `/tmp/dist/*.whl` files are the wheels built or installed in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-# Installing all Python packages in a single command allows `pip` to resolve dependencies correctly.
+# Installing all packages in one command allows `pip` to resolve dependencies correctly.
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
     python -m pip install --find-links /tmp/dist \
@@ -483,23 +500,33 @@ WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
 
 ########################################################################
+FROM ${BUILD_IMAGE} AS deploy-builds-exclude
+
+COPY --link --from=install-base   /opt/conda /opt/conda
+COPY --link --from=build-pillow   /tmp/dist  /tmp/dist
+COPY --link --from=download-torch /tmp/dist  /tmp/dist
+
+########################################################################
+FROM ${BUILD_IMAGE} AS deploy-builds-include
+
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=build-vision /tmp/dist  /tmp/dist
+
+FROM deploy-builds-${BUILD_MODE} AS deploy-builds
+
 # Minimalist deployment preparation layer.
-FROM ${BUILD_IMAGE} AS deploy-builds
 
 # If any `pip` packages must be compiled on installation, create a wheel in the
 # `build` stages and move it to `/tmp/dist`. Otherwise, the installtion may fail.
 # See `Pillow-SIMD` in the TorchVision build process for an example.
 # The `deploy` image is a CUDA `runtime` image without compiler tools.
 
-# The licenses for the Anaconda defaults channel and Intel MKL are not fully open-source.
+# The Anaconda defaults channel and Intel MKL are not fully open-source.
 # Enterprise users may therefore wish to remove them from their final product.
 # The deployment therefore uses system Python. Conda is copied here just in case.
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
 # This may also be useful for non-Intel CPUs.
-
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-vision /tmp/dist  /tmp/dist
 
 COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
 COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt

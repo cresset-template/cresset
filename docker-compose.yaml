@@ -63,13 +63,18 @@ services:
         USE_QNNPACK: 0
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
-        CUDA_VERSION: ${CUDA_VERSION:-10.2}
+        CUDA_VERSION: ${CUDA_VERSION:-11.2.2}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
         TORCH_CUDA_ARCH_LIST: ${CCA}  # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
+        # Variables for building PyTorch. Must be valid git tags.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
+        # Variables for downloading PyTorch instead of building.
+        PYTORCH_URL: ${PYTORCH_URL:-https://download.pytorch.org/whl/cu116}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -127,8 +132,13 @@ services:
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
+        # Variables for building PyTorch. Must be valid git tags.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
+        # Variables for downloading PyTorch instead of building.
+        PYTORCH_URL: ${PYTORCH_URL:-https://download.pytorch.org/whl/cu116}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
