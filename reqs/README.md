@@ -7,20 +7,23 @@ Using requirements files should minimize
 the need to manually edit the Dockerfiles.
 
 Note that the current project structure only allows the Dockerfile to find
-requirements files in the `reqs` directory and project root directory because of the `.dockerignore` file.
+requirements files in the `reqs` directory and 
+project root directory because of the `.dockerignore` file.
 
 To use files in other directories, 
 please modify the `.dockerignore` file.
 
 ## Build Dependency Versions
 
-Edit the package versions in `*-build.requirements.txt` if the latest versions cannot be used for older versions of PyTorch and other libraries.
+Edit the package versions in `*-build.requirements.txt` if the latest versions 
+cannot be used for older versions of PyTorch and other libraries.
 
 `Setuptools` must be set to `<=59.5.0` for PyTorch `v1.10.x` and below.
 
 `PyYAML` may cause issues for early versions of PyTorch.
 
-More versioning issues will arise with the passing of time but the latest versions of libraries will use the latest versions of their dependencies.
+More versioning issues will arise with the passing of time, but the latest 
+versions of libraries will use the latest versions of their dependencies.
 
 
 ## Requirements File Explanation
@@ -54,6 +57,8 @@ To use spaces, check the `xargs` documentation on how it handles whitespace.
 
 # Adding Custom Code
 
-The project blocks any files other than requirements files from being included in the Dockerfile context.
-To add custom code not available from a download, edit the `.dockerignore` file to include the directory in the context.
+The project blocks any files other than requirements files
+from being included in the Dockerfile context.
+To add custom code not available from a download,
+edit the `.dockerignore` file to include the directory in the context.
 Then `COPY` the directory in the Dockerfile during the build.

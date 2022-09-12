@@ -1,7 +1,10 @@
+# Example `apt` requirements file for Ubuntu 22.04 LTS.
+
 # Essential packages.
 libjemalloc2
 libjpeg-turbo8
 libpng16-16
+libxcb1  # Necessary when built from source.
 openssh-server
 sudo
 tzdata

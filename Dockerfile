@@ -1,9 +1,13 @@
 # syntax = docker/dockerfile:1.4
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 
-# Use `export BUILDKIT_PROGRESS=plain` in the host to see full build logs.
+# Use `export BUILDKIT_PROGRESS=plain` in the host terminal to see full build logs.
+
+# Visit the following URL for available BuildKit syntax versions.
+# https://hub.docker.com/r/docker/dockerfile
+
 # See the link below for documentation on BuildKit syntax.
-# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md
 
 # This image uses multi-stage builds. See the link below for a detailed description.
 # https://docs.docker.com/develop/develop-images/multistage-build
@@ -23,8 +27,8 @@
 # Note that the CUDA 11+ now uses semantic versioning.
 # Until CUDA 10.2, there are only the major and minor version numbers.
 # From CUDA 11.0.0 onwards, the major, minor, and patch versions are included.
-# A CUDA version such as 11.2 is therefore invalid.
-# Users must specify the full version, e.g., 11.2.2.
+# A CUDA version such as `11.2` is therefore invalid.
+# Users must specify the full version, e.g., `11.2.2`.
 
 ARG BUILD_MODE=exclude
 ARG USE_CUDA=1
@@ -47,7 +51,9 @@ ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LIN
 # The only use of cURL is to download Miniconda.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-centos
@@ -152,12 +158,14 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 ########################################################################
 FROM install-conda AS install-exclude-mkl
 
-# The Intel(R) Math Kernel Library (MKL) places some restrictions on its use, though there are no
-# restrictions on commercial use. See the Intel(R) Simplified Software License (ISSL) for details.
-# Other Intel software such as the Intel OpenMP^* Runtime Library (iomp) are licensed under the
-# Intel End User License Agreement for Developer Tools. See URL below for Intel licenses & EULAs.
+# The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
+# though there are no restrictions on commercial use.
+# See the Intel(R) Simplified Software License (ISSL) for details.
+# Other Intel software such as the Intel OpenMP^* Runtime Library (iomp)
+# are licensed under the Intel End User License Agreement for Developer Tools.
+# See URL below for Intel licenses & EULAs.
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
-# Also, non-Intel CPUs may face slowdowns if MKL or other Intel tools are used in the backend.
+# Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
 ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/conda/build-requirements.txt \
@@ -169,7 +177,7 @@ RUN $conda install -y \
 FROM install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the base stage for all builds in the Dockerfile.
 
-# Use Jemalloc as the system memory allocator for faster and more efficient memory management.
+# Use Jemalloc as the system memory allocator for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
@@ -299,7 +307,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-base AS download-pure
+FROM build-base AS fetch-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
@@ -311,16 +319,16 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 
-FROM build-base AS download-torch
+FROM build-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
 # PyTorch and related libraries are downloaded here.
-ARG PYTORCH_URL=https://download.pytorch.org/whl/cu116
+ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
 ARG PYTORCH_VERSION=1.12.1
 ARG TORCHVISION_VERSION=0.13.1
 
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_URL} \
+        --index-url ${PYTORCH_INDEX_URL} \
         torch==${PYTORCH_VERSION} \
         torchvision==${TORCHVISION_VERSION}
 
@@ -336,19 +344,25 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
 # with only the build artifacts (e.g., pip wheels) copied over.
-COPY --link --from=install-base  /opt/conda /opt/conda
-COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
-COPY --link --from=build-vision  /tmp/dist  /tmp/dist
-COPY --link --from=download-pure /opt/zsh   /opt
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=build-vision /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure   /opt/zsh   /opt
+
+# For GLIBC version mismatch between the system and Anaconda.
+# Remove later when Anaconda fully supports Python 3.10.
+# Run this inside the container after the image has been built.
+# It does not work during the build for unknown reasons.
+# RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /opt/conda/lib/libstdc++.so.6
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
 # Only build lightweight libraries.
 
-COPY --link --from=install-base   /opt/conda /opt/conda
-COPY --link --from=build-pillow   /tmp/dist  /tmp/dist
-COPY --link --from=download-torch /tmp/dist  /tmp/dist
-COPY --link --from=download-pure  /opt/zsh   /opt
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -361,8 +375,13 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 ARG INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
+
 RUN if [ ${INDEX_URL} ]; then \
-        printf "[global]\nindex-url=${INDEX_URL}\ntrusted-host=${TRUSTED_HOST}\n" > ${PIP_CONFIG_FILE}; \
+    { \
+        echo "[global]"; \
+        echo "index-url=${INDEX_URL}"; \
+        echo "trusted-host=${TRUSTED_HOST}"; \
+    } > ${PIP_CONFIG_FILE}; \
     fi
 
 ARG PATH=/opt/conda/bin:${PATH}
@@ -467,11 +486,13 @@ RUN conda config --append channels conda-forge && \
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
-# `printf` is preferred over `echo` when escape characters are used due to
-# the inconsistent behavior of `echo` across different shells.
 ARG PURE_PATH=${HOME}/.zsh/pure
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
-RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pure\n" >> ${HOME}/.zshrc
+RUN { \
+        echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${HOME}/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
 #ARG ZSHA_PATH=${HOME}/.zsh/zsh-autosuggestions
@@ -480,7 +501,8 @@ RUN printf "fpath+=${PURE_PATH}\nautoload -Uz promptinit; promptinit\nprompt pur
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
 ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-syntax-highlighting ${ZSHS_PATH}
+COPY --link --from=train-builds --chown=${UID}:${GID} \
+    /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Solve libncurses version mismatch bug.
@@ -488,10 +510,6 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Enable mouse scrolling for tmux. This also disables copying text from the terminal.
 # RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
-
-# For GLIBC version mismatch between the system and Anaconda.
-# Remove later when Anaconda fully supports Python 3.10.
-# RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /opt/conda/bin/../lib/libstdc++.so.6
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
@@ -502,9 +520,9 @@ CMD ["/bin/zsh"]
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
-COPY --link --from=install-base   /opt/conda /opt/conda
-COPY --link --from=build-pillow   /tmp/dist  /tmp/dist
-COPY --link --from=download-torch /tmp/dist  /tmp/dist
+COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
+COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-include
@@ -551,6 +569,8 @@ ARG DEB_NEW
 # Both `python` and `python3` are set to point to the installed version of Python.
 # The pre-installed system Python3 may be overridden if the installed and pre-installed
 # versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
+# `printf` is preferred over `echo` when escape characters are used due to
+# the inconsistent behavior of `echo` across different shells.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive

@@ -41,11 +41,13 @@ for compatible versions of the CUDA driver and CUDA Toolkit.
 or update to a recent version compatible with Docker Compose V2.
 Docker incompatibility with Docker Compose V2 is also a common issue for new users.
 Note that Windows users may use WSL (Windows Subsystem for Linux).
-Cresset has been tested on Windows 11 WSL with the Windows CUDA driver and Docker Desktop.
+Cresset has been tested on Windows 11 WSL2
+with the Windows CUDA driver and Docker Desktop.
 There is no need to install a separate WSL CUDA driver or Docker for Linux inside WSL.
 _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
 Disable any active antivirus programs on Windows for best performance.
-_N.B._ Linux hosts may also install via this [repo](https://github.com/docker/docker-install).
+_N.B._ Linux hosts may also install via this
+[repo](https://github.com/docker/docker-install).
 
 3. Run `. misc/install_compose.sh` to install Docker Compose V2 for Linux hosts. 
 Docker Desktop has Docker Compose V2 activated by default for WSL users.
@@ -76,20 +78,29 @@ session names, hostnames, etc. for different projects and configurations.
 The `docker-compose.yaml` file provides reasonable default values but these 
 can be overridden by values specified in the `.env` file.
 
-3. Edit requirements in `reqs/apt-train.requirements.txt` and `reqs/pip-train.requirements.txt`.
-These contain project package dependencies. The `apt` requirements are designed to resemble an
+3. Edit requirements in `reqs/apt-train.requirements.txt`
+and `reqs/pip-train.requirements.txt`.
+These contain project package dependencies. 
+The `apt` requirements are designed to resemble an
 ordinary Python `requirements.txt` file.
 
-4. Edit the `volumes` section of a service to include external directories in the container environment.
-Run `make overrides` to create a `docker-compose.override.yaml` file to add custom volumes and configurations.
-The `docker-compose.override.yaml` file is excluded from version control to allow per-user/per-server settings.
+4. Edit the `volumes` section of a service
+to include external directories in the container environment.
+Run `make overrides` to create a `docker-compose.override.yaml` file
+to add custom volumes and configurations.
+The `docker-compose.override.yaml` file is excluded from version control
+to allow per-user/per-server settings.
 
 5. (Advanced) If an external file must be included in the Docker image build process,
 edit the `.dockerignore` file to allow the Docker context to find the external file.
-By default, all files except requirements files are excluded from the Docker build context.
+By default, all files except requirements 
+files are excluded from the Docker build context.
 
-Example `.env` file for user with username `USERNAME`, group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
-Edit the `docker-compose.yaml` file and the `Makefile` to specify services other than `full`.
+Example `.env` file for user with username `USERNAME`,
+group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
+Edit the `docker-compose.yaml` file and the
+`Makefile` to specify services other than `full`.
+
 ```text
 # Generated automatically by `make up`.
 GID=1000
@@ -123,7 +134,8 @@ MKL_MODE=include                   # Enable MKL for Intel CPUs.
 ## General Usage After Initial Installation and Configuration
 
 1. Run `make build` to build the image from the Dockerfile and start the service. 
-The `make` commands are defined in the `Makefile` and target the `train` service by default.
+The `make` commands are defined in the 
+`Makefile` and target the `train` service by default.
 Run `make up` if the image has already been built and
 rebuilding the image from the Dockerfile is not necessary.
 2. Run `make exec` to enter the interactive container environment.
@@ -131,20 +143,28 @@ rebuilding the image from the Dockerfile is not necessary.
 
 
 ## Makefile Instructions
-The Makefile contains shortcuts for common docker compose commands. Please read the Makefile to see the exact commands.
+The Makefile contains shortcuts for common docker compose commands.
+Please read the Makefile to see the exact commands.
 
-1. `make build` builds the Docker image from the Dockerfile regardless of whether the image already exists.
-This will reinstall packages to the updated requirements files, and then recreate the container.
-2. `make up` creates a fresh container from the image, undoing any changes to the container made by the user.
-Allows changing container settings as network ports, mounted volumes, shared memory configurations, etc.
+1. `make build` builds the Docker image from the Dockerfile 
+regardless of whether the image already exists.
+This will reinstall packages to the updated requirements files,
+and then recreate the container.
+2. `make up` creates a fresh container from the image,
+undoing any changes to the container made by the user.
+Allows changing container settings as network ports,
+mounted volumes, shared memory configurations, etc.
 Recommended method for using this project.
-3. `make exec` enters the interactive terminal of the container created by `make build` and `make up`.
-4. `make down` stops Compose containers and deletes networks. Necessary for service teardown.
+3. `make exec` enters the interactive terminal of the container 
+created by `make build` and `make up`.
+4. `make down` stops Compose containers and deletes networks.
+Necessary for service teardown.
 5. `make start` restarts a stopped container without recreating it.
 Similar to `make up` but does not delete the current container.
-Not recommended unless data saved in container is absolutely necessary.
+Not recommended unless data saved in container are absolutely necessary.
 6. `make ls` shows all Docker Compose services, both active and inactive.
-7. `make run` is used for debugging. If a service fails to start, use it to find the error.
+7. `make run` is used for debugging. 
+If a service fails to start, use it to find the error.
 
 
 ### Tips
@@ -154,16 +174,20 @@ The current container is removed and a new container is created from the current
 - `make build` is akin to resetting/formatting a computer.
 The current image, if present, is removed and a new image is built from the Dockerfile,
 after which a container is created from the resulting image.
-In contrast, `make up` only creates an image from source if the specified image is not present.
+In contrast, `make up`
+only creates an image from source if the specified image is not present.
 - `make exec` is akin to logging into a computer.
-It is the most important command and allows the user to access the container's terminal interactively.
+It is the most important command
+  and allows the user to access the container's terminal interactively.
 - Configurations such as connected volumes and network ports cannot 
 be changed in a running container, requiring a new container.
 - Docker automatically caches all builds up to `defaultKeepStorage`.
 Builds use caches from previous builds by default, 
 greatly speeding up later builds by only building modified layers.
-- If the build fails during `git clone`, try `make build` again with a stable internet connection.
-- If the build fails during `pip install`, check the PyPI mirror URLs and package requirements.
+- If the build fails during `git clone`, 
+try `make build` again with a stable internet connection.
+- If the build fails during `pip install`,
+check the PyPI mirror URLs and package requirements.
 
 
 ## Project Overview
@@ -188,7 +212,8 @@ take precedence over those in the `.env` file.
 The `.env` file is deliberately excluded from source control
 to allow different users and machines to use different configurations.
 
-The `docker-compose.yaml` file manages configurations, builds, runs, etc. using the `Dockerfile`.
+The `docker-compose.yaml` file manages configurations,
+builds, runs, etc. using the `Dockerfile`.
 Visit the Docker Compose [Specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
 and [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) for details.
 
@@ -208,7 +233,8 @@ the `train` stage specified in the `Dockerfile`, which assumes an Ubuntu image.
 
 
 ## _Raison d'Être_
-The purpose of this section is to introduce a new paradigm for deep learning development. 
+The purpose of this section is
+to introduce a new paradigm for deep learning development. 
 I hope that Cresset, or at least the ideas behind it, will eventually become 
 best practice for small to medium-scale deep learning research and development.
 
@@ -222,8 +248,9 @@ that many readers of this article will have experienced at first-hand.
 Docker containers are the standard method for providing reproducible programs 
 across different computing environments. 
 They create isolated environments where programs 
-can run without interference from the host or from one another. See the 
-[documentation](https://www.docker.com/resources/what-container) for details.
+can run without interference from the host or from one another.
+For details, see the
+[documentation](https://www.docker.com/resources/what-container).
 
 But in practice, Docker containers are often misused. 
 Containers are meant to be transient and best practice dictates 
@@ -259,11 +286,13 @@ been spilled turning research code into anything resembling a production-ready p
 Often, even the original developers cannot recreate the same model after a few months.
 Many firms thus have entire teams dedicated to model translation, a huge expenditure.
 
-To alleviate these problems, I propose the use of Docker Compose as a simple MLOps solution.
+To alleviate these problems,
+I propose the use of Docker Compose as a simple MLOps solution.
 Using Docker and Docker Compose, the entire training environment can be reproduced.
 Compose has not yet caught on in the deep learning community,
 possibly because it is usually advertised as a multi-container solution.
-This is a misunderstanding as it can be used for single-container development just as well.
+This is a misunderstanding
+as it can be used for single-container development just as well.
 
 A `docker-compose.yaml` file is provided for easy management of containers.
 **Using the provided `docker-compose.yaml` file will create an interactive environment,
@@ -290,7 +319,7 @@ is a competitive edge for any firm, whether lean startup or tech titan.
 
 With luck, the techniques I propose here will enable 
 the deep learning community to "_write once, train anywhere_".
-But even if I fail in persuading the majority of users of the merits of my method,
+But even if I fail in persuading most users of the merits of my method,
 I may still spare many a hapless grad student from the 
 sisyphean labor of setting up their `conda` environment,
 only to have it crash and burn right before their paper submission is due.
@@ -298,19 +327,23 @@ only to have it crash and burn right before their paper submission is due.
 
 ## Compose as Best Practice
 
-Docker Compose is superior to using custom shell scripts for each environment.
-Not only does it gather all variables and commands for both build and run into a single file,
-but its native integration with Docker means that it makes complicated Docker 
-build/run setups simple to implement and use.
+Docker Compose is superior to using 
+custom shell scripts for each environment.
+Not only does it gather all variables and commands 
+for both build and run into a single file,
+but its native integration with Docker means that it makes complicated 
+Docker build/run setups simple to implement and use.
 
-I wish to emphasize that using Docker Compose this way is a general-purpose technique 
+I wish to emphasize that using Docker Compose 
+this way is a general-purpose technique 
 that does not depend on anything about this project.
 As an example, an image from the NVIDIA NGC PyTorch repository 
 has been used as the base image in `ngc.Dockerfile`.
 The NVIDIA NGC PyTorch images contain many optimizations 
 for the latest GPU architectures and provide
 a multitude of pre-installed machine learning libraries. 
-For those starting new projects, using the latest NGC image is recommended.
+For those starting new projects, 
+using the latest NGC image is recommended.
 
 To use the NGC images, use the following commands:
 
@@ -322,7 +355,8 @@ The only difference with the previous example is the service name.
 
 ### Using Compose with PyCharm and VSCode
 
-The Docker Compose container environment can be used with popular Python IDEs, not just in the terminal.
+The Docker Compose container environment can be used with popular Python IDEs,
+not just in the terminal.
 PyCharm and Visual Studio Code, both very popular in the deep learning community,
 are compatible with Docker Compose.
 
@@ -332,7 +366,8 @@ See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) a
 [Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
 JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
-JetBrains Fleet IDE, with much more advanced features, will become available in early 2022.
+JetBrains Fleet IDE, with much more advanced features,
+will become available sometime during 2022.
 _N.B._ PyCharm Professional and other JetBrains IDEs are available 
 free of charge to anyone with a valid university e-mail address.
 
@@ -348,7 +383,8 @@ This is because `sshd` starts a new environment, wiping out all previous variabl
 Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 2. `pip install package[option]` will fail on the terminal because of Z-shell globbing.
-Characters such as `[`,`]`,`*`, etc. will be interpreted by Z-shell as special commands.
+Characters such as `[`,`]`,`*`,
+   etc. will be interpreted by Z-shell as special commands.
 Use string literals, e.g., `pip install 'package[option]'` for cross-shell consistency.
 
 3. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
@@ -367,7 +403,7 @@ is incompatible with the CUDA version on the Docker image.
 Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
 Check the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 to see if the host CUDA driver is compatible with the desired version of CUDA.
-Also check if the CUDA driver has been configured correctly on the host.
+Also, check if the CUDA driver has been configured correctly on the host.
 The CUDA driver version can be found using the `nvidia-smi` command.
 
 7. Docker Compose V2 will silently fail if the installed Docker version is too low.
@@ -385,10 +421,12 @@ Example: `python -m pip install 'ray[tune]'`.
 Currently, Cresset depends on the `magma-cudaXXX` package
 provided in the PyTorch channel of Anaconda.
 
-3. Bug reports are welcome. Only the latest versions has been tested rigorously.
+3. Bug reports are welcome.
+   Only the latest versions have been tested rigorously.
 Please raise an issue if there are any versions that do not build properly. 
 However, please check that your host Docker, Docker Compose, 
 and especially NVIDIA Driver are up-to-date before doing so.
 
-4. Translations into other languages and updates to existing translations are welcome. 
+4. Translations into other languages and updates to 
+existing translations are welcome. 
 Please create a separate `LANG.README.md` file and make a Pull Request.
