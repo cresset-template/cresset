@@ -22,7 +22,7 @@ development environments for deep learning practitioners.
 Hopefully, the methods presented here will become best practice in both academia and industry.*__
 
 
-## Introductory Video
+## Introductory Video (In English)
 [![Weights and Biases Presentation](https://res.cloudinary.com/marcomontalbano/image/upload/v1649474431/video_to_markdown/images/youtube--sW3VxlJl46o-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/sW3VxlJl46o?t=6865 "Weights and Biases Presentation")
 ------------------------------------------------------------------------
 
