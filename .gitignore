@@ -132,6 +132,9 @@ dmypy.json
 .idea/
 .vscode/
 
+# Mac related
+.DS_Store/
+
 # Cresset specific convention.
 # The override file is meant to hold user-specific such as host volume paths or ports.
 docker-compose.override.yaml
