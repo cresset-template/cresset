@@ -5,7 +5,7 @@
 # This script is separate from the Makefile because
 # downloads are sometimes very slow in `make` commands.
 
-COMPOSE_VERSION=v2.10.2
+COMPOSE_VERSION=v2.11.2
 COMPOSE_OS_ARCH=linux-x86_64
 COMPOSE_URL=https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-${COMPOSE_OS_ARCH}
 COMPOSE_PATH=${HOME}/.docker/cli-plugins

@@ -275,12 +275,9 @@ FROM build-base AS build-pillow
 # Specify the version of `Pillow-SIMD` if necessary. Variable is not used yet.
 # Condition ensures that AVX2 instructions are built only if available.
 ARG PILLOW_SIMD_VERSION
-RUN if [ -n "$(lscpu | grep avx2)" ]; then \
-        CC="cc -mavx2" \
-        python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD; \
-    else \
-        python -m pip wheel --no-deps --wheel-dir /tmp/dist Pillow-SIMD; \
-    fi
+RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
+    python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+        Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
 
 ########################################################################
 FROM build-torch AS build-vision
@@ -322,16 +319,20 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 FROM build-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
-# PyTorch and related libraries are downloaded here.
 ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
 ARG PYTORCH_VERSION=1.12.1
-ARG TORCHVISION_VERSION=0.13.1
-
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
         torch==${PYTORCH_VERSION} \
-        torchvision==${TORCHVISION_VERSION}
 
+
+FROM build-base AS fetch-vision
+
+ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
+ARG TORCHVISION_VERSION=0.13.1
+RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+        --index-url ${PYTORCH_INDEX_URL} \
+        torchvision==${TORCHVISION_VERSION}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include
@@ -362,6 +363,7 @@ FROM ${BUILD_IMAGE} AS train-builds-exclude
 COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure   /opt/zsh   /opt
 
 ########################################################################
@@ -377,8 +379,7 @@ ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 
 RUN if [ ${INDEX_URL} ]; then \
-    { \
-        echo "[global]"; \
+    {   echo "[global]"; \
         echo "index-url=${INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
     } > ${PIP_CONFIG_FILE}; \
@@ -488,8 +489,7 @@ RUN conda config --append channels conda-forge && \
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 ARG PURE_PATH=${HOME}/.zsh/pure
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
-RUN { \
-        echo "fpath+=${PURE_PATH}"; \
+RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${HOME}/.zshrc
@@ -523,6 +523,7 @@ FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-include

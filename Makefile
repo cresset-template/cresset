@@ -1,4 +1,4 @@
-.PHONY: di up exec build rebuild start down run ls check overrides init
+.PHONY: up exec build rebuild start down run ls check init
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
@@ -48,24 +48,38 @@ check:  # Checks if the `.env` file exists.
 	fi
 
 OVERRIDE_FILE = docker-compose.override.yaml
-OVERRIDE_BASE = "services:\n  ${SERVICE}:\n    volumes:"
+# Indentation for the next line is included at the end of
+# the previous line because Makefiles do not read the initial spaces.
+OVERRIDE_BASE = "$\
+services:\n  $\
+  ${SERVICE}:\n    $\
+    volumes:\n      $\
+      - \n$\
+"
 # Create override file for Docker Compose configurations for each user.
 # For example, different users may use different host volume directories.
-overrides:
-	test -s ${OVERRIDE_FILE} || printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
+${OVERRIDE_FILE}:
+	printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
 
-build: check  # Start service. Rebuilds the image from the Dockerfile before creating a new container.
-	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up --build -d ${SERVICE}
+overrides:
+	${OVERRIDE_FILE}
+
+build: check  # Rebuilds the image from the Dockerfile before creating a new container.
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
+	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
 rebuild: build  # Deprecated alias for `build`.
 up: check  # Start service. Creates a new container from the image.
-	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} up -d ${SERVICE}
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
+	docker compose -p ${PROJECT} up -d ${SERVICE}
 exec:  # Execute service. Enter interactive shell.
-	DOCKER_BUILDKIT=1 docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
-start:  # Start a stopped service without recreating the container. Useful if the previous container must not deleted.
+	DOCKER_BUILDKIT=1 \
+	docker compose -p ${PROJECT} exec ${SERVICE} ${COMMAND}
+# Useful if the previous container must not be deleted.
+start:  # Start a stopped service without recreating the container.
 	docker compose -p ${PROJECT} start ${SERVICE}
-down:  # Shut down service and delete containers, volumes, networks, etc.
+down:  # Shut down the service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
-run: check  # Used for debugging cases where service will not start.
+run: check  # Used for debugging cases where the service will not start.
 	docker compose -p ${PROJECT} run ${SERVICE}
 ls:  # List all services.
 	docker compose ls -a
@@ -74,9 +88,11 @@ ls:  # List all services.
 # Set to ignore all files except requirements files at project root or `reqs`.
 DI_FILE = .dockerignore
 DI_TEXT = "$\
-*\n$\
+**\n$\
 !*requirements*.txt\n$\
 !**/*requirements*.txt\n$\
 "
-di:
-	test -s ${DI_FILE} || printf ${DI_TEXT} >> ${DI_FILE}
+${DI_FILE}:
+	printf ${DI_TEXT} >> ${DI_FILE}
+
+di: ${DI_FILE}

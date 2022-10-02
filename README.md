@@ -31,9 +31,11 @@ If this is your first time using this project, follow these steps:
 
 1. Install the NVIDIA CUDA [Driver](https://www.nvidia.com/download/index.aspx) 
 appropriate for the target host and NVIDIA GPU. 
-The CUDA toolkit is not necessary. If the driver has already been installed, 
+The CUDA toolkit is not necessary.
+If the driver has already been installed, 
 check that the installed version is compatible with the target CUDA version.
-CUDA driver version mismatch is the single most common issue for new users. See the 
+CUDA driver version mismatch is the single most common issue for new users.
+See the 
 [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit.
 
@@ -59,6 +61,10 @@ for the latest installation information.
 The `.env` file provides environment variables for `docker-compose.yaml`,
 allowing different users and machines to set their own variables as required.
 Each host should have its separate `.env` file for configurations unique to each host.
+
+5. Run `make overrides` to create a `docker-compose.override.yaml` files.
+Add configurations that should not be shared via source control there.
+For example, volume-mount pairs specific to each host machine.
 
 
 ## Project Configuration
@@ -194,8 +200,9 @@ check the PyPI mirror URLs and package requirements.
 The main components of the project are as follows. The other files are utilities.
 1) Dockerfile 
 2) docker-compose.yaml 
-3) reqs/*requirements.txt 
-4) .env
+3) docker-compose.override.yaml
+4) reqs/*requirements.txt 
+5) .env
 
 When the user inputs `make up` or another `make` command, 
 commands specified in the `Makefile` are executed.
@@ -216,6 +223,10 @@ The `docker-compose.yaml` file manages configurations,
 builds, runs, etc. using the `Dockerfile`.
 Visit the Docker Compose [Specification](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
 and [Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/) for details.
+
+The `docker-compose.override.yaml` is read by the `docker-compose.yaml` file
+during the setup phase. Add configurations specific to each host that should not be 
+shared via source control such as volume mounts for host-specific paths.
 
 The `Dockerfile` is configured to read only requirements files in the `reqs` directory.
 Edit `reqs/pip-train.requirements.txt` to specify Python package requirements.
@@ -379,54 +390,49 @@ See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) fo
 # Known Issues
 
 1. Connecting to a running container by `ssh` will remove all variables set by `ENV`.
-This is because `sshd` starts a new environment, wiping out all previous variables.
-Using `docker`/`docker compose` to enter containers is strongly recommended.
+   This is because `sshd` starts a new environment, wiping out all previous variables.
+   Using `docker`/`docker compose` to enter containers is strongly recommended.
 
 2. `pip install package[option]` will fail on the terminal because of Z-shell globbing.
-Characters such as `[`,`]`,`*`,
-   etc. will be interpreted by Z-shell as special commands.
+Characters such as `[`,`]`,`*`, etc. will be interpreted by Z-shell as special commands.
 Use string literals, e.g., `pip install 'package[option]'` for cross-shell consistency.
 
-3. WSL users using Compose should disable `ipc: host`. WSL cannot use this option.
+3. PyTorch source builds require a corresponding `magma-cudaXXX` package in the 
+   PyTorch anaconda channel. CUDA 11.4.x is not available as `magma-cuda114` is 
+   unavailable. Neither can new versions of CUDA be used until a `magma` package is 
+   published.
 
-4. PyTorch source builds require a corresponding `magma-cudaXXX` package in the PyTorch anaconda channel.
-CUDA 11.4.x is not available as `magma-cuda114` is unavailable. 
-Neither can new versions of CUDA be used until a `magma` package is published.
+4. If the build fails during `git clone`, simply try `make build` again.
+   Most of the build will be cached. Failure is probably due to networking issues 
+   during installation. Updating git submodules is 
+   [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
-5. If the build fails during `git clone`, simply try `make build` again.
-Most of the build will be cached. Failure is probably due to networking issues during installation.
-Updating git submodules is [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
+5. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:.
+   ..` error or the image will simply not start if the CUDA driver on the host 
+   is incompatible with the CUDA version on the Docker image.
+   Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
+   Check the 
+   [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
+   to see if the host CUDA driver is compatible with the desired version of CUDA.
+   Also, check if the CUDA driver has been configured correctly on the host.
+   The CUDA driver version can be found using the `nvidia-smi` command.
 
-6. `torch.cuda.is_available()` will return a `... UserWarning: CUDA initialization:...` error 
-or the image will simply not start if the CUDA driver on the host 
-is incompatible with the CUDA version on the Docker image.
-Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
-Check the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
-to see if the host CUDA driver is compatible with the desired version of CUDA.
-Also, check if the CUDA driver has been configured correctly on the host.
-The CUDA driver version can be found using the `nvidia-smi` command.
-
-7. Docker Compose V2 will silently fail if the installed Docker version is too low.
-Update Docker to the latest version (20.10+) to use Docker Compose V2.
-
-8. Packages with square brackets need to be inside single quotes when installed on Z-shell.
-This is because Z-shell interprets square brackets as regular expressions, unlike bash.
-Example: `python -m pip install 'ray[tune]'`.
+6. Docker Compose V2 will silently fail if the installed Docker engine version is too 
+   low on Linux hosts. Update Docker to the latest version (20.10+) to use Docker 
+   Compose V2.
 
 # Desiderata
 
 1. **MORE STARS**. _**No Contribution Without Appreciation!**_
 
 2. A method of building `Magma` from source would be appreciated.
-Currently, Cresset depends on the `magma-cudaXXX` package
-provided in the PyTorch channel of Anaconda.
+   Currently, Cresset depends on the `magma-cudaXXX` package
+   provided in the PyTorch channel of Anaconda.
 
-3. Bug reports are welcome.
-   Only the latest versions have been tested rigorously.
-Please raise an issue if there are any versions that do not build properly. 
-However, please check that your host Docker, Docker Compose, 
-and especially NVIDIA Driver are up-to-date before doing so.
+3. Bug reports are welcome. Only the latest versions have been tested rigorously.
+   Please raise an issue if there are any versions that do not build properly. 
+   However, please check that your host Docker, Docker Compose, 
+   and especially NVIDIA Driver are up-to-date before doing so.
 
-4. Translations into other languages and updates to 
-existing translations are welcome. 
-Please create a separate `LANG.README.md` file and make a Pull Request.
+4. Translations into other languages and updates to existing translations are welcome. 
+   Please create a separate `LANG.README.md` file and make a Pull Request.
