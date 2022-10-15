@@ -25,14 +25,14 @@
 
 services:
   train:  # Default service name. Change the name as necessary for each project.
-    hostname: train  # Set to be the same as the service name. Makes terminals easier to tell apart.
+    hostname: train  # Set to the service name. Makes terminals easier to tell apart.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: cresset:${IMAGE_NAME:-train}
-    network_mode: host  # Use the same network as the host.
+    network_mode: host  # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    ipc: host  # Equivalent to `--ipc=host` in `docker run`.
+#    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
 #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
     tty: true  # Equivalent to `-t` flag in `docker run`.
     init: true  # Equivalent to `--init` flag in `docker run`.
@@ -53,7 +53,7 @@ services:
     build:  # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
       target: ${TARGET_STAGE:-train}  # Specify build target.
-      context: .
+      context: .  # Nearly all files are ignored due to `.dockerignore` settings.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
@@ -91,8 +91,6 @@ services:
         INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
-#    ports:  # Uncomment if ports are necessary.
-#      - ${PORT:-8080}:22
     user: ${UID:-1000}:${GID:-1000}
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during runtime.

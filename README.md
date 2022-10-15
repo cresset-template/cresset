@@ -16,11 +16,12 @@
 
 ## TL;DR
 
-__*A new MLOps paradigm for deep learning development is proposed using Docker Compose
+__*A new MLOps paradigm for deep learning development 
+is proposed using Docker Compose
 with the aim of providing reproducible and easy-to-use interactive 
 development environments for deep learning practitioners.
-Hopefully, the methods presented here will become best practice in both academia and industry.*__
-
+Hopefully, the methods presented here will become
+best practice in both academia and industry.*__
 
 ## Introductory Video (In English)
 [![Weights and Biases Presentation](https://res.cloudinary.com/marcomontalbano/image/upload/v1649474431/video_to_markdown/images/youtube--sW3VxlJl46o-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/sW3VxlJl46o?t=6865 "Weights and Biases Presentation")
@@ -30,77 +31,81 @@ Hopefully, the methods presented here will become best practice in both academia
 If this is your first time using this project, follow these steps:
 
 1. Install the NVIDIA CUDA [Driver](https://www.nvidia.com/download/index.aspx) 
-appropriate for the target host and NVIDIA GPU. 
-The CUDA toolkit is not necessary.
-If the driver has already been installed, 
-check that the installed version is compatible with the target CUDA version.
-CUDA driver version mismatch is the single most common issue for new users.
-See the 
-[compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
-for compatible versions of the CUDA driver and CUDA Toolkit.
+   appropriate for the target host and NVIDIA GPU. The CUDA toolkit is not necessary.
+   If the driver has already been installed, 
+   check that the installed version is compatible with the target CUDA version.
+   CUDA driver version mismatch is the single most common issue for new users.
+   See the 
+   [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
+   for compatible versions of the CUDA driver and CUDA Toolkit.
 
 2. Install [Docker](https://docs.docker.com/get-docker) (v20.10+ is recommended)
-or update to a recent version compatible with Docker Compose V2.
-Docker incompatibility with Docker Compose V2 is also a common issue for new users.
-Note that Windows users may use WSL (Windows Subsystem for Linux).
-Cresset has been tested on Windows 11 WSL2
-with the Windows CUDA driver and Docker Desktop.
-There is no need to install a separate WSL CUDA driver or Docker for Linux inside WSL.
-_N.B._ Windows Security real-time protection causes significant slowdown if enabled.
-Disable any active antivirus programs on Windows for best performance.
-_N.B._ Linux hosts may also install via this
-[repo](https://github.com/docker/docker-install).
+   or update to a recent version compatible with Docker Compose V2.
+   Docker incompatibility with Docker Compose V2 is also a common issue for new users.
+   Note that Windows users may use WSL (Windows Subsystem for Linux).
+   Cresset has been tested on Windows 11 WSL2 with the Windows CUDA driver
+   using Docker Desktop for Windows. There is no need to install a separate 
+   WSL CUDA driver or Docker for Linux inside WSL.
+   _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
+   Disable any active antivirus programs on Windows for best performance.
+   _N.B._ Linux hosts may also install via this
+   [repo](https://github.com/docker/docker-install).
 
 3. Run `. misc/install_compose.sh` to install Docker Compose V2 for Linux hosts. 
-Docker Desktop has Docker Compose V2 activated by default for WSL users.
-Installation does _**not**_ require `root` permissions.
-Visit the [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
-for the latest installation information.
+   Docker Desktop has Docker Compose V2 activated by default for WSL users.
+   Installation does _**not**_ require `root` permissions. Visit the 
+   [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
+   for the latest installation information.
 
 4. Run `make env` on the terminal at project root to create a basic `.env` file. 
-The `.env` file provides environment variables for `docker-compose.yaml`,
-allowing different users and machines to set their own variables as required.
-Each host should have its separate `.env` file for configurations unique to each host.
+   The `.env` file provides environment variables for `docker-compose.yaml`,
+   allowing different users and machines to set their own variables as required.
+   Each host should have a separate `.env` file for host-specific configurations.
 
 5. Run `make overrides` to create a `docker-compose.override.yaml` files.
-Add configurations that should not be shared via source control there.
-For example, volume-mount pairs specific to each host machine.
+   Add configurations that should not be shared via source control there.
+   For example, volume-mount pairs specific to each host machine.
 
 
 ## Project Configuration
 
 1. To build PyTorch from source, set `BUILD_MODE=include` and set the
-CUDA Compute Capability (CCA) of the target NVIDIA GPU.
-Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
-to find compute capabilities of NVIDIA GPUs. Visit the
-[documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
-for an explanation of compute capability and its relevance.
-Note that the Docker cache will save previously built binaries
-if the given configurations are identical.
+   CUDA Compute Capability (CCA) of the target NVIDIA GPU.
+   Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
+   to find compute capabilities of NVIDIA GPUs. Visit the
+   [documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
+   for an explanation of compute capability and its relevance.
+   Note that the Docker cache will save previously built binaries
+   if the given configurations are identical.
 
 2. Read the `docker-compose.yaml` file to fill in extra variables in `.env`.
-Also, feel free to edit `docker-compose.yaml` as necessary by changing 
-session names, hostnames, etc. for different projects and configurations.
-The `docker-compose.yaml` file provides reasonable default values but these 
-can be overridden by values specified in the `.env` file.
+   Also, feel free to edit `docker-compose.yaml` as necessary by changing 
+   session names, hostnames, etc. for different projects and configurations.
+   The `docker-compose.yaml` file provides reasonable default values but these 
+   can be overridden by values specified in the `.env` file.
+   An important configuration is `ipc: host`, which allows the container to
+   access the shared memory of the host. This is required for multiprocessing, 
+   e.g., to use `num_workers` in the PyTorch `DataLoader` class.
+   Disable this configuration on WSL and specify `shm_size:` instead as WSL
+   cannot use host IPC as of the time of writing.
 
 3. Edit requirements in `reqs/apt-train.requirements.txt`
-and `reqs/pip-train.requirements.txt`.
-These contain project package dependencies. 
-The `apt` requirements are designed to resemble an
-ordinary Python `requirements.txt` file.
+   and `reqs/pip-train.requirements.txt`.
+   These contain project package dependencies. 
+   The `apt` requirements are designed to resemble an
+   ordinary Python `requirements.txt` file.
 
 4. Edit the `volumes` section of a service
-to include external directories in the container environment.
-Run `make overrides` to create a `docker-compose.override.yaml` file
-to add custom volumes and configurations.
-The `docker-compose.override.yaml` file is excluded from version control
-to allow per-user/per-server settings.
+   to include external directories in the container environment.
+   Run `make overrides` to create a `docker-compose.override.yaml` file
+   to add custom volumes and configurations.
+   The `docker-compose.override.yaml` file is excluded from version control
+   to allow per-user/per-server settings.
 
 5. (Advanced) If an external file must be included in the Docker image build process,
-edit the `.dockerignore` file to allow the Docker context to find the external file.
-By default, all files except requirements 
-files are excluded from the Docker build context.
+   edit the `.dockerignore` file to allow the Docker context to find the external file.
+   By default, all files except requirements 
+   files are excluded from the Docker build context.
 
 Example `.env` file for user with username `USERNAME`,
 group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
@@ -140,41 +145,43 @@ MKL_MODE=include                   # Enable MKL for Intel CPUs.
 ## General Usage After Initial Installation and Configuration
 
 1. Run `make build` to build the image from the Dockerfile and start the service. 
-The `make` commands are defined in the 
-`Makefile` and target the `train` service by default.
-Run `make up` if the image has already been built and
-rebuilding the image from the Dockerfile is not necessary.
+   The `make` commands are defined in the 
+   `Makefile` and target the `train` service by default.
+   Run `make up` if the image has already been built and
+   rebuilding the image from the Dockerfile is not necessary.
 2. Run `make exec` to enter the interactive container environment.
 3. There is no step 3. Just start coding.
-
+   Check out the documentation if anything goes wrong.
 
 ## Makefile Instructions
 The Makefile contains shortcuts for common docker compose commands.
 Please read the Makefile to see the exact commands.
 
 1. `make build` builds the Docker image from the Dockerfile 
-regardless of whether the image already exists.
-This will reinstall packages to the updated requirements files,
-and then recreate the container.
+   regardless of whether the image already exists.
+   This will reinstall packages to the updated requirements files,
+   and then recreate the container.
 2. `make up` creates a fresh container from the image,
-undoing any changes to the container made by the user.
-Allows changing container settings as network ports,
-mounted volumes, shared memory configurations, etc.
-Recommended method for using this project.
+   undoing any changes to the container made by the user.
+   Allows changing container settings as network ports,
+   mounted volumes, shared memory configurations, etc.
+   Recommended method for using this project.
 3. `make exec` enters the interactive terminal of the container 
-created by `make build` and `make up`.
+   created by `make build` and `make up`.
 4. `make down` stops Compose containers and deletes networks.
-Necessary for service teardown.
+   Necessary for service teardown.
 5. `make start` restarts a stopped container without recreating it.
-Similar to `make up` but does not delete the current container.
-Not recommended unless data saved in container are absolutely necessary.
+   Similar to `make up` but does not delete the current container.
+   Not recommended unless data saved in container are absolutely necessary.
 6. `make ls` shows all Docker Compose services, both active and inactive.
 7. `make run` is used for debugging. 
-If a service fails to start, use it to find the error.
+   If a service fails to start, use it to find the error.
 
 
 ### Tips
-
+- PyTorch or the container may fail to run due to versioning issues.
+To solve these problems, run `misc/fixes.sh` **after** starting the 
+container with  `make exec`.
 - `make up` is akin to rebooting a computer.
 The current container is removed and a new container is created from the current image.
 - `make build` is akin to resetting/formatting a computer.

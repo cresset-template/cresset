@@ -45,7 +45,6 @@ ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
-
 # Build-related packages are pre-installed on CUDA `devel` images.
 # Only the `cURL` package is downloaded from the package manager.
 # The only use of cURL is to download Miniconda.
@@ -112,6 +111,7 @@ FROM install-base AS install-conda
 COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 ENV conda=/opt/conda/bin/conda
 
+########################################################################
 FROM install-conda AS install-mamba
 
 # Using Mamba instead of Conda as the package manager for faster installation.
@@ -315,7 +315,7 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-
+########################################################################
 FROM build-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
@@ -323,9 +323,9 @@ ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
 ARG PYTORCH_VERSION=1.12.1
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
-        torch==${PYTORCH_VERSION} \
+        torch==${PYTORCH_VERSION}
 
-
+########################################################################
 FROM build-base AS fetch-vision
 
 ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
@@ -349,12 +349,6 @@ COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure   /opt/zsh   /opt
-
-# For GLIBC version mismatch between the system and Anaconda.
-# Remove later when Anaconda fully supports Python 3.10.
-# Run this inside the container after the image has been built.
-# It does not work during the build for unknown reasons.
-# RUN ln -sf /usr/lib/x86_64-linux-gnu/libstdc++.so.6 /opt/conda/lib/libstdc++.so.6
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
@@ -505,9 +499,6 @@ COPY --link --from=train-builds --chown=${UID}:${GID} \
     /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
-# Solve libncurses version mismatch bug.
-#RUN rm /opt/conda/lib/libncursesw.so.6
-
 # Enable mouse scrolling for tmux. This also disables copying text from the terminal.
 # RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
@@ -532,6 +523,7 @@ COPY --link --from=install-base /opt/conda /opt/conda
 COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
 
+########################################################################
 FROM deploy-builds-${BUILD_MODE} AS deploy-builds
 
 # Minimalist deployment preparation layer.
