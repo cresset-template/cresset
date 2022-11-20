@@ -60,14 +60,12 @@ services:\n  $\
 # For example, different users may use different host volume directories.
 ${OVERRIDE_FILE}:
 	printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
-
-overrides:
-	${OVERRIDE_FILE}
+# Cannot use `override` as a recipe name as it is a `make` keyword.
+over: ${OVERRIDE_FILE}
 
 build: check  # Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
-rebuild: build  # Deprecated alias for `build`.
 up: check  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up -d ${SERVICE}

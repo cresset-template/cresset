@@ -24,8 +24,11 @@
 
 
 services:
-  train:  # Default service name. Change the name as necessary for each project.
-    hostname: train  # Set to the service name. Makes terminals easier to tell apart.
+  train:  # Default service name. Change the name for each project.
+    # Set to the service name. Makes terminals easier to tell apart.
+    hostname: train
+    extra_hosts:
+      - "train:127.0.0.1"  # Prevents unknown host issue when using sudo.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
@@ -85,11 +88,11 @@ services:
         TZ: ${TZ:-Asia/Seoul}
         # URL for faster `apt` and `pip` installs. Optimized for Korean users.
         # Use URLs optimized for user location and security requirements.
-        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+        # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        # DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
         # Comment out the PyPI mirrors to use the default PyPI repository.
-        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+        # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+        # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
     environment:  # Environment variables for the container, not the build. Equivalent to `--env`
@@ -106,6 +109,8 @@ services:
 
   deploy:
     hostname: deploy
+    extra_hosts:
+      - "deploy:127.0.0.1"
     image: cresset:${IMAGE_NAME:-deploy}
     tty: true
     init: true
@@ -140,10 +145,10 @@ services:
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+#        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
@@ -158,6 +163,8 @@ services:
   # This layer may be useful for PyTorch contributors.
   devel:  # Skeleton service for development and debugging.
     hostname: devel
+    extra_hosts:
+      - "devel:127.0.0.1"
     image: cresset:${IMAGE_NAME:-devel}
     tty: true
     init: true
@@ -172,6 +179,8 @@ services:
 
   ngc:  # NGC image service. Demonstrates the generality of the template.
     hostname: ngc
+    extra_hosts:
+      - "ngc:127.0.0.1"
     image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
 #    ipc: host
     tty: true

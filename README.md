@@ -62,7 +62,7 @@ If this is your first time using this project, follow these steps:
    allowing different users and machines to set their own variables as required.
    Each host should have a separate `.env` file for host-specific configurations.
 
-5. Run `make overrides` to create a `docker-compose.override.yaml` files.
+5. Run `make over` to create a `docker-compose.override.yaml` files.
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
 
@@ -97,7 +97,7 @@ If this is your first time using this project, follow these steps:
 
 4. Edit the `volumes` section of a service
    to include external directories in the container environment.
-   Run `make overrides` to create a `docker-compose.override.yaml` file
+   Run `make over` to create a `docker-compose.override.yaml` file
    to add custom volumes and configurations.
    The `docker-compose.override.yaml` file is excluded from version control
    to allow per-user/per-server settings.

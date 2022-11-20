@@ -470,7 +470,7 @@ ARG HOME=/home/${USR}
 # PATH variable to prevent system program search errors.
 # This is the opposite of the build stage.
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:${PATH}:/opt/conda/bin
+ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 
 # Conda configurations are not carried with the directory.
