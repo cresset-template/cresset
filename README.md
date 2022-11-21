@@ -113,7 +113,7 @@ Edit the `docker-compose.yaml` file and the
 `Makefile` to specify services other than `full`.
 
 ```text
-# Generated automatically by `make up`.
+# Generated automatically by `make env`.
 GID=1000
 UID=1000
 GRP=GROUPNAME
@@ -130,8 +130,8 @@ CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude                 # Whether to build PyTorch from source.
-PYTORCH_VERSION_TAG=v1.11.0        # Any `git` branch or tag name can be used.
-TORCHVISION_VERSION_TAG=v0.12.0
+PYTORCH_VERSION_TAG=v1.13.0        # Any `git` branch or tag name can be used.
+TORCHVISION_VERSION_TAG=v0.14.0
 
 # General environment configurations.
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
