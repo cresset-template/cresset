@@ -77,7 +77,7 @@ services:
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_URL: ${PYTORCH_URL:-https://download.pytorch.org/whl/cu116}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu116}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
@@ -141,7 +141,7 @@ services:
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_URL: ${PYTORCH_URL:-https://download.pytorch.org/whl/cu116}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu116}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}

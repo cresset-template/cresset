@@ -319,19 +319,19 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 FROM build-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
-ARG PYTORCH_URL
+ARG PYTORCH_INDEX_URL
 ARG PYTORCH_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_URL} \
+        --index-url ${PYTORCH_INDEX_URL} \
         torch==${PYTORCH_VERSION}
 
 ########################################################################
 FROM build-base AS fetch-vision
 
-ARG PYTORCH_URL
+ARG PYTORCH_INDEX_URL
 ARG TORCHVISION_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_URL} \
+        --index-url ${PYTORCH_INDEX_URL} \
         torchvision==${TORCHVISION_VERSION}
 
 ########################################################################
@@ -456,7 +456,7 @@ ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for efficient memory management.
-# This configuration only works for Ubuntu 20.04+.
+# Use `libjemalloc.so.1` for Ubuntu 18.04 or below.
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
