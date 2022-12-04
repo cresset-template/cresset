@@ -319,19 +319,19 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 FROM build-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
-ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
-ARG PYTORCH_VERSION=1.12.1
+ARG PYTORCH_URL
+ARG PYTORCH_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
+        --index-url ${PYTORCH_URL} \
         torch==${PYTORCH_VERSION}
 
 ########################################################################
 FROM build-base AS fetch-vision
 
-ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
-ARG TORCHVISION_VERSION=0.13.1
+ARG PYTORCH_URL
+ARG TORCHVISION_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
+        --index-url ${PYTORCH_URL} \
         torchvision==${TORCHVISION_VERSION}
 
 ########################################################################
