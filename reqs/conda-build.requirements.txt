@@ -6,7 +6,7 @@ astunparse
 ccache
 cffi
 cmake
-ffmpeg
+ffmpeg  # Remove this if TorchVision fails to compile.
 future
 git
 jemalloc
@@ -20,6 +20,6 @@ pkgconfig
 pyyaml
 requests
 rsync
-setuptools  # ==59.5.0 # For older PyTorch versions that use `distutils.version`.
+setuptools==59.5.0 # For older PyTorch versions that use `distutils.version`.
 six
 typing_extensions

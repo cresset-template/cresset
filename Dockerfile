@@ -296,6 +296,8 @@ RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip install --force-reinstall --no-deps /tmp/dist/*
 
 ARG USE_CUDA
+# Disable FFMPEG and remove it as a build dependency if TorchVision
+# fails to compile with unhelpful error messages.
 ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
@@ -499,8 +501,9 @@ COPY --link --from=train-builds --chown=${UID}:${GID} \
     /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
-# Enable mouse scrolling for tmux. This also disables copying text from the terminal.
-# RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
+# Enable mouse scrolling for tmux.
+# iTerm2 users should change settings to use scrolling properly.
+RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.

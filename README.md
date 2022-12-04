@@ -419,22 +419,27 @@ which is useful if `sudo` permissions are unavailable on the host.
    wiping out all previous variables.v Using `docker`/`docker compose` 
    to enter containers is strongly recommended.
 
-2. `pip install package[option]` will fail on the terminal because of 
+2. iTerm2 users must change their settings to enable mouse wheel 
+   scrolling inside `tmux`. Go to Settings > Advanced > Mouse > 
+   Scroll wheel sends arrow keys when in alternate screen mode.
+   Change the setting to "Yes".
+
+3. `pip install package[option]` will fail on the terminal because of 
    Z-shell globbing. Characters such as `[`,`]`,`*`, etc. will be 
    interpreted by Z-shell as special commands. Use string literals, 
    e.g., `pip install 'package[option]'` for cross-shell consistency.
 
-3. PyTorch source builds require a corresponding `magma-cudaXXX` package
+4. PyTorch source builds require a corresponding `magma-cudaXXX` package
    in the PyTorch anaconda channel. CUDA 11.4.x is not available as 
    `magma-cuda114` is unavailable. Neither can new versions of CUDA be
     used until a `magma` package is published.
 
-4. If the build fails during `git clone`, simply try `make build` again.
+5. If the build fails during `git clone`, simply try `make build` again.
    Most of the build will be cached. Failure is probably due to 
    networking issues during installation. Updating git submodules is 
    [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
-5. `torch.cuda.is_available()` will return a `... UserWarning: 
+6. `torch.cuda.is_available()` will return a `... UserWarning: 
    CUDA initialization:...` error or the image will simply not start if 
    the CUDA driver on the host is incompatible with the CUDA version on 
    the Docker image. Either upgrade the host CUDA driver or downgrade 
@@ -444,7 +449,7 @@ which is useful if `sudo` permissions are unavailable on the host.
    Also, check if the CUDA driver has been configured correctly on the host.
    The CUDA driver version can be found using the `nvidia-smi` command.
 
-6. Docker Compose V2 will silently fail if the installed Docker engine 
+7. Docker Compose V2 will silently fail if the installed Docker engine 
    version is too low on Linux hosts. Update Docker to the latest 
    version (20.10+) to use Docker Compose V2.
 
