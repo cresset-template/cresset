@@ -436,8 +436,9 @@ ARG GRP=user
 ARG USR=user
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
-# Creating user with password-free sudo permissions. This may cause security issues.
-RUN groupadd -g ${GID} ${GRP} && \
+# Creating user with password-free sudo permissions.
+# This may cause security issues.
+RUN groupadd -f -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers

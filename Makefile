@@ -23,7 +23,10 @@ GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
 USR = $(shell id -un)
-IMAGE_NAME = "${SERVICE}-${USR}"
+# Docker image names must be lowercase.
+REPOSITORY = cresset
+_IMAGE_NAME = "${REPOSITORY}:${SERVICE}-${USR}"
+IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html

@@ -32,7 +32,7 @@ services:
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
-    image: cresset:${IMAGE_NAME:-train}
+    image: ${IMAGE_NAME}
     network_mode: host  # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
 #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
