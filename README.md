@@ -420,8 +420,8 @@ which is useful if `sudo` permissions are unavailable on the host.
    to enter containers is strongly recommended.
 
 2. iTerm2 users must change their settings to enable mouse wheel 
-   scrolling inside `tmux`. Go to Settings > Advanced > Mouse > 
-   Scroll wheel sends arrow keys when in alternate screen mode.
+   scrolling inside `tmux`. Go to "Settings" > "Advanced" > "Mouse" > 
+   "Scroll wheel sends arrow keys when in alternate screen mode".
    Change the setting to "Yes".
 
 3. `pip install package[option]` will fail on the terminal because of 
