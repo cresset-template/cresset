@@ -46,25 +46,25 @@ ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 # Build-related packages are pre-installed on CUDA `devel` images.
-# Only the `cURL` package is downloaded from the package manager.
-# The only use of cURL is to download Miniconda.
+# Only `cURL` and `git` are downloaded from the package manager.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl && \
+        curl \
+        git && \
     rm -rf /var/lib/apt/lists/*
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-centos
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubi
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-rockylinux
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM install-${LINUX_DISTRO} AS install-base
@@ -306,7 +306,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-base AS fetch-pure
+FROM install-base AS fetch-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
@@ -318,7 +318,7 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 ########################################################################
-FROM build-base AS fetch-torch
+FROM install-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
 ARG PYTORCH_INDEX_URL
@@ -328,7 +328,7 @@ RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         torch==${PYTORCH_VERSION}
 
 ########################################################################
-FROM build-base AS fetch-vision
+FROM install-base AS fetch-vision
 
 ARG PYTORCH_INDEX_URL
 ARG TORCHVISION_VERSION
@@ -354,10 +354,12 @@ COPY --link --from=fetch-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
-# Only build lightweight libraries.
+# No compiled libraries copied over in exclude mode.
+# Note that `fetch` stages are derived from the `install-base` stage
+# with no dependency on the `build-base` stage. This skips installation
+# of any build-time dependencies, saving both time and space.
 
 COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure   /opt/zsh   /opt
@@ -417,6 +419,7 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezo
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common`, a requirement for the `add-apt-repository` command.
+# This command may be deleted if no personal apt repositories are required.
 RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common && \
