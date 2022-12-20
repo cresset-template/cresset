@@ -412,24 +412,28 @@ ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
+
 ARG DEB_OLD
 ARG DEB_NEW
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
-# Install `software-properties-common`, a requirement for the `add-apt-repository` command.
-# This command may be deleted if no personal apt repositories are required.
-RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common && \
-    rm -rf /var/lib/apt/lists/*
+# Enable caching for `apt` packages.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > \
+    /etc/apt/apt.conf.d/keep-cache
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
+# `apt` requirements are copied from the outside instead of from
+# `train-builds` to allow parallel installation with pip.
 COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
-RUN apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -571,6 +575,7 @@ ARG DEB_NEW
 # versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
 # `printf` is preferred over `echo` when escape characters are used due to
 # the inconsistent behavior of `echo` across different shells.
+# `software-properties-common` is required for the `add-apt-repository` command.
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 ARG PYTHON_VERSION
 ARG DEBIAN_FRONTEND=noninteractive
