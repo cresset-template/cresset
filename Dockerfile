@@ -483,11 +483,10 @@ ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 
-# Conda configurations are not carried with the directory.
+# Conda configurations are saved in the user's home directory.
 # Resetting configurations in case conda packages are needed.
 RUN conda config --append channels conda-forge && \
-    conda config --remove channels defaults && \
-    conda config --set channel_priority strict
+    conda config --remove channels defaults
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
