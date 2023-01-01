@@ -30,7 +30,10 @@ USR = $(shell id -un)
 
 REPOSITORY = cresset
 TAG = "${SERVICE}-${USR}"
-IMAGE_NAME = "${REPOSITORY}:${TAG}"
+_IMAGE_NAME = "${REPOSITORY}:${TAG}"
+# Image names are made lowercase even though Docker can recognize
+# uppercase for compatibility across platforms.
+IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
