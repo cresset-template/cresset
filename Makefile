@@ -9,8 +9,12 @@ SERVICE = train
 COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
-# Project names are made unique for each user to prevent name clashes.
-PROJECT = "${SERVICE}-${USR}"
+# Project names are made unique for each user to prevent name clashes,
+# which may cause issues if multiple users are using the same account.
+# Give `PROJECT` to the `make` command if this is the case.
+_PROJECT = "${SERVICE}-${USR}"
+# The `COMPOSE_PROJECT_NAME` variable must be lowercase.
+PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -23,10 +27,10 @@ GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
 USR = $(shell id -un)
-# Docker image names must be lowercase.
+
 REPOSITORY = cresset
-_IMAGE_NAME = "${REPOSITORY}:${SERVICE}-${USR}"
-IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
+TAG = "${SERVICE}-${USR}"
+IMAGE_NAME = "${REPOSITORY}:${TAG}"
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
