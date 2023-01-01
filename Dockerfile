@@ -30,17 +30,16 @@
 # A CUDA version such as `11.2` is therefore invalid.
 # Users must specify the full version, e.g., `11.2.2`.
 
-ARG BUILD_MODE=exclude
+ARG MKL_MODE
+ARG BUILD_MODE
 ARG USE_CUDA=1
-ARG USE_PRECOMPILED_HEADERS=1
+ARG CUDA_VERSION
+ARG CUDNN_VERSION
+ARG LINUX_DISTRO
+ARG DISTRO_VERSION
 ARG CONDA_MANAGER=mamba
-ARG MKL_MODE=include
-ARG CUDA_VERSION=11.7.1
-ARG CUDNN_VERSION=8
-ARG PYTHON_VERSION=3.10
-ARG LINUX_DISTRO=ubuntu
-ARG DISTRO_VERSION=22.04
 ARG TORCH_CUDA_ARCH_LIST
+ARG USE_PRECOMPILED_HEADERS=1
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
@@ -94,7 +93,7 @@ ARG PYTHON_VERSION
 ENV PATH=/opt/conda/bin:${PATH}
 # Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
 # Cannot set strict channel priority because of installation conflicts.
-ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+ARG CONDA_URL
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     /bin/bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh && \
