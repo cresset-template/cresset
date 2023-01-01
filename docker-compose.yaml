@@ -72,6 +72,9 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
+        # Change the Miniconda URL for different hardware architectures or if
+        # different versions of Miniconda are necessary.
+        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA}
         # Variables for building PyTorch. Must be valid git tags.
@@ -137,6 +140,7 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
+        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         # Variables for building PyTorch. Must be valid git tags.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
@@ -176,6 +180,7 @@ services:
       target: ${TARGET_STAGE:-build-base}  # All builds begin at `build-base`.
       context: .
       dockerfile: Dockerfile
+      CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
 
 
   ngc:  # NGC image service. Demonstrates the generality of the template.
