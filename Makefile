@@ -79,7 +79,7 @@ exec:  # Execute service. Enter interactive shell.
 start:  # Start a stopped service without recreating the container.
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down the service and delete containers, volumes, networks, etc.
-	docker compose -p ${PROJECT} down
+	docker compose -p ${PROJECT} down ${COMMAND}
 run: check  # Used for debugging cases where the service will not start.
 	docker compose -p ${PROJECT} run ${SERVICE}
 ls:  # List all services.
