@@ -508,6 +508,10 @@ COPY --link --from=train-builds --chown=${UID}:${GID} \
     /opt/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
+# Add `ll` alias for convenience. The Mac version of `ll` is used
+# instead of the Ubuntu version due to better configurability.
+RUN echo "alias ll='ls -lh'" >> ${HOME}/.zshrc
+
 # Enable mouse scrolling for tmux.
 # iTerm2 users should change settings to use scrolling properly.
 RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
