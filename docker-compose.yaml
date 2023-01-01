@@ -50,6 +50,7 @@ services:
       # Use this if the docker-compose.yaml file is at the project root.
       - .:${PROJECT_ROOT:-/opt/project}
       # Preserve VSCode extensions between containers.
+      # Assumes default VSCode server directory.
       - ${HOME}/.vscode-server:/home/${USR}/.vscode-server
 #    tmpfs:  # Create directory in RAM for fast data IO.
 #      - /opt/data

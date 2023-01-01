@@ -1,4 +1,4 @@
-.PHONY: up exec build rebuild start down run ls check init
+.PHONY: up exec build rebuild start down run ls check init vs
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
@@ -50,6 +50,13 @@ check:  # Checks if the `.env` file exists.
 		exit 1; \
 	fi
 
+
+# Creates VSCode server directory to prevent Docker Compose from
+# creating the directory with `root` ownership.
+VSCODE_SERVER_PATH = ${HOME}/.vscode-server
+vs:
+	mkdir -p ${VSCODE_SERVER_PATH}
+
 OVERRIDE_FILE = docker-compose.override.yaml
 # Indentation for the next line is included at the end of
 # the previous line because Makefiles do not read the initial spaces.
@@ -66,10 +73,11 @@ ${OVERRIDE_FILE}:
 # Cannot use `override` as a recipe name as it is a `make` keyword.
 over: ${OVERRIDE_FILE}
 
-build: check  # Rebuilds the image from the Dockerfile before creating a new container.
+# Rebuilds the image from the Dockerfile before creating a new container.
+build: check vs
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
-up: check  # Start service. Creates a new container from the image.
+up: check vs  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up -d ${SERVICE}
 exec:  # Execute service. Enter interactive shell.
@@ -80,7 +88,7 @@ start:  # Start a stopped service without recreating the container.
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down the service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down ${COMMAND}
-run: check  # Used for debugging cases where the service will not start.
+run: check vs  # Used for debugging cases where the service will not start.
 	docker compose -p ${PROJECT} run ${SERVICE}
 ls:  # List all services.
 	docker compose ls -a
