@@ -96,8 +96,7 @@ ENV PATH=/opt/conda/bin:${PATH}
 # Cannot set strict channel priority because of installation conflicts.
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
-    chmod +x /tmp/miniconda.sh && \
-    /tmp/miniconda.sh -b -p /opt/conda && \
+    /bin/bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh && \
     conda config --remove channels defaults && \
     conda config --append channels conda-forge && \
@@ -467,6 +466,7 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for efficient memory management.
 # Use `libjemalloc.so.1` for Ubuntu 18.04 or below.
+# Different architectures will also have different binary names.
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
