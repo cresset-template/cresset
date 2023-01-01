@@ -67,11 +67,16 @@ vs:
 OVERRIDE_FILE = docker-compose.override.yaml
 # Indentation for the next line is included at the end of
 # the previous line because Makefiles do not read the initial spaces.
+# The user's $HOME directory on the host should not be mounted on the
+# containers $HOME directory as this would override the configurations
+# inside the container with those from the host.
+# The home directory is therefore mounted in a separate directory,.
+# which also serves as an example of how to make volume pairings.
 OVERRIDE_BASE = "$\
 services:\n  $\
   ${SERVICE}:\n    $\
     volumes:\n      $\
-      - \n$\
+      - $$"{HOME}":/mnt/home\n$\
 "
 # Create override file for Docker Compose configurations for each user.
 # For example, different users may use different host volume directories.
@@ -94,9 +99,9 @@ exec:  # Execute service. Enter interactive shell.
 start:  # Start a stopped service without recreating the container.
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down the service and delete containers, volumes, networks, etc.
-	docker compose -p ${PROJECT} down ${COMMAND}
+	docker compose -p ${PROJECT} down
 run: check vs  # Used for debugging cases where the service will not start.
-	docker compose -p ${PROJECT} run ${SERVICE}
+	docker compose -p ${PROJECT} run ${SERVICE} ${COMMAND}
 ls:  # List all services.
 	docker compose ls -a
 
