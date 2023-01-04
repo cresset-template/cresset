@@ -20,9 +20,9 @@ dependencies:  # Use conda packages if possible.
 
   # Utility packages.
   - git
-  - jemalloc
-#  - libxcb  # Necessary when built from source.
+  - htop
+  - jemalloc  # Essential package.
 
   # `pip` dependencies not available in conda.
-  - pip  # Source compiled packages are installed by pip.
+  - pip  # Source compiled packages are installed via pip.
   - pip:  # Do not delete this line even if pip packages are not used.
