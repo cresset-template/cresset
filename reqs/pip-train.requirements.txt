@@ -1,6 +1,0 @@
-# Packages to be installed in `Dockerfile` in `train` mode.
-# PyTorch installation is contained within the Docker Compose file.
-mkl  # Essential package if BUILD_MODE=include and MKL_MODE=include.
-hydra-core==1.1.0
-pandas
-jupyterlab

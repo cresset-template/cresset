@@ -112,6 +112,8 @@ DI_TEXT = "$\
 **\n$\
 !*requirements*.txt\n$\
 !**/*requirements*.txt\n$\
+!*environment*.yaml\n$\
+!**/*environment*.yaml\n$\
 "
 ${DI_FILE}:
 	printf ${DI_TEXT} >> ${DI_FILE}

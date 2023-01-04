@@ -37,7 +37,6 @@ ARG CUDA_VERSION
 ARG CUDNN_VERSION
 ARG LINUX_DISTRO
 ARG DISTRO_VERSION
-ARG CONDA_MANAGER=mamba
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS=1
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
@@ -45,25 +44,23 @@ ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 # Build-related packages are pre-installed on CUDA `devel` images.
-# Only `cURL` and `git` are downloaded from the package manager.
+# Only `cURL` is downloaded from the package manager.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl \
-        git && \
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-centos
-RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubi
-RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-rockylinux
-RUN yum -y install curl git && yum -y clean all && rm -rf /var/cache
+RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM install-${LINUX_DISTRO} AS install-base
@@ -87,43 +84,43 @@ ENV PYTHONIOENCODING=UTF-8
 # https://conda.io/en/latest/license.html
 # https://www.anaconda.com/terms-of-service
 # https://www.anaconda.com/end-user-license-agreement-miniconda
-ARG MKL_MODE
-ARG PYTHON_VERSION
+
 # Conda packages have higher priority than system packages during the build.
 ENV PATH=/opt/conda/bin:${PATH}
 # Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
 # Cannot set strict channel priority because of installation conflicts.
+# The `update-all` option is given to clear out pre-existing dependencies
+# but may cause issues if previous versions of the conda installer are used.
 ARG CONDA_URL
+ARG PYTHON_VERSION
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     /bin/bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh && \
     conda config --remove channels defaults && \
     conda config --append channels conda-forge && \
-    conda install -y python=${PYTHON_VERSION} && \
+    conda install -y --update-all python=${PYTHON_VERSION} && \
     conda clean -ya
 
 ########################################################################
 FROM install-base AS install-conda
 
-# Get build requirements. Set package versions manually if compatibility issues arise.
-COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
-ENV conda=/opt/conda/bin/conda
-
-########################################################################
-FROM install-conda AS install-mamba
-
-# Using Mamba instead of Conda as the package manager for faster installation.
-RUN conda install -y mamba && conda clean -ya
-ENV conda=/opt/conda/bin/mamba
-
-########################################################################
-FROM install-${CONDA_MANAGER} AS install-include-mkl
-
-# The `CONDA_MANAGER` variable may be either `mamba` (the default) or `conda`.
+# `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
 # Mamba is a faster reimplementation of conda in C++.
 # However, there are occasions where mamba is unable to
 # resolve conflicts that conda can resolve.
 # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
+ARG CONDA_MANAGER=mamba
+# Git is installed for the `fetch` stages.
+RUN conda install -y ${CONDA_MANAGER} git && conda clean -ya
+
+# Shortcut to simplify downstream installation.
+ENV conda=/opt/conda/bin/${CONDA_MANAGER}
+
+########################################################################
+FROM install-conda AS install-include-mkl
+
+# Get build requirements. Set package versions manually if compatibility issues arise.
+COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
@@ -156,6 +153,9 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 ########################################################################
 FROM install-conda AS install-exclude-mkl
 
+# Get build requirements. Set package versions manually if compatibility issues arise.
+COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
+
 # The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
 # though there are no restrictions on commercial use.
 # See the Intel(R) Simplified Software License (ISSL) for details.
@@ -173,7 +173,7 @@ RUN $conda install -y \
 
 ########################################################################
 FROM install-${MKL_MODE}-mkl AS build-base
-# `build-base` is the base stage for all builds in the Dockerfile.
+# `build-base` is the base stage for all heavy builds in the Dockerfile.
 
 # Use Jemalloc as the system memory allocator for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
@@ -269,10 +269,14 @@ RUN --mount=type=cache,target=/opt/ccache \
 # https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
 
 ########################################################################
-FROM build-base AS build-pillow
-# Specify the version of `Pillow-SIMD` if necessary. Variable is not used yet.
-# Condition ensures that AVX2 instructions are built only if available.
+FROM install-conda AS build-pillow
+# This stage is derived from `install-conda` instead of `build-base`
+# as it is very lightweight and does not require many dependencies.
+RUN $conda install -y libjpeg-turbo zlib && conda clean -ya
+
+# Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
 ARG PILLOW_SIMD_VERSION
+# Condition ensures that AVX2 instructions are built only if available.
 RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
@@ -304,7 +308,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM install-base AS fetch-pure
+FROM install-conda AS fetch-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
@@ -316,7 +320,7 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 ########################################################################
-FROM install-base AS fetch-torch
+FROM install-conda AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
 ARG PYTORCH_INDEX_URL
@@ -326,7 +330,7 @@ RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         torch==${PYTORCH_VERSION}
 
 ########################################################################
-FROM install-base AS fetch-vision
+FROM install-conda AS fetch-vision
 
 ARG PYTORCH_INDEX_URL
 ARG TORCHVISION_VERSION
@@ -352,12 +356,13 @@ COPY --link --from=fetch-pure   /opt/zsh   /opt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
-# No compiled libraries copied over in exclude mode.
+# No compiled libraries copied over in exclude mode except Pillow-SIMD.
 # Note that `fetch` stages are derived from the `install-base` stage
 # with no dependency on the `build-base` stage. This skips installation
 # of any build-time dependencies, saving both time and space.
 
 COPY --link --from=install-base /opt/conda /opt/conda
+COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure   /opt/zsh   /opt
@@ -373,7 +378,6 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 ARG INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
-
 RUN if [ ${INDEX_URL} ]; then \
     {   echo "[global]"; \
         echo "index-url=${INDEX_URL}"; \
@@ -382,17 +386,25 @@ RUN if [ ${INDEX_URL} ]; then \
     fi
 
 ARG PATH=/opt/conda/bin:${PATH}
-# Using `PIP_CACHE_DIR` to cache previous installations.
+
+# `CONDA_MANAGER` should be either `mamba` or `conda`.
+# The `install-conda` stage above contains details.
+ARG CONDA_MANAGER=mamba
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
+COPY --link reqs/train-environment.yaml /tmp/train/environment.yaml
+# Using `PIP_CACHE_DIR` and `CONDA_CACHE_DIR` to cache installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
-# The `/tmp/dist/*.whl` files are the wheels built or installed in previous stages.
-# `--find-links` gives higher priority to the wheels in `/tmp/dist`.
-# Installing all packages in one command allows `pip` to resolve dependencies correctly.
-# Using multiple `pip` installs may break the dependencies of all but the last installation.
+ARG CONDA_CACHE_DIR=/opt/conda/pkgs
+ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
+COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
-    python -m pip install --find-links /tmp/dist \
-        -r /tmp/pip/requirements.txt \
-        /tmp/dist/*.whl
+    --mount=type=cache,target=${CONDA_CACHE_DIR} \
+    conda config --append channels conda-forge && \
+    conda config --remove channels defaults && \
+    conda install -y -c conda-forge ${CONDA_MANAGER} && \
+    find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
+    conda install -y python=${PYTHON_VERSION} ${CONDA_MANAGER} && \
+    $conda env update --file ${CONDA_ENV_FILE}
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
@@ -464,9 +476,7 @@ ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Use Jemalloc for efficient memory management.
-# Use `libjemalloc.so.1` for Ubuntu 18.04 or below.
-# Different architectures will also have different binary names.
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 USER ${USR}
@@ -595,6 +605,8 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/a
 # The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
 # The MKL major version used at runtime must match the version used to build PyTorch.
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
+# Installing all packages in one command allows `pip` to resolve dependencies correctly.
+# Using multiple `pip` installs may break the dependencies of all but the last installation.
 RUN --mount=type=bind,from=deploy-builds,source=/tmp/pip,target=/tmp/pip \
     --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
     python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \

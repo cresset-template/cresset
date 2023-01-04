@@ -5,3 +5,5 @@
 **
 !*requirements*.txt
 !**/*requirements*.txt
+!*environment*.yaml
+!**/*environment*.yaml
