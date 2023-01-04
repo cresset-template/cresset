@@ -1,4 +1,4 @@
-.PHONY: up exec build rebuild start down run ls check init
+.PHONY: up exec build rebuild start down run ls check init vs
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
@@ -9,8 +9,12 @@ SERVICE = train
 COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
-# Project names are made unique for each user to prevent name clashes.
-PROJECT = "${SERVICE}-${USR}"
+# Project names are made unique for each user to prevent name clashes,
+# which may cause issues if multiple users are using the same account.
+# Give `PROJECT` to the `make` command if this is the case.
+_PROJECT = "${SERVICE}-${USR}"
+# The `COMPOSE_PROJECT_NAME` variable must be lowercase.
+PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -23,9 +27,12 @@ GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
 USR = $(shell id -un)
-# Docker image names must be lowercase.
+
 REPOSITORY = cresset
-_IMAGE_NAME = "${REPOSITORY}:${SERVICE}-${USR}"
+TAG = "${SERVICE}-${USR}"
+_IMAGE_NAME = "${REPOSITORY}:${TAG}"
+# Image names are made lowercase even though Docker can recognize
+# uppercase for compatibility across platforms.
 IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
@@ -50,14 +57,26 @@ check:  # Checks if the `.env` file exists.
 		exit 1; \
 	fi
 
+
+# Creates VSCode server directory to prevent Docker Compose from
+# creating the directory with `root` ownership.
+VSCODE_SERVER_PATH = ${HOME}/.vscode-server
+vs:
+	mkdir -p ${VSCODE_SERVER_PATH}
+
 OVERRIDE_FILE = docker-compose.override.yaml
 # Indentation for the next line is included at the end of
 # the previous line because Makefiles do not read the initial spaces.
+# The user's $HOME directory on the host should not be mounted on the
+# containers $HOME directory as this would override the configurations
+# inside the container with those from the host.
+# The home directory is therefore mounted in a separate directory,.
+# which also serves as an example of how to make volume pairings.
 OVERRIDE_BASE = "$\
 services:\n  $\
   ${SERVICE}:\n    $\
     volumes:\n      $\
-      - \n$\
+      - $$"{HOME}":/mnt/home\n$\
 "
 # Create override file for Docker Compose configurations for each user.
 # For example, different users may use different host volume directories.
@@ -66,10 +85,11 @@ ${OVERRIDE_FILE}:
 # Cannot use `override` as a recipe name as it is a `make` keyword.
 over: ${OVERRIDE_FILE}
 
-build: check  # Rebuilds the image from the Dockerfile before creating a new container.
+# Rebuilds the image from the Dockerfile before creating a new container.
+build: check vs
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
-up: check  # Start service. Creates a new container from the image.
+up: check vs  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up -d ${SERVICE}
 exec:  # Execute service. Enter interactive shell.
@@ -80,8 +100,8 @@ start:  # Start a stopped service without recreating the container.
 	docker compose -p ${PROJECT} start ${SERVICE}
 down:  # Shut down the service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
-run: check  # Used for debugging cases where the service will not start.
-	docker compose -p ${PROJECT} run ${SERVICE}
+run: check vs  # Used for debugging cases where the service will not start.
+	docker compose -p ${PROJECT} run ${SERVICE} ${COMMAND}
 ls:  # List all services.
 	docker compose ls -a
 
@@ -92,6 +112,8 @@ DI_TEXT = "$\
 **\n$\
 !*requirements*.txt\n$\
 !**/*requirements*.txt\n$\
+!*environment*.yaml\n$\
+!**/*environment*.yaml\n$\
 "
 ${DI_FILE}:
 	printf ${DI_TEXT} >> ${DI_FILE}

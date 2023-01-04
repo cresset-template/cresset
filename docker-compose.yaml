@@ -50,6 +50,7 @@ services:
       # Use this if the docker-compose.yaml file is at the project root.
       - .:${PROJECT_ROOT:-/opt/project}
       # Preserve VSCode extensions between containers.
+      # Assumes default VSCode server directory.
       - ${HOME}/.vscode-server:/home/${USR}/.vscode-server
 #    tmpfs:  # Create directory in RAM for fast data IO.
 #      - /opt/data
@@ -66,20 +67,23 @@ services:
         USE_NNPACK: 0
         USE_QNNPACK: 0
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-20.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.2.2}
+        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
+        CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
+        # Change the Miniconda URL for different hardware architectures or if
+        # different versions of Miniconda are necessary.
+        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA}
         # Variables for building PyTorch. Must be valid git tags.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu116}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu117}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -136,14 +140,15 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
+        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         # Variables for building PyTorch. Must be valid git tags.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.12.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.13.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu116}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.12.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.13.1}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu117}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
 #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
 #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
