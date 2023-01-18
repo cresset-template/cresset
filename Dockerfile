@@ -523,7 +523,7 @@ RUN echo "alias ll='ls -lh'" >> ${HOME}/.zshrc
 
 # Enable mouse scrolling for tmux.
 # iTerm2 users should change settings to use scrolling properly.
-RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
+# RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
