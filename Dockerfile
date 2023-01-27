@@ -39,31 +39,29 @@ ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS=1
+# Build-related packages are pre-installed on CUDA `devel` images.
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
-# Build-related packages are pre-installed on CUDA `devel` images.
-# Only `cURL` is downloaded from the package manager.
 ########################################################################
-FROM ${BUILD_IMAGE} AS install-ubuntu
-RUN apt-get update && apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+FROM curlimages/curl:latest AS curl
+# An image used solely to download files from the internet.
+
+# Use a different CONDA_URL for a different CPU architecture or specific version.
+# The Anaconda `defaults` channel is no longer free for commercial use.
+# Using Miniforge or Mambaforge is strongly recommended. Viva la Open Source!
+# Use Miniconda only if absolutely necessary.
+# The defaults channel will be removed and the conda-forge channel will be used.
+# https://conda.io/en/latest/license.html
+# https://www.anaconda.com/terms-of-service
+# https://www.anaconda.com/end-user-license-agreement-miniconda
+
+ARG CONDA_URL
+RUN mkdir /tmp/conda && curl -fsSL -v -o /tmp/conda/miniconda.sh -O ${CONDA_URL}
 
 ########################################################################
-FROM ${BUILD_IMAGE} AS install-centos
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
-
-########################################################################
-FROM ${BUILD_IMAGE} AS install-ubi
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
-
-########################################################################
-FROM ${BUILD_IMAGE} AS install-rockylinux
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
-
-########################################################################
-FROM install-${LINUX_DISTRO} AS install-base
+FROM ${BUILD_IMAGE} AS install-conda
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -76,51 +74,32 @@ ENV PYTHONUNBUFFERED=1
 # Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
 
-# Conda always uses the specified version of Python, regardless of Miniconda version.
-# Use a different conda URL for a different CPU architecture or specific version.
-# The Anaconda `defaults` channel is no longer free for commercial use.
-# Miniconda itself is still open-source.
-# Removing `defaults` channel as a result. Viva la Open Source!
-# https://conda.io/en/latest/license.html
-# https://www.anaconda.com/terms-of-service
-# https://www.anaconda.com/end-user-license-agreement-miniconda
-
 # Conda packages have higher priority than system packages during the build.
 ENV PATH=/opt/conda/bin:${PATH}
-# Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
-# Cannot set strict channel priority because of installation conflicts.
-# The `update-all` option is given to clear out pre-existing dependencies
-# but may cause issues if previous versions of the conda installer are used.
-ARG CONDA_URL
-ARG PYTHON_VERSION
-RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
-    /bin/bash /tmp/miniconda.sh -b -p /opt/conda && \
-    rm /tmp/miniconda.sh && \
-    conda config --remove channels defaults && \
-    conda config --append channels conda-forge && \
-    conda install -y --update-all python=${PYTHON_VERSION} && \
-    conda clean -ya
 
-########################################################################
-FROM install-base AS install-conda
-
-# `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
-# Mamba is a faster reimplementation of conda in C++.
-# However, there are occasions where mamba is unable to
-# resolve conflicts that conda can resolve.
-# In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-ARG CONDA_MANAGER=mamba
-# Git is installed for the `fetch` stages.
-RUN conda install -y ${CONDA_MANAGER} git && conda clean -ya
-
+# `CONDA_MANAGER` may be either `mamba` or `conda`.
+ARG CONDA_MANAGER
 # Shortcut to simplify downstream installation.
 ENV conda=/opt/conda/bin/${CONDA_MANAGER}
 
+ARG PYTHON_VERSION
+# The `.condarc` file in the installation directory portably configures the
+# `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
+# No effect if Miniforge or Mambaforge is used as this is the default anyway.
+RUN --mount=type=bind,from=curl,source=/tmp/conda,target=/tmp/conda \
+    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
+    printf "channels:\n  - conda-forge\n" > /opt/conda.condarc && \
+    $conda install -y python=${PYTHON_VERSION} && \
+    conda clean -ya
+
 ########################################################################
-FROM install-conda AS install-include-mkl
+FROM install-conda AS install-mkl-base
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
 COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
+
+########################################################################
+FROM install-mkl-base AS install-include-mkl
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
@@ -151,10 +130,7 @@ ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 ########################################################################
-FROM install-conda AS install-exclude-mkl
-
-# Get build requirements. Set package versions manually if compatibility issues arise.
-COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
+FROM install-mkl-base AS install-exclude-mkl
 
 # The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
 # though there are no restrictions on commercial use.
@@ -204,14 +180,14 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 ########################################################################
 FROM build-base AS build-torch
 
-# Minimize downloads by only cloning shallow branches and not the full `git` history.
-# If the build fails during `git clone`, just try again.
 # Updating git submodules is not fail-safe.
+# If the build fails during `git clone`, just try again.
 # The reason for failure is likely due to networking issues during installation.
 # See https://stackoverflow.com/a/8573310/9289275
 WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
+# Minimize downloads by only cloning shallow branches and not the full `git` history.
 RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
         ${TORCH_URL} /opt/pytorch
@@ -315,6 +291,9 @@ ARG PURE_URL=https://github.com/sindresorhus/pure.git
 ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
 ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
 
+# Get `git` from `conda` to prevent version mismatch issues.
+RUN $conda install -y git && conda clean -ya
+
 RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
@@ -349,23 +328,23 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # The `train` image is the one actually used for training.
 # It is designed to be separate from the `build` image,
 # with only the build artifacts (e.g., pip wheels) copied over.
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-vision /tmp/dist  /tmp/dist
-COPY --link --from=fetch-pure   /opt/zsh   /opt
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
 # No compiled libraries copied over in exclude mode except Pillow-SIMD.
-# Note that `fetch` stages are derived from the `install-base` stage
+# Note that `fetch` stages are derived from the `install-conda` stage
 # with no dependency on the `build-base` stage. This skips installation
 # of any build-time dependencies, saving both time and space.
 
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
-COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
-COPY --link --from=fetch-pure   /opt/zsh   /opt
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -388,8 +367,8 @@ RUN if [ ${INDEX_URL} ]; then \
 ARG PATH=/opt/conda/bin:${PATH}
 
 # `CONDA_MANAGER` should be either `mamba` or `conda`.
-# The `install-conda` stage above contains details.
-ARG CONDA_MANAGER=mamba
+# See the `install-conda` stage above for details.
+ARG CONDA_MANAGER
 ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 COPY --link reqs/train-environment.yaml /tmp/train/environment.yaml
 # Using `PIP_CACHE_DIR` and `CONDA_CACHE_DIR` to cache installations.
@@ -399,9 +378,6 @@ ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
 COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
     --mount=type=cache,target=${CONDA_CACHE_DIR} \
-    conda config --append channels conda-forge && \
-    conda config --remove channels defaults && \
-    conda install -y -c conda-forge ${CONDA_MANAGER} && \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
     conda install -y python=${PYTHON_VERSION} ${CONDA_MANAGER} && \
     $conda env update --file ${CONDA_ENV_FILE}
@@ -454,7 +430,7 @@ ARG USR=user
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
 # Creating user with password-free sudo permissions.
-# This may cause security issues.
+# This may cause security issues. Use at your own risk.
 RUN groupadd -f -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
@@ -492,15 +468,10 @@ ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 
-# Conda configurations are saved in the user's home directory.
-# Resetting configurations in case conda packages are needed.
-RUN conda config --append channels conda-forge && \
-    conda config --remove channels defaults
-
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
 ARG PURE_PATH=${HOME}/.zsh/pure
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
@@ -508,13 +479,13 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
 #ARG ZSHA_PATH=${HOME}/.zsh/zsh-autosuggestions
-#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${ZSHA_PATH}
+#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
 #RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${HOME}/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
 ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} \
-    /opt/zsh-syntax-highlighting ${ZSHS_PATH}
+    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Add `ll` alias for convenience. The Mac version of `ll` is used
@@ -534,17 +505,17 @@ CMD ["/bin/zsh"]
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
-COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-include
 
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-vision /tmp/dist  /tmp/dist
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM deploy-builds-${BUILD_MODE} AS deploy-builds

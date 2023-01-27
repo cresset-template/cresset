@@ -72,9 +72,17 @@ services:
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
-        # Change the Miniconda URL for different hardware architectures or if
-        # different versions of Miniconda are necessary.
-        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
+        # Change the `CONDA_URL` for different hardware architectures.
+        # URLs from https://github.com/conda-forge/miniforge are recommended over
+        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html
+        # `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
+        # Mamba is a faster reimplementation of conda in C++
+        # However, there are occasions where mamba is unable to
+        # resolve conflicts that conda can resolve.
+        # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
+        # Note that installing Mamba via Mambaforge is strongly recommended.
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA}
         # Variables for building PyTorch. Must be valid git tags.
@@ -140,7 +148,17 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
-        CONDA_URL: ${CONDA_URL:-https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh}
+        # Change the `CONDA_URL` for different hardware architectures.
+        # URLs from https://github.com/conda-forge/miniforge are recommended over
+        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html
+        # `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
+        # Mamba is a faster reimplementation of conda in C++
+        # However, there are occasions where mamba is unable to
+        # resolve conflicts that conda can resolve.
+        # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
+        # Note that installing Mamba via Mambaforge is strongly recommended.
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         # Variables for building PyTorch. Must be valid git tags.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
