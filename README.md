@@ -114,7 +114,7 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-IMAGE_NAME=train-USERNAME
+IMAGE_NAME=cresset:train-USERNAME
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
