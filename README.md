@@ -126,8 +126,8 @@ CCA=8.6                            # Compute capability. CCA=8.6 for RTX3090 and
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude                 # Whether to build PyTorch from source.
-PYTORCH_VERSION_TAG=v1.13.0        # Any `git` branch or tag name can be used.
-TORCHVISION_VERSION_TAG=v0.14.0
+PYTORCH_VERSION_TAG=v1.13.1        # Any `git` branch or tag name can be used.
+TORCHVISION_VERSION_TAG=v0.14.1
 
 # General environment configurations.
 LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for available base images. 
@@ -136,6 +136,7 @@ CUDA_VERSION=11.7.1                # Must be compatible with hardware and CUDA d
 CUDNN_VERSION=8                    # Only major version specifications are available.
 PYTHON_VERSION=3.10                # Minor version specifications are not guaranteed to work.
 MKL_MODE=include                   # Enable MKL for Intel CPUs.
+TZ=Asia/Seoul                      # Set the container timezone.
 ```
 
 ## General Usage After Initial Installation and Configuration
