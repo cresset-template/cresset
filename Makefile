@@ -105,21 +105,6 @@ run: check vs  # Used for debugging cases where the service will not start.
 ls:  # List all services.
 	docker compose ls -a
 
-# Create a `.dockerignore` file in PWD if it does not exist already or is empty.
-# Set to ignore all files except requirements files at project root or `reqs`.
-DI_FILE = .dockerignore
-DI_TEXT = "$\
-**\n$\
-!*requirements*.txt\n$\
-!**/*requirements*.txt\n$\
-!*environment*.yaml\n$\
-!**/*environment*.yaml\n$\
-"
-${DI_FILE}:
-	printf ${DI_TEXT} >> ${DI_FILE}
-
-di: ${DI_FILE}
-
 # Utility for installing Docker Compose on Linux (but not WSL) systems.
 # Visit https://docs.docker.com/compose/install for the full documentation.
 COMPOSE_VERSION = v2.15.1
