@@ -171,14 +171,11 @@ Please read the Makefile to see the exact commands.
    Similar to `make up` but does not delete the current container.
    Not recommended unless data saved in container are absolutely necessary.
 6. `make ls` shows all Docker Compose services, both active and inactive.
-7. `make run` is used for debugging. 
+7. `make run` is used for debugging. Containers are removed on exit.
    If a service fails to start, use it to find the error.
 
 
 ### Tips
-- PyTorch or the container may fail to run due to versioning issues.
-To solve these problems, run `misc/fixes.sh` **after** starting the 
-container with  `make exec`.
 - `make up` is akin to rebooting a computer.
 The current container is removed and a new container is created from the current image.
 - `make build` is akin to resetting/formatting a computer.
