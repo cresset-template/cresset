@@ -58,8 +58,8 @@ check:  # Checks if the `.env` file exists.
 	fi
 
 
-# Creates VSCode server directory to prevent Docker Compose from
-# creating the directory with `root` ownership.
+# Creates VSCode server directory to prevent Docker Compose
+# from creating the directory with `root` ownership.
 VSCODE_SERVER_PATH = ${HOME}/.vscode-server
 vs:
 	mkdir -p ${VSCODE_SERVER_PATH}

@@ -16,6 +16,7 @@ dependencies:  # Use conda packages if possible.
   - libpng  # Torchvision dependency.
   - numpy  # Intel optimized Numpy is not available on PyPI.
   - mkl  # Essential if BUILD_MODE=include and MKL_MODE=include.
+  - tqdm
   - typing_extensions  # A PyTorch dependency.
 
   # Utility packages.
@@ -25,4 +26,4 @@ dependencies:  # Use conda packages if possible.
 
   # `pip` dependencies not available in conda.
   - pip  # Source compiled packages are installed via pip.
-  - pip:  # Do not delete this line even if pip packages are not used.
+  - pip:  # Do not delete this line even if no `pip` packages used.
