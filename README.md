@@ -47,11 +47,11 @@ If this is your first time using this project, follow these steps:
    _N.B._ Linux hosts may also install via this
    [repo](https://github.com/docker/docker-install).
 
-3. Run `. misc/install_compose.sh` to install Docker Compose V2 for Linux hosts. 
-   Docker Desktop has Docker Compose V2 activated by default for WSL users.
+3. Run `make install-compose` to install Docker Compose V2 for Linux hosts.
    Installation does _**not**_ require `root` permissions. Visit the 
    [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
-   for the latest installation information.
+   for the latest installation information. Note that Docker Compose V2
+   is available for WSL users with Docker Desktop by default.
 
 4. Run `make env` on the terminal at project root to create a basic `.env` file. 
    The `.env` file provides environment variables for `docker-compose.yaml`,
