@@ -101,7 +101,7 @@ start:  # Start a stopped service without recreating the container.
 down:  # Shut down the service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
 run: check vs  # Used for debugging cases where the service will not start.
-	docker compose -p ${PROJECT} run ${SERVICE} ${COMMAND}
+	docker compose -p ${PROJECT} run --rm ${SERVICE} ${COMMAND}
 ls:  # List all services.
 	docker compose ls -a
 
@@ -119,3 +119,18 @@ ${DI_FILE}:
 	printf ${DI_TEXT} >> ${DI_FILE}
 
 di: ${DI_FILE}
+
+# Utility for installing Docker Compose on Linux (but not WSL) systems.
+# Visit https://docs.docker.com/compose/install for the full documentation.
+COMPOSE_VERSION = v2.15.1
+COMPOSE_OS_ARCH = linux-x86_64
+COMPOSE_URL = https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-${COMPOSE_OS_ARCH}
+COMPOSE_PATH = ${HOME}/.docker/cli-plugins
+COMPOSE_FILE = ${COMPOSE_PATH}/docker-compose
+
+${COMPOSE_FILE}:
+	mkdir -p "${COMPOSE_PATH}"
+	curl -SL "${COMPOSE_URL}" -o "${COMPOSE_FILE}"
+	chmod +x "${COMPOSE_FILE}"
+
+install-compose: ${COMPOSE_FILE}
