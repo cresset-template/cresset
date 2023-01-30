@@ -398,9 +398,9 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
-ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
