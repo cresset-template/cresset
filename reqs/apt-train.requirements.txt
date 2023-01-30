@@ -1,14 +1,8 @@
 # Example `apt` requirements file.
 
 # Essential packages.
-openssh-server
 sudo
-tzdata
 zsh
 
-# Additional packages.
+# Optional packages.
 at
-nano
-parallel
-rsync
-tmux

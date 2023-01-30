@@ -6,8 +6,8 @@
 # installation with pip.
 name: base  # Always use the `base` environment.
 channels:
-  - nodefaults
-  - conda-forge
+  - nodefaults  # Do not use the default environment.
+  - conda-forge  # Always use conda-forge instead.
 dependencies:  # Use conda packages if possible.
   # Requirements.
   - hydra-core==1.3.1
@@ -19,11 +19,19 @@ dependencies:  # Use conda packages if possible.
   - tqdm
   - typing_extensions  # A PyTorch dependency.
 
+  # Essential packages.
+  - jemalloc
+  - openssh
+  - tzdata
+
   # Utility packages.
   - git
   - htop
-  - jemalloc  # Essential package.
+  - nano
+  - parallel
+  - rsync
+  - tmux
 
-  # `pip` dependencies not available in conda.
+  # For `pip` dependencies that are not available in conda.
   - pip  # Source compiled packages are installed via pip.
-  - pip:  # Do not delete this line even if no `pip` packages used.
+  - pip:  # Do not delete this line even if no `pip` packages are used.
