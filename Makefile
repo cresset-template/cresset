@@ -70,7 +70,7 @@ OVERRIDE_FILE = docker-compose.override.yaml
 # The user's $HOME directory on the host should not be mounted on the
 # containers $HOME directory as this would override the configurations
 # inside the container with those from the host.
-# The home directory is therefore mounted in a separate directory,.
+# The home directory is therefore mounted in a separate directory,
 # which also serves as an example of how to make volume pairings.
 OVERRIDE_BASE = "$\
 services:\n  $\
