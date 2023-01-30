@@ -22,6 +22,10 @@ cannot be used for older versions of PyTorch and other libraries.
 
 `PyYAML` may cause issues for early versions of PyTorch.
 
+`FFmpeg` is also a frequent cause of problems in TorchVision compilation.
+Disable compilation with FFmpeg and possibly remove it as a build dependency
+if TorchVision fails to compile, even if the error message does not mention FFmpeg.
+
 More versioning issues will arise with the passing of time, but the latest 
 versions of libraries will use the latest versions of their dependencies.
 
