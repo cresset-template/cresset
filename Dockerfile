@@ -45,8 +45,8 @@ ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
-FROM curlimages/curl:latest AS curl
-# An image used solely to download files from the internet.
+FROM curlimages/curl:latest AS curl-conda
+# An image used solely to download conda from the internet.
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
 # The Anaconda `defaults` channel is no longer free for commercial use.
@@ -86,7 +86,7 @@ ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge or Mambaforge is used as this is the default anyway.
-RUN --mount=type=bind,from=curl,source=/tmp/conda,target=/tmp/conda \
+RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n" > /opt/conda.condarc && \
     $conda install -y python=${PYTHON_VERSION} && \
@@ -379,7 +379,6 @@ COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
     --mount=type=cache,target=${CONDA_CACHE_DIR} \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
-    conda install -y python=${PYTHON_VERSION} ${CONDA_MANAGER} && \
     $conda env update --file ${CONDA_ENV_FILE}
 
 # Enable Intel MKL optimizations on AMD CPUs.
@@ -552,7 +551,7 @@ ARG DEB_OLD
 ARG DEB_NEW
 
 # Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
-# The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
+# The `readwrite` option is necessary as `apt` needs write permissions on `/tmp`.
 # Both `python` and `python3` are set to point to the installed version of Python.
 # The pre-installed system Python3 may be overridden if the installed and pre-installed
 # versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
