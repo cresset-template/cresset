@@ -1,4 +1,4 @@
-.PHONY: up exec build rebuild start down run ls check init vs
+.PHONY: up exec build start down run ls check vs
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
