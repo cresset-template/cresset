@@ -31,8 +31,8 @@ USR = $(shell id -un)
 REPOSITORY = cresset
 TAG = "${SERVICE}-${USR}"
 _IMAGE_NAME = "${REPOSITORY}:${TAG}"
-# Image names are made lowercase even though Docker can recognize
-# uppercase for compatibility across platforms.
+# Image names are made lowercase even though Docker can
+# recognize uppercase for cross-platform compatibility.
 IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
@@ -68,9 +68,9 @@ OVERRIDE_FILE = docker-compose.override.yaml
 # Indentation for the next line is included at the end of
 # the previous line because Makefiles do not read the initial spaces.
 # The user's $HOME directory on the host should not be mounted on the
-# containers $HOME directory as this would override the configurations
+# container's $HOME directory as this would override the configurations
 # inside the container with those from the host.
-# The home directory is therefore mounted in a separate directory,.
+# The home directory is therefore mounted in a separate directory,
 # which also serves as an example of how to make volume pairings.
 OVERRIDE_BASE = "$\
 services:\n  $\
