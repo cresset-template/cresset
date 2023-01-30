@@ -26,4 +26,4 @@ dependencies:  # Use conda packages if possible.
 
   # `pip` dependencies not available in conda.
   - pip  # Source compiled packages are installed via pip.
-  - pip:  # Do not delete this line even if pip packages are not used.
+  - pip:  # Do not delete this line even if no `pip` packages used.
