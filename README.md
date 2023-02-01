@@ -104,9 +104,9 @@ If this is your first time using this project, follow these steps:
    files are excluded from the Docker build context.
 
 Example `.env` file for user with username `USERNAME`,
-group name `GROUPNAME`, user id `1000`,  group id `1000` on service `full`.
+group name `GROUPNAME`, user id `1000`,  group id `1000` on service `train`.
 Edit the `docker-compose.yaml` file and the
-`Makefile` to specify services other than `full`.
+`Makefile` to specify services other than `train`.
 
 ```text
 # Generated automatically by `make env`.
@@ -235,12 +235,12 @@ Edit `reqs/apt-train.requirements.txt` to specify Ubuntu package requirements.
 Users must edit the `.dockerignore` file to `COPY` other files into the Docker build,
 for example, when building from private code during the Docker build.
 
-The `Dockerfile` uses Docker Buildkit and a multi-stage build where
+The `Dockerfile` uses Docker BuildKit and a multi-stage build where
 control flow is specified via stage names and build-time environment variables 
-given via `docker-compose.yaml`. See the Docker Buildkit 
+given via `docker-compose.yaml`. See the Docker BuildKit 
 [Syntax](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md)
-for more information on Docker Buildkit.
-The `full` service specified in the `docker-compose.yaml` file uses 
+for more information on Docker BuildKit.
+The `train` service specified in the `docker-compose.yaml` file uses 
 the `train` stage specified in the `Dockerfile`, which assumes an Ubuntu image.
 
 
