@@ -400,17 +400,19 @@ Directories that already exist retain their directory ownership.
 When the `.vscode-server` directory is created by Docker this way, 
 VSCode is unable to install any files in the `.vscode-server` directory.
 
+This has been fixed in the Makefile but problems related to 
+the `.vscode-server` directory occur frequently.
 To solve this problem, simply change the directory ownership to the
 user with `sudo chown -R $(id -u):$(id -g) ${HOME}/.vscode-server`.
 This command can be run either on the host or inside the container,
 which is useful if `sudo` permissions are unavailable on the host.
-
+For other problems concerning VSCode, try deleting `~/.vscode-server`.
 
 # Known Issues
 
 1. Connecting to a running container by `ssh` will remove all variables 
    set by `ENV`. This is because `sshd` starts a new environment, 
-   wiping out all previous variables.v Using `docker`/`docker compose` 
+   wiping out all previous variables. Using `docker`/`docker compose` 
    to enter containers is strongly recommended.
 
 2. iTerm2 users must change their settings to enable mouse wheel 
