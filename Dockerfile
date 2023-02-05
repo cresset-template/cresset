@@ -349,7 +349,7 @@ COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
 # Gather Python packages built in previous stages and
-# install into a conda virtual environment using pip.
+# install using both conda and pip with a single file.
 # Using a separate stage allows for build modularity
 # and and parallel installation with system packages.
 
@@ -371,13 +371,14 @@ ARG PATH=/opt/conda/bin:${PATH}
 ARG CONDA_MANAGER
 ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 COPY --link reqs/train-environment.yaml /tmp/train/environment.yaml
-# Using `PIP_CACHE_DIR` and `CONDA_CACHE_DIR` to cache installations.
+# Using `PIP_CACHE_DIR` and `CONDA_PKGS_DIRS`, both of which are
+# native cache directory variables, to cache installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-ARG CONDA_CACHE_DIR=/opt/conda/pkgs
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
 COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
-    --mount=type=cache,target=${CONDA_CACHE_DIR} \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS} \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
     $conda env update --file ${CONDA_ENV_FILE}
 
@@ -436,7 +437,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-# Using conda for the virtual environment but not package installation.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
@@ -490,6 +490,9 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 # Add `ll` alias for convenience. The Mac version of `ll` is used
 # instead of the Ubuntu version due to better configurability.
 RUN echo "alias ll='ls -lh'" >> ${HOME}/.zshrc
+
+# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
+RUN echo "alias wns='watch nvidia-smi'" >> ${HOME}/.zshrc
 
 # Enable mouse scrolling for tmux.
 # iTerm2 users should change settings to use scrolling properly.
