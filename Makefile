@@ -7,6 +7,8 @@
 # **Change `SERVICE` to specify other services and projects.**
 # `SERVICE`, `COMMAND`, and `PROJECT` take environment variables from
 # the user's shell if specified, making it easier to configure commands.
+# The `?=` means that default variables are only used if the variable is
+# unset in the user's environment, i.e., the shell.
 SERVICE ?= train
 COMMAND ?= /bin/zsh
 
