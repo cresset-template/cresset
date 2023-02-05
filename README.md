@@ -176,6 +176,8 @@ Please read the Makefile to see the exact commands.
 
 
 ### Tips
+- The `PROJECT`, `SERVICE`, and `COMMAND` variables in the Makefile
+use variables specified in the user's terminal if available.
 - `make up` is akin to rebooting a computer.
 The current container is removed and a new container is created from the current image.
 - `make build` is akin to resetting/formatting a computer.

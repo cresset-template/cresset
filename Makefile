@@ -5,16 +5,20 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 
 # **Change `SERVICE` to specify other services and projects.**
-SERVICE = train
-COMMAND = /bin/zsh
+# `SERVICE`, `COMMAND`, and `PROJECT` take environment variables from
+# the user's shell if specified, making it easier to configure commands.
+# The `?=` means that default variables are only used if the variable is
+# unset in the user's environment, i.e., the shell.
+SERVICE ?= train
+COMMAND ?= /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes,
 # which may cause issues if multiple users are using the same account.
-# Give `PROJECT` to the `make` command if this is the case.
+# Specify `PROJECT` for the `make` command if this is the case.
 _PROJECT = "${SERVICE}-${USR}"
 # The `COMPOSE_PROJECT_NAME` variable must be lowercase.
-PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
+PROJECT ?= $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -62,22 +66,22 @@ check:  # Checks if the `.env` file exists.
 # from creating the directory with `root` ownership.
 VSCODE_SERVER_PATH = ${HOME}/.vscode-server
 vs:
-	mkdir -p ${VSCODE_SERVER_PATH}
+	@mkdir -p ${VSCODE_SERVER_PATH}
 
 OVERRIDE_FILE = docker-compose.override.yaml
-# Indentation for the next line is included at the end of
-# the previous line because Makefiles do not read the initial spaces.
+# The newline symbol is placed at the start of the line because
+# Makefiles do not read the initial spaces otherwise.
 # The user's $HOME directory on the host should not be mounted on the
 # container's $HOME directory as this would override the configurations
 # inside the container with those from the host.
 # The home directory is therefore mounted in a separate directory,
 # which also serves as an example of how to make volume pairings.
 OVERRIDE_BASE = "$\
-services:\n  $\
-  ${SERVICE}:\n    $\
-    volumes:\n      $\
-      - $$"{HOME}":/mnt/home\n$\
-"
+services:$\
+\n  ${SERVICE}:$\
+\n    volumes:$\
+\n      - $$"{HOME}":/mnt/home$\
+\n"
 # Create override file for Docker Compose configurations for each user.
 # For example, different users may use different host volume directories.
 ${OVERRIDE_FILE}:
