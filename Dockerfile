@@ -39,13 +39,18 @@ ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS=1
+
+# Fixing `git` to 2.38.1 as it its the last version to support `jobs=0`.
+ARG GIT_IMAGE=alpine/git:edge-2.38.1
+ARG CURL_IMAGE=curlimages/curl:latest
+
 # Build-related packages are pre-installed on CUDA `devel` images.
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
-FROM curlimages/curl:latest AS curl-conda
+FROM ${CURL_IMAGE} AS curl-conda
 # An image used solely to download conda from the internet.
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
@@ -110,12 +115,13 @@ FROM install-mkl-base AS install-include-mkl
 # which is only available from the PyTorch channel.
 # All other packages should come from the conda-forge channel.
 ARG CUDA_VERSION
-RUN $conda install -y \
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+RUN --mount=type=cache,target=${CONDA_PKGS_DIRS} \
+    $conda install -y \
         --file /tmp/conda/build-requirements.txt \
         pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
         mkl-include \
-        mkl && \
-    conda clean -ya
+        mkl
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
@@ -141,11 +147,12 @@ FROM install-mkl-base AS install-exclude-mkl
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
 # Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
 ARG CUDA_VERSION
-RUN $conda install -y \
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+RUN --mount=type=cache,target=${CONDA_PKGS_DIRS} \
+    $conda install -y \
         --file /tmp/conda/build-requirements.txt \
         pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
-        nomkl && \
-    conda clean -ya
+        nomkl
 
 ########################################################################
 FROM install-${MKL_MODE}-mkl AS build-base
@@ -178,19 +185,24 @@ RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
-FROM build-base AS build-torch
+FROM ${GIT_IMAGE} AS clone-torch
 
 # Updating git submodules is not fail-safe.
 # If the build fails during `git clone`, just try again.
 # The reason for failure is likely due to networking issues during installation.
 # See https://stackoverflow.com/a/8573310/9289275
-WORKDIR /opt/pytorch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
 RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
         ${TORCH_URL} /opt/pytorch
+
+########################################################################
+FROM build-base AS build-torch
+
+WORKDIR /opt/pytorch
+COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
@@ -258,14 +270,19 @@ RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
         Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
 
 ########################################################################
-FROM build-torch AS build-vision
+FROM ${GIT_IMAGE} AS clone-vision
 
-WORKDIR /opt/vision
 ARG TORCHVISION_VERSION_TAG
 ARG VISION_URL=https://github.com/pytorch/vision.git
 RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         --recurse-submodules --branch ${TORCHVISION_VERSION_TAG} \
         ${VISION_URL} /opt/vision
+
+########################################################################
+FROM build-torch AS build-vision
+
+WORKDIR /opt/vision
+COPY --link --from=clone-vision /opt/vision /opt/vision
 
 # Install Pillow-SIMD before TorchVision build and add it to `/tmp/dist`.
 # Pillow will be uninstalled if it is present.
@@ -284,15 +301,12 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM install-conda AS fetch-pure
+FROM ${GIT_IMAGE} AS fetch-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
 ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
 ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
-
-# Get `git` from `conda` to prevent version mismatch issues.
-RUN $conda install -y git && conda clean -ya
 
 RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
@@ -316,6 +330,14 @@ ARG TORCHVISION_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
         torchvision==${TORCHVISION_VERSION}
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-stash
+
+# This layer prevents direct contact between the `train` stage and
+# outside files, also allowing Docker to cache the files.
+# Other files such as `.deb` package files may also be stashed here.
+COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include
@@ -370,9 +392,12 @@ ARG PATH=/opt/conda/bin:${PATH}
 # See the `install-conda` stage above for details.
 ARG CONDA_MANAGER
 ARG conda=/opt/conda/bin/${CONDA_MANAGER}
-COPY --link reqs/train-environment.yaml /tmp/train/environment.yaml
 # Using `PIP_CACHE_DIR` and `CONDA_PKGS_DIRS`, both of which are
 # native cache directory variables, to cache installations.
+# Note that `PIP_CACHE_DIR` is not officially documented, however.
+# Also unclear which path `pip` inside a `conda` install uses for caching.
+# https://pip.pypa.io/en/stable/topics/caching
+# https://conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html#specify-package-directories-pkgs-dirs
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
@@ -405,7 +430,7 @@ ARG DEB_NEW
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
-# Enable caching for `apt` packages.
+# Enable caching for `apt` packages in Docker.
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > \
     /etc/apt/apt.conf.d/keep-cache
@@ -415,9 +440,9 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
 # See the `deploy` stage below to see how to add other apt reporitories.
 # `apt` requirements are copied from the outside instead of from
 # `train-builds` to allow parallel installation with pip.
-COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
