@@ -40,7 +40,7 @@ ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS=1
 
-# Fixing `git` to 2.38.1 as it its the last version to support `jobs=0`.
+# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
 ARG GIT_IMAGE=alpine/git:edge-2.38.1
 ARG CURL_IMAGE=curlimages/curl:latest
 
