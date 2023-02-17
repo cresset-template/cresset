@@ -250,7 +250,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
-# PyTorch builds with ROCM has not been tested.
+# PyTorch builds with ROCM have not been tested.
 # Note that PyTorch for ROCM is still in beta and the ROCM build API may change.
 
 # To build for Jetson Nano devices, see the link below for the necessary modifications.
