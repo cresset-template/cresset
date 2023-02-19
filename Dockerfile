@@ -40,7 +40,7 @@ ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS=1
 
-# Fixing `git` to 2.38.1 as it its the last version to support `jobs=0`.
+# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
 ARG GIT_IMAGE=alpine/git:edge-2.38.1
 ARG CURL_IMAGE=curlimages/curl:latest
 
@@ -250,7 +250,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
-# PyTorch builds with ROCM has not been tested.
+# PyTorch builds with ROCM have not been tested.
 # Note that PyTorch for ROCM is still in beta and the ROCM build API may change.
 
 # To build for Jetson Nano devices, see the link below for the necessary modifications.
