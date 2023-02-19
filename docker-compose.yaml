@@ -51,7 +51,7 @@ services:
       - .:${PROJECT_ROOT:-/opt/project}
       # Preserve VSCode extensions between containers.
       # Assumes default VSCode server directory.
-      - ${HOME}/.vscode-server:/home/${USR}/.vscode-server
+      - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
 #    tmpfs:  # Create directory in RAM for fast data IO.
 #      - /opt/data
     build:  # Options for building. Used when `--build` is called in `docker compose`.
@@ -123,7 +123,7 @@ services:
     hostname: deploy
     extra_hosts:
       - "deploy:127.0.0.1"
-    image: cresset:${IMAGE_NAME:-deploy}
+    image: cresset:${IMAGE_NAME}
     tty: true
     init: true
     stdin_open: true
@@ -180,7 +180,7 @@ services:
     hostname: devel
     extra_hosts:
       - "devel:127.0.0.1"
-    image: cresset:${IMAGE_NAME:-devel}
+    image: cresset:${IMAGE_NAME}
     tty: true
     init: true
     stdin_open: true
