@@ -123,7 +123,7 @@ services:
     hostname: deploy
     extra_hosts:
       - "deploy:127.0.0.1"
-    image: cresset:${IMAGE_NAME}
+    image: ${IMAGE_NAME}
     tty: true
     init: true
     stdin_open: true
@@ -180,7 +180,7 @@ services:
     hostname: devel
     extra_hosts:
       - "devel:127.0.0.1"
-    image: cresset:${IMAGE_NAME}
+    image: ${IMAGE_NAME}
     tty: true
     init: true
     stdin_open: true
