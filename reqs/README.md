@@ -1,21 +1,21 @@
 # Requirements
 
-This directory contains `conda`, `apt`, and `pip` 
+This directory contains `conda`, `apt`, and `pip`
 requirements files for the Dockerfiles.
 
-Using requirements files should minimize 
+Using requirements files should minimize
 the need to manually edit the Dockerfiles.
 
 Note that the current project structure only allows the Dockerfile to find
-requirements files in the `reqs` directory and 
+requirements files in the `reqs` directory and
 project root directory because of the `.dockerignore` file.
 
-To use files in other directories, 
+To use files in other directories,
 please modify the `.dockerignore` file.
 
 ## Build Dependency Versions
 
-Edit the package versions in `*-build.requirements.txt` if the latest versions 
+Edit the package versions in `*-build.requirements.txt` if the latest versions
 cannot be used for older versions of PyTorch and other libraries.
 
 `Setuptools` must be set to `<=59.5.0` for PyTorch `v1.10.x` and below.
@@ -26,9 +26,8 @@ cannot be used for older versions of PyTorch and other libraries.
 Disable compilation with FFmpeg and possibly remove it as a build dependency
 if TorchVision fails to compile, even if the error message does not mention FFmpeg.
 
-More versioning issues will arise with the passing of time, but the latest 
+More versioning issues will arise with the passing of time, but the latest
 versions of libraries will use the latest versions of their dependencies.
-
 
 ## Requirements File Explanation
 
@@ -37,23 +36,23 @@ sed 's/#.*//g; s/\r//g' FILE | xargs -r COMMAND
 ```
 
 Arbitrary commands can be executed from input text files with the syntax above.
-For the Cresset project, this technique was used to create requirements files 
-for `apt`, which does not natively support them. 
-However, this technique will prove invaluable for many applications, 
+For the Cresset project, this technique was used to create requirements files
+for `apt`, which does not natively support them.
+However, this technique will prove invaluable for many applications,
 which motivates this guide.
 
-The `sed 's/#.*//g; s/\r//g' FILE` reads `FILE`, 
+The `sed 's/#.*//g; s/\r//g' FILE` reads `FILE`,
 removes all comments, which start with a hash symbol, using `s/#.*//g`,
 then converts all line endings to `\n` by removing `\r`.
 
 The output of `sed` is given to `stdout`, which is the piped to `xargs`.
 The `-r` flag stops execution if no inputs are given.
 `xargs` takes all whitespace separated inputs from `stdin` and
-runs `COMMAND` on these inputs. 
-The newline `\n` character is used as a separator. 
-Having multiple newlines in succession does not affect the result. 
+runs `COMMAND` on these inputs.
+The newline `\n` character is used as a separator.
+Having multiple newlines in succession does not affect the result.
 
-The final result is that `COMMAND` is executed on all elements in 
+The final result is that `COMMAND` is executed on all elements in
 each line of `FILE` while ignoring comments and blank lines.
 
 Note that spaces in a single line may lead to bugs by splitting the line.

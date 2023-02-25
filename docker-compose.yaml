@@ -22,46 +22,45 @@
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 # The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
 
-
 services:
-  train:  # Default service name. Change the name for each project.
+  train: # Default service name. Change the name for each project.
     # Set to the service name. Makes terminals easier to tell apart.
     hostname: train
     extra_hosts:
-      - "train:127.0.0.1"  # Prevents unknown host issue when using sudo.
+      - "train:127.0.0.1" # Prevents unknown host issue when using sudo.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: ${IMAGE_NAME}
-    network_mode: host  # Use the same network as the host, may cause security issues.
+    network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-#    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
-#    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-    tty: true  # Equivalent to `-t` flag in `docker run`.
-    init: true  # Equivalent to `--init` flag in `docker run`.
-    stdin_open: true  # equivalent to `-i` flag in `docker run`.
+    #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
+    #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
+    tty: true # Equivalent to `-t` flag in `docker run`.
+    init: true # Equivalent to `--init` flag in `docker run`.
+    stdin_open: true # equivalent to `-i` flag in `docker run`.
     # Setting `HOST_PATH:CONTAINER_PATH`
     # allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
     # Current working directory `.` is connected to `PROJECT_ROOT`.
     # Always use the ${HOME} variable to specify the host home directory.
     # See https://github.com/docker/compose/issues/6506 for details.
-    volumes:  # Equivalent to `-v` flag in `docker run`.
+    volumes: # Equivalent to `-v` flag in `docker run`.
       # Use this if the docker-compose.yaml file is at the project root.
       - .:${PROJECT_ROOT:-/opt/project}
       # Preserve VSCode extensions between containers.
       # Assumes default VSCode server directory.
       - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
-#    tmpfs:  # Create directory in RAM for fast data IO.
-#      - /opt/data
-    build:  # Options for building. Used when `--build` is called in `docker compose`.
+    #    tmpfs:  # Create directory in RAM for fast data IO.
+    #      - /opt/data
+    build: # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
-      target: ${TARGET_STAGE:-train}  # Specify build target.
-      context: .  # Nearly all files are ignored due to `.dockerignore` settings.
+      target: ${TARGET_STAGE:-train} # Specify build target.
+      context: . # Nearly all files are ignored due to `.dockerignore` settings.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_CAFFE2: 0  # Caffe2 disabled for faster build.
+        BUILD_CAFFE2: 0 # Caffe2 disabled for faster build.
         BUILD_CAFFE2_OPS: 0
         BUILD_TEST: 0
         USE_NNPACK: 0
@@ -71,7 +70,7 @@ services:
         CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
-        MKL_MODE: ${MKL_MODE:-include}  # MKL_MODE can be `include` or `exclude`.
+        MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
         # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html
@@ -107,17 +106,16 @@ services:
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
-    environment:  # Environment variables for the container, not the build. Equivalent to `--env`
-      TZ: ${TZ:-Asia/Seoul}  # Timezone settings used during runtime.
+    environment: # Environment variables for the container, not the build. Equivalent to `--env`
+      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
       CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:  # API dependent on compose version.
+    deploy: # API dependent on compose version.
       resources:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [ gpu ]
-#              device_ids: [ "0" ]  # Use only GPU 0.
-
+              capabilities: [gpu]
+  #              device_ids: [ "0" ]  # Use only GPU 0.
 
   deploy:
     hostname: deploy
@@ -127,7 +125,7 @@ services:
     tty: true
     init: true
     stdin_open: true
-    volumes:  # Place user-specific directories in `docker-compose.override.yaml`.
+    volumes: # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: deploy
@@ -136,22 +134,22 @@ services:
       args:
         BUILD_MODE: ${BUILD_MODE:-exclude}
         # The Anaconda `defaults` channel is not free for commercial use.
-        BUILD_TEST: 1  # Enable build tests for deployment.
-        BUILD_CAFFE2: 1  # Caffe2 should be enabled in production settings.
+        BUILD_TEST: 1 # Enable build tests for deployment.
+        BUILD_CAFFE2: 1 # Caffe2 should be enabled in production settings.
         BUILD_CAFFE2_OPS: 1
-        USE_NNPACK: 1  # Enable NNPack for deployment.
-        USE_QNNPACK: 1  # Enable QNNPack for deployment.
+        USE_NNPACK: 1 # Enable NNPack for deployment.
+        USE_QNNPACK: 1 # Enable QNNPack for deployment.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
-        MKL_MODE: ${MKL_MODE:-include}  # `include` or `exclude`. Disabled by default for deployment.
+        MKL_MODE: ${MKL_MODE:-include} # `include` or `exclude`. Disabled by default for deployment.
         # Change the `CONDA_URL` for different hardware architectures, etc.
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
-        TORCH_CUDA_ARCH_LIST: ${CCA}  # This will fail if BUILD_MODE=include but CCA is not set explicitly.
+        TORCH_CUDA_ARCH_LIST: ${CCA} # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         # Variables for building PyTorch. Must be valid git tags.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.1}
@@ -160,10 +158,10 @@ services:
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.1}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-#        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-#        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-#        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+    #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+    #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
+    #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
+    #        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     environment:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
@@ -172,11 +170,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [ gpu ]
-
+              capabilities: [gpu]
 
   # This layer may be useful for PyTorch contributors.
-  devel:  # Skeleton service for development and debugging.
+  devel: # Skeleton service for development and debugging.
     hostname: devel
     extra_hosts:
       - "devel:127.0.0.1"
@@ -187,17 +184,16 @@ services:
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
-      target: ${TARGET_STAGE:-build-base}  # All builds begin at `build-base`.
+      target: ${TARGET_STAGE:-build-base} # All builds begin at `build-base`.
       context: .
       dockerfile: Dockerfile
 
-
-  ngc:  # NGC image service. Demonstrates the generality of the template.
+  ngc: # NGC image service. Demonstrates the generality of the template.
     hostname: ngc
     extra_hosts:
       - "ngc:127.0.0.1"
     image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
-#    ipc: host
+    #    ipc: host
     tty: true
     init: true
     stdin_open: true
@@ -226,4 +222,4 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [ gpu ]
+              capabilities: [gpu]
