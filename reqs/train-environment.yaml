@@ -4,20 +4,20 @@
 # to reduce dependency issues with conda and for greater flexibility.
 # Manually add dependencies of compiled libraries for reduced
 # installation with pip.
-name: base  # Always use the `base` environment.
+name: base # Always use the `base` environment.
 channels:
-  - nodefaults  # Do not use the default environment.
-  - conda-forge  # Always use conda-forge instead.
-dependencies:  # Use conda packages if possible.
+  - nodefaults # Do not use the default environment.
+  - conda-forge # Always use conda-forge instead.
+dependencies: # Use conda packages if possible.
   # Requirements.
   - hydra-core==1.3.1
   - jupyterlab
-  - libjpeg-turbo  # Torchvision dependency.
-  - libpng  # Torchvision dependency.
-  - numpy  # Intel optimized Numpy is not available on PyPI.
-  - mkl  # Essential if BUILD_MODE=include and MKL_MODE=include.
+  - libjpeg-turbo # Torchvision dependency.
+  - libpng # Torchvision dependency.
+  - numpy # Intel optimized Numpy is not available on PyPI.
+  - mkl # Essential if BUILD_MODE=include and MKL_MODE=include.
   - tqdm
-  - typing_extensions  # A PyTorch dependency.
+  - typing_extensions # A PyTorch dependency.
 
   # Essential packages.
   - jemalloc
@@ -29,9 +29,12 @@ dependencies:  # Use conda packages if possible.
   - htop
   - nano
   - parallel
+  - pre-commit
+  - pytest
   - rsync
   - tmux
 
   # For `pip` dependencies that are not available in conda.
-  - pip  # Source compiled packages are installed via pip.
-  - pip:  # Do not delete this line even if no `pip` packages are used.
+  - pip # Source compiled packages are installed via pip.
+  - pip: # Do not delete this line even if no `pip` packages are used.
+      - pyre-check # Automate `watchman` installation later.
