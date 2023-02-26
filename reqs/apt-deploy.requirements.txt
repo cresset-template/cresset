@@ -1,7 +1,4 @@
-# Essential packages.
+libgomp1  # GNU OpenMP
+libjpeg-turbo8  # TorchVision dependency
+libpng16-16  # TorchVision dependency
 python3-pip
-libgomp1
-libjpeg-turbo8
-libpng16-16
-
-# Add additional `apt` packages here.

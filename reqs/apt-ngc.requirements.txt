@@ -1,12 +1,9 @@
-# Essential packages.
+curl
 git
 libjemalloc2
+nano
 openssh-server
 sudo
+tmux
 tzdata
 zsh
-
-# Utilitiy packages.
-curl
-nano
-tmux

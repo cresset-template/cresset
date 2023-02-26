@@ -394,11 +394,10 @@ ARG CONDA_MANAGER
 ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 # Using `PIP_CACHE_DIR` and `CONDA_PKGS_DIRS`, both of which are
 # native cache directory variables, to cache installations.
-# Note that `PIP_CACHE_DIR` is not officially documented, however.
-# Also unclear which path `pip` inside a `conda` install uses for caching.
+# Unclear which path `pip` inside a `conda` install uses for caching, however.
 # https://pip.pypa.io/en/stable/topics/caching
 # https://conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html#specify-package-directories-pkgs-dirs
-ARG PIP_CACHE_DIR=/tmp/.cache/pip
+ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
 COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
@@ -444,7 +443,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
+    apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -594,7 +593,7 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/a
     apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
     add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
     printf "\n python${PYTHON_VERSION} \n" >> /tmp/apt/requirements.txt && \
-    sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt |  \
+    sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt |  \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \

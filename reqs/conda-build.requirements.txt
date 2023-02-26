@@ -2,8 +2,8 @@
 # Editing this file will invalidate the Docker build cache for all build layers.
 # Specify package versions if necessary for the build.
 # Also, do not add MKL or related packages in this file.
-autoconf
 astunparse
+autoconf
 ccache
 cffi
 cmake

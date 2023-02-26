@@ -1,0 +1,56 @@
+# Pre-commit is a tool to check for issues in the code at commit time.
+# Visit the pre-commit documentation for the configuration options.
+# https://pre-commit.com/#adding-pre-commit-plugins-to-your-project
+# Run `pre-commit install` inside the container for the first run.
+# Run `pre-commit run --all-files` to run all checks.
+
+default_language_version:
+  python: python3.10
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.4 # Update to stable ASAP.
+    hooks:
+      - id: prettier
+        files: \.(json|jsx|md|mdx|yaml)$
+
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+      - id: black-jupyter
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-bugbear
+          - mccabe

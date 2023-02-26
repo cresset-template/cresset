@@ -1,8 +1,6 @@
 # Example `apt` requirements file.
-
-# Essential packages.
-sudo
-zsh
-
-# Optional packages.
+# `sudo` and `zsh` are required packages.
 at
+sudo
+watchman  # For pyre-check only.
+zsh
