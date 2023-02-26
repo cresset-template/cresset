@@ -394,11 +394,10 @@ ARG CONDA_MANAGER
 ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 # Using `PIP_CACHE_DIR` and `CONDA_PKGS_DIRS`, both of which are
 # native cache directory variables, to cache installations.
-# Note that `PIP_CACHE_DIR` is not officially documented, however.
-# Also unclear which path `pip` inside a `conda` install uses for caching.
+# Unclear which path `pip` inside a `conda` install uses for caching, however.
 # https://pip.pypa.io/en/stable/topics/caching
 # https://conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html#specify-package-directories-pkgs-dirs
-ARG PIP_CACHE_DIR=/tmp/.cache/pip
+ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
 COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
