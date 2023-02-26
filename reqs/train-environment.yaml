@@ -34,6 +34,7 @@ dependencies: # Use conda packages if possible.
   - pytest-xdist
   - rsync
   - tmux
+  - tree
 
   # For `pip` dependencies that are not available in conda.
   - pip # Source compiled packages are installed via pip.
