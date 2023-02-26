@@ -27,6 +27,7 @@ dependencies: # Use conda packages if possible.
   # Utility packages.
   - git
   - htop
+  - monkeytype
   - nano
   - parallel
   - pre-commit

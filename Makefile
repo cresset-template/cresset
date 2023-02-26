@@ -1,4 +1,4 @@
-.PHONY: up exec build start down run ls check vs
+.PHONY: up exec build start down run ls check vs pre-commit pyre-apply
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
@@ -123,3 +123,16 @@ ${COMPOSE_FILE}:
 	chmod +x "${COMPOSE_FILE}"
 
 install-compose: ${COMPOSE_FILE}
+
+pre-commit:
+	pre-commit run --all-files
+
+PYRE_CONFIGURATION = ${PROJECT_ROOT}/.pyre_configuration
+${PYRE_CONFIGURATION}:
+	pyre init
+
+# Perform static analysis on the codebase and
+# apply the annotations to the code in-place.
+# Run this command from inside the container, not from the host.
+pyre-apply: ${PYRE_CONFIGURATION}
+	pyre infer -i
