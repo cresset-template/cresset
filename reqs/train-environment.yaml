@@ -41,4 +41,4 @@ dependencies: # Use conda packages if possible.
   # For `pip` dependencies that are not available in conda.
   - pip # Source compiled packages are installed via pip.
   - pip: # Do not delete this line even if no `pip` packages are used.
-      - pyre-check # Automate `watchman` installation later.
+      - pyre-check
