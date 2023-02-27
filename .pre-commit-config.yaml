@@ -30,27 +30,23 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
+  # Ruff must be executed before other formatters.
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.252"
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # Replace with `Rome` if a pre-commit hook becomes available.
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.4 # Update to stable ASAP.
     hooks:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
 
+  # Replace with `PyInk` if a pre-commit hook becomes available.
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
       - id: black
       - id: black-jupyter
-
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-bugbear
-          - mccabe
