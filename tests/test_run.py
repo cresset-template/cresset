@@ -34,6 +34,7 @@ from torchvision.models import resnet50, vgg19
 from torchvision.models.video import r3d_18
 from tqdm import tqdm
 
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
