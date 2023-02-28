@@ -37,14 +37,13 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
 
-  # Replace with `Rome` if a pre-commit hook becomes available.
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.4 # Update to stable ASAP.
     hooks:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
 
-  # Replace with `PyInk` if a pre-commit hook becomes available.
+  # Perhaps replace with `PyInk` if a pre-commit hook becomes available.
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:

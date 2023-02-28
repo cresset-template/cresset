@@ -10,7 +10,7 @@ channels:
   - conda-forge # Always use conda-forge instead.
 dependencies: # Use conda packages if possible.
   # Requirements.
-  - hydra-core==1.3.1
+  - hydra-core
   - jupyterlab
   - libjpeg-turbo # Torchvision dependency.
   - libpng # TorchVision dependency.
