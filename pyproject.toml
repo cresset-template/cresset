@@ -19,6 +19,7 @@ exclude = '''
 
 [tool.pytest.ini_options]
 minversion = "7.0"
+addopts = "--doctest-modules -ra"
 log_cli = true
 testpaths = [
     "tests",
