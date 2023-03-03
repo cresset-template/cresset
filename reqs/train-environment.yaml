@@ -14,7 +14,7 @@ dependencies: # Use conda packages if possible.
   - jupyterlab
   - libjpeg-turbo # TorchVision dependency.
   - libpng # TorchVision dependency.
-  - numpy # Intel optimized Numpy is not available on PyPI.
+  - numpy # Intel optimized NumPy is not available on PyPI.
   - mkl # Essential if BUILD_MODE=include and MKL_MODE=include.
   - tqdm
   - typing_extensions # A PyTorch dependency.
