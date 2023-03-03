@@ -12,7 +12,7 @@ dependencies: # Use conda packages if possible.
   # Requirements.
   - hydra-core
   - jupyterlab
-  - libjpeg-turbo # Torchvision dependency.
+  - libjpeg-turbo # TorchVision dependency.
   - libpng # TorchVision dependency.
   - numpy # Intel optimized Numpy is not available on PyPI.
   - mkl # Essential if BUILD_MODE=include and MKL_MODE=include.
