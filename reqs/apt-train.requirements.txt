@@ -3,4 +3,5 @@
 at
 sudo
 watchman  # For pyre-check only.
+tmux
 zsh

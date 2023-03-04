@@ -38,7 +38,6 @@ dependencies: # Use conda packages if possible.
   - pytest-xdist
   - rsync
   - shellcheck
-  - tmux
   - tree
 
   # For `pip` dependencies that are not available in conda.
