@@ -134,7 +134,7 @@ LINUX_DISTRO=ubuntu                # Visit the NVIDIA Docker Hub repo for availa
 DISTRO_VERSION=22.04               # https://hub.docker.com/r/nvidia/cuda/tags
 CUDA_VERSION=11.7.1                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                    # Only major version specifications are available.
-PYTHON_VERSION=3.10                # Minor version specifications are not guaranteed to work.
+PYTHON_VERSION=3.10                # Specify the Python version.
 MKL_MODE=include                   # Enable MKL for Intel CPUs.
 TZ=Asia/Seoul                      # Set the container timezone.
 ```
