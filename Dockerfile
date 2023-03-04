@@ -468,15 +468,11 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-
 # Use Intel OpenMP with optimizations. See documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-ENV KMP_BLOCKTIME=0
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-
 # Use Jemalloc for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
 USER ${USR}
 # Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
@@ -517,10 +513,6 @@ RUN echo "alias ll='ls -lh'" >> ${HOME}/.zshrc
 
 # Add `wns` as an alias for `watch nvidia-smi`, which is used often.
 RUN echo "alias wns='watch nvidia-smi'" >> ${HOME}/.zshrc
-
-# Enable mouse scrolling for tmux.
-# iTerm2 users should change settings to use scrolling properly.
-# RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
