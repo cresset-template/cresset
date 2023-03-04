@@ -25,6 +25,7 @@ dependencies: # Use conda packages if possible.
   - tzdata
 
   # Utility packages.
+  - conda-lock
   - git
   - htop
   - lazygit
