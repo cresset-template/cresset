@@ -1,4 +1,5 @@
-.PHONY: up exec build start down run ls check vs pre-commit pyre-apply
+.PHONY: env over build up exec down run ls start
+.PHONY: check vs install-compose pre-commit pyre-apply
 
 # Convenience `make` recipes for Docker Compose.
 # See URL below for documentation on Docker Compose.
