@@ -30,9 +30,9 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
-  # Ruff must be executed before other formatters.
+  # Ruff should be executed before other formatters.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.252"
+    rev: "v0.0.254"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
