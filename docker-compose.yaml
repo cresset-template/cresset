@@ -108,7 +108,7 @@ services:
     user: ${UID:-1000}:${GID:-1000}
     environment: # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
-      HISTSIZE: ${HISTSIZE:-50000} # Command history size.
+      HISTSIZE: 50000 # Hard-coded large command history size.
       CUDA_DEVICE_ORDER: PCI_BUS_ID
       KMP_BLOCKTIME: 0 # Intel OpenMP thread blocking time in ms.
       # Jemalloc memory allocation configuration.
