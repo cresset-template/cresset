@@ -25,7 +25,8 @@ Use your environment as you were using it for a fair comparison.
 import logging
 import platform
 import subprocess
-from typing import Callable, NamedTuple, Sequence
+from collections.abc import Callable, Sequence
+from typing import NamedTuple
 
 import pytest
 import torch
@@ -89,13 +90,11 @@ def test_inference_run(
 ):
     if enable_amp and enable_scripting:
         raise RuntimeError("AMP is incompatible with TorchScript.")
-    logger.info("Model: {mn}.", extra={"mn": name})
-    logger.info("Input shapes: {shape}.", extra={"shape": input_shapes})
-    logger.info("Automatic Mixed Precision Enabled: {amp}.", extra={"amp": enable_amp})
-    logger.info("TorchScript Enabled: {script}.", extra={"script": enable_scripting})
-    logger.info(
-        "Benchmarking Enabled: {benchmark}.", extra={"benchmark": torch.backends.cudnn.benchmark}
-    )
+    logger.info(f"Model: {name}.")
+    logger.info(f"Input shapes: {input_shapes}.")
+    logger.info(f"Automatic Mixed Precision Enabled: {enable_amp}.")
+    logger.info(f"TorchScript Enabled: {enable_scripting}.")
+    logger.info(f"Benchmarking Enabled: {torch.backends.cudnn.benchmark}.")
 
     network = network_func()
     network.eval()
@@ -113,8 +112,8 @@ def test_inference_run(
     else:
         elapsed_time = _infer(network=network, inputs=inputs, num_steps=num_steps)
 
-    logger.info("Average time: {ms:7.3f} milliseconds.", extra={"ms": elapsed_time / num_steps})
-    logger.info("Total time: {secs} seconds.", extra={"secs": round(elapsed_time / 1000)})
+    logger.info(f"Average time: {elapsed_time / num_steps:7.3f} milliseconds.")
+    logger.info(f"Total time: {round(elapsed_time / 1000):3d} seconds.")
 
 
 # Backwards compatibility with legacy Pytorch 1.x versions.
@@ -139,19 +138,19 @@ def _infer(network: nn.Module, inputs: Sequence[Tensor], num_steps: int) -> floa
 
 @pytest.fixture(scope="session", autouse=True)
 def get_cuda_info(device):  # Using as a fixture to get device info.
-    logger.info("Python Version: {ver}", extra={"ver": platform.python_version()})
-    logger.info("PyTorch Version: {ver}", extra={"ver": torch.__version__})
+    logger.info(f"Python Version: {platform.python_version()}")
+    logger.info(f"PyTorch Version: {torch.__version__}")
     if not torch.cuda.is_available():
         return
 
     dp = torch.cuda.get_device_properties(device)
-    logger.info("PyTorch CUDA Version: {ver}", extra={"ver": torch.version.cuda})
-    logger.info("PyTorch cuDNN Version: {ver}", extra={"ver": torch.backends.cudnn.version()})
-    logger.info("PyTorch Architecture List: {al}", extra={"al": tuple(torch.cuda.get_arch_list())})
-    logger.info("GPU Device Name: {dn}", extra={"dn": dp.name})
-    logger.info(
-        "GPU Compute Capability: {major}.{minor}", extra={"major": dp.major, "minor": dp.minor}
-    )
+    logger.info(f"PyTorch CUDA Version: {torch.version.cuda}")
+    cd = torch.backends.cudnn.version()
+    logger.info(f"PyTorch cuDNN Version: {cd}")
+    al = tuple(torch.cuda.get_arch_list())
+    logger.info(f"PyTorch Architecture List: {al}")
+    logger.info(f"GPU Device Name: {dp.name}")
+    logger.info(f"GPU Compute Capability: {dp.major}.{dp.minor}")
 
     # Python3.7+ required for `subprocess` to work as intended.
     if int(platform.python_version_tuple()[1]) > 6:
@@ -165,4 +164,4 @@ def get_cuda_info(device):  # Using as a fixture to get device info.
             capture_output=True,
             text=True,
         ).stdout.strip()
-        logger.info("NVIDIA Driver Version: {dv}", extra={"dv": dv})
+        logger.info(f"NVIDIA Driver Version: {dv}")
