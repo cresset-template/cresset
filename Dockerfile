@@ -265,7 +265,7 @@ RUN $conda install -y libjpeg-turbo zlib && conda clean -ya
 # Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
 ARG PILLOW_SIMD_VERSION
 # Condition ensures that AVX2 instructions are built only if available.
-RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
+RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
 
