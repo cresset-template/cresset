@@ -39,6 +39,7 @@ dependencies: # Use conda packages if possible.
   - pytype
   - rsync
   - shellcheck
+  - tmux==3.2a
   - tree
 
   # For `pip` dependencies that are not available in conda.

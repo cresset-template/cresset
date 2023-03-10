@@ -265,7 +265,7 @@ RUN $conda install -y libjpeg-turbo zlib && conda clean -ya
 # Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
 ARG PILLOW_SIMD_VERSION
 # Condition ensures that AVX2 instructions are built only if available.
-RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
+RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
 
@@ -507,12 +507,13 @@ COPY --link --from=train-builds --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
+# Add custom aliases and settings.
 # Add `ll` alias for convenience. The Mac version of `ll` is used
 # instead of the Ubuntu version due to better configurability.
-RUN echo "alias ll='ls -lh'" >> ${HOME}/.zshrc
-
 # Add `wns` as an alias for `watch nvidia-smi`, which is used often.
-RUN echo "alias wns='watch nvidia-smi'" >> ${HOME}/.zshrc
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+    } >> ${HOME}/.zshrc
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.

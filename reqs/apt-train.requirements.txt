@@ -2,6 +2,5 @@
 # `sudo` and `zsh` are required packages.
 at
 sudo
-tmux
 watchman  # For pyre-check only.
 zsh
