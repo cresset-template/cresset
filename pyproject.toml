@@ -25,16 +25,18 @@ select = [
     "D", # pydocstyle
     "E", # pycodestyle errors
     "F", # pyflakes
-    "G", # flake8-logging-format
     "I", # isort
+#    "N", # PEP8-Naming
     "NPY", # NumPy-specific rules
     "PLE", # Error
+    "PLW", # Warning
+#    "UP", # PyUpgrade
     "W", # pycodestyle warnings
     "YTT",  # flake8-2020
     "RUF",  # Ruff-specific rules
 ]
 ignore = [
-  "E501", # line length violations
+  "C408", # unnecessary-collection-call
   "D100", # public module
   "D101", # public class
   "D102", # public method
@@ -47,6 +49,7 @@ ignore = [
   "D213", # Multi-line docstring summary should start at the second line
   "D402", # First line should not be the function's signature
   "D417", # Missing argument descriptions
+  "E501", # line length violations
 ]
 # Enable autofix behavior by-default when running `ruff`
 fix = true
