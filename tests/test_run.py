@@ -25,7 +25,8 @@ Use your environment as you were using it for a fair comparison.
 import logging
 import platform
 import subprocess
-from typing import Callable, NamedTuple, Sequence
+from collections.abc import Callable, Sequence
+from typing import NamedTuple
 
 import pytest
 import torch

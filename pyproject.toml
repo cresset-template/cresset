@@ -15,22 +15,28 @@ testpaths = [
 
 
 [tool.ruff]
+line-length = 100
 target-version = "py310"
 select = [
     "B", # flake8-bugbear
     "BLE", # flake8-blind-except
+    "C4", # flake8-comprehensions
     "C90", # mccabe
     "D", # pydocstyle
     "E", # pycodestyle errors
     "F", # pyflakes
     "I", # isort
+#    "N", # PEP8-Naming
     "NPY", # NumPy-specific rules
+    "PLE", # Error
+    "PLW", # Warning
+#    "UP", # PyUpgrade
     "W", # pycodestyle warnings
     "YTT",  # flake8-2020
-    "RUF100",  # Remove unused `noqa` directive.
+    "RUF",  # Ruff-specific rules
 ]
 ignore = [
-  "E501", # line length violations
+  "C408", # unnecessary-collection-call
   "D100", # public module
   "D101", # public class
   "D102", # public method
@@ -43,31 +49,31 @@ ignore = [
   "D213", # Multi-line docstring summary should start at the second line
   "D402", # First line should not be the function's signature
   "D417", # Missing argument descriptions
+  "E501", # line length violations
 ]
+# Enable autofix behavior by-default when running `ruff`
+fix = true
 # By default, always enumerate fixed violations.
 show-fixes = true
 # By default, always show source code snippets.
 show-source = true
 # Respect file exclusions via `.gitignore` and other standard ignore files.
 respect-gitignore = true
+# Avoid automatically removing unused imports in `__init__.py` files.
 ignore-init-module-imports = true
-# Using 100 as the line length for code.
-line-length = 100
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 10
-
-# Ignore `E402` (import violations) in all `__init__.py` files.
-[tool.ruff.per-file-ignores]
-"__init__.py" = ["E402"]
-"*test*.py" = ["D"] # ignore all docstring lints in tests
 
 [tool.ruff.isort]
 lines-after-imports = 2
 
-# PEP8 states sets documentation max length to 72.
 [tool.ruff.pycodestyle]
+# PEP8 states sets documentation maximum length to 72.
 max-doc-length = 72
+
+[tool.ruff.per-file-ignores]
+# Ignore `E402` (import violations) in all `__init__.py` files.
+"__init__.py" = ["E402"]
+"*test*.py" = ["D"] # ignore all docstring lints in tests
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
