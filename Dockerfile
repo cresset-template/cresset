@@ -289,9 +289,6 @@ RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip install --force-reinstall --no-deps /tmp/dist/*
 
 ARG USE_CUDA
-# Disable FFMPEG and remove it as a build dependency if TorchVision
-# fails to compile with unhelpful error messages.
-ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
