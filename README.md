@@ -139,7 +139,7 @@ MKL_MODE=include                 # Enable MKL for Intel CPUs.
 TZ=Asia/Seoul                    # Set the container timezone.
 
 # Advanced Usage.
-TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files are available in `train-builds`. 
+TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
 ```
 
 ## General Usage After Initial Installation and Configuration

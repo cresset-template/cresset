@@ -8,22 +8,22 @@ astunparse
 ccache
 cmake
 expecttest
+filelock
+fsspec
 git  # Needed to get the `git` commit hash, etc.
 hypothesis
 jemalloc
+jinja2
 libjpeg-turbo
 libpng
 lld
+networkx
 ninja
 numpy
 psutil
 pyyaml
 requests
 setuptools
+sympy
 types-dataclasses
 typing-extensions
-sympy
-filelock
-networkx
-jinja2
-fsspec

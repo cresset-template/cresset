@@ -22,7 +22,6 @@ have been cleaned up for the PyTorch v2.x builds to save time and space.
 To build legacy PyTorch 1.x versions, copy the requirements from the following
 [link](https://github.com/cresset-template/cresset/blob/7568722631a458980b6586ab0799a2e0d6f0a3da/reqs/conda-build.requirements.txt).
 
-
 ## Build Dependency Versions
 
 Edit the package versions in `*-build.requirements.txt` if the latest versions
