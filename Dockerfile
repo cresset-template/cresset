@@ -207,7 +207,7 @@ COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
-# Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
+# Disabling NNPack and QNNPack by default as they are legacy and most users do not need them.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK=0
