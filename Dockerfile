@@ -532,7 +532,6 @@ COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-include
 
-COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 
@@ -548,7 +547,7 @@ FROM deploy-builds-${BUILD_MODE} AS deploy-builds
 
 # The Anaconda defaults channel and Intel MKL are not fully open-source.
 # Enterprise users may therefore wish to remove them from their final product.
-# The deployment therefore uses system Python. Conda is copied here just in case.
+# The deployment therefore uses system Python.
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
 # This may also be useful for non-Intel CPUs.
 
