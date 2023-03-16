@@ -4,6 +4,8 @@
 # to reduce dependency issues with conda and for greater flexibility.
 # Manually add dependencies of compiled libraries for reduced
 # installation with pip.
+# Tip: Use `awk 'START_LINE<=NR && FINISH_LINE<=20 reqs/train-environment.yaml'`
+# to sort dependencies in the command line while preserving comments, etc.
 name: base # Always use the `base` environment.
 channels:
   - nodefaults # Do not use the default environment.
@@ -25,11 +27,13 @@ dependencies: # Use conda packages if possible.
   - tzdata
 
   # Utility packages.
+  - attrs
   - conda-lock
   - git
   - htop
+  - invoke
   - lazygit
-  - monkeytype
+  - loguru
   - nano
   - pandera
   - parallel
