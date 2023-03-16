@@ -130,7 +130,7 @@ services:
     volumes: # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
     build:
-      target: deploy
+      target: ${TARGET_STAGE:-deploy}
       context: .
       dockerfile: Dockerfile
       args:
