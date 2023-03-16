@@ -60,8 +60,6 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_CAFFE2: 0 # Caffe2 disabled for faster build.
-        BUILD_CAFFE2_OPS: 0
         BUILD_TEST: 0
         USE_NNPACK: 0
         USE_QNNPACK: 0
@@ -139,8 +137,6 @@ services:
         BUILD_MODE: ${BUILD_MODE:-exclude}
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1 # Enable build tests for deployment.
-        BUILD_CAFFE2: 1 # Caffe2 should be enabled in production settings.
-        BUILD_CAFFE2_OPS: 1
         USE_NNPACK: 1 # Enable NNPack for deployment.
         USE_QNNPACK: 1 # Enable QNNPack for deployment.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
