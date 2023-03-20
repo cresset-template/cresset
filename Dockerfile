@@ -207,14 +207,12 @@ COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without default values here recieve defaults from the top of the Dockerfile.
-# Disabling Caffe2, NNPack, and QNNPack as they are legacy and most users do not need them.
+# Disabling NNPack and QNNPack by default as they are legacy and most users do not need them.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=0
-ARG BUILD_CAFFE2=0
-ARG BUILD_CAFFE2_OPS=0
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -291,9 +289,6 @@ RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip install --force-reinstall --no-deps /tmp/dist/*
 
 ARG USE_CUDA
-# Disable FFMPEG and remove it as a build dependency if TorchVision
-# fails to compile with unhelpful error messages.
-ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
 ARG FORCE_CUDA=${USE_CUDA}
 ARG TORCH_CUDA_ARCH_LIST
@@ -532,7 +527,6 @@ COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-include
 
-COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 
@@ -548,7 +542,7 @@ FROM deploy-builds-${BUILD_MODE} AS deploy-builds
 
 # The Anaconda defaults channel and Intel MKL are not fully open-source.
 # Enterprise users may therefore wish to remove them from their final product.
-# The deployment therefore uses system Python. Conda is copied here just in case.
+# The deployment therefore uses system Python.
 # Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
 # This may also be useful for non-Intel CPUs.
 

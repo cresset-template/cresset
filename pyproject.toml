@@ -66,7 +66,7 @@ ignore-init-module-imports = true
 lines-after-imports = 2
 
 [tool.ruff.pycodestyle]
-# PEP8 states sets maximum documentation length to 72 but this is 
+# PEP8 states sets maximum documentation length to 72 but this is
 # too short for many people. Using 80 as in the Google Style Guide.
 max-doc-length = 80
 

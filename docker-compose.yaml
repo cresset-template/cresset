@@ -60,14 +60,12 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_CAFFE2: 0 # Caffe2 disabled for faster build.
-        BUILD_CAFFE2_OPS: 0
-        BUILD_TEST: 0
+        BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
         USE_QNNPACK: 0
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
+        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
@@ -85,12 +83,12 @@ services:
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA}
         # Variables for building PyTorch. Must be valid git tags.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu117}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.1}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -132,20 +130,18 @@ services:
     volumes: # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
     build:
-      target: deploy
+      target: ${TARGET_STAGE:-deploy}
       context: .
       dockerfile: Dockerfile
       args:
         BUILD_MODE: ${BUILD_MODE:-exclude}
         # The Anaconda `defaults` channel is not free for commercial use.
         BUILD_TEST: 1 # Enable build tests for deployment.
-        BUILD_CAFFE2: 1 # Caffe2 should be enabled in production settings.
-        BUILD_CAFFE2_OPS: 1
-        USE_NNPACK: 1 # Enable NNPack for deployment.
-        USE_QNNPACK: 1 # Enable QNNPack for deployment.
+        USE_NNPACK: 0 # Enable NNPack for deployment if required.
+        USE_QNNPACK: 0 # Enable QNNPack for deployment if required.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.7.1}
+        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
@@ -155,12 +151,12 @@ services:
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         TORCH_CUDA_ARCH_LIST: ${CCA} # This will fail if BUILD_MODE=include but CCA is not set explicitly.
         # Variables for building PyTorch. Must be valid git tags.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu117}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.1}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
     #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
     #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
