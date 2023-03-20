@@ -60,7 +60,7 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_TEST: 1  # Enable tests to have identical configurations with deployment.
+        BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
         USE_QNNPACK: 0
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
