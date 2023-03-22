@@ -212,7 +212,7 @@ ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
-ARG BUILD_TEST=0
+ARG BUILD_TEST=1
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -519,7 +519,6 @@ CMD ["/bin/zsh"]
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
-COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
