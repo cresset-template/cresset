@@ -550,6 +550,8 @@ COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
+# Currently failing for PyTorch 2.x because several packages must be compiled
+# during `pip` installation of packages. Use only for PyTorch 1.x.
 FROM ${DEPLOY_IMAGE} AS deploy
 
 LABEL maintainer=veritas9872@gmail.com
