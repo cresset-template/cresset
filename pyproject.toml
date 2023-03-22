@@ -1,12 +1,13 @@
 [tool.black]
 line-length = 100
 target-version = ['py310']
-# https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
 include = '\.pyi?$'
+# Black excludes files in `.gitignore` if no `exclude` is specified.
+# https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
 
 
 [tool.pytest.ini_options]
-minversion = "7.0"
+minversion = "7.0"  # Update to 7.2.3 ASAP.
 addopts = "--doctest-modules --doctest-continue-on-failure -ra"
 log_cli = true
 testpaths = [
