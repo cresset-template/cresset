@@ -212,7 +212,7 @@ ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
-ARG BUILD_TEST=0
+ARG BUILD_TEST=1
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -519,7 +519,6 @@ CMD ["/bin/zsh"]
 ########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
-COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
@@ -551,6 +550,8 @@ COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
+# Currently failing for PyTorch 2.x because several packages must be compiled
+# during `pip` installation of packages. Use only for PyTorch 1.x.
 FROM ${DEPLOY_IMAGE} AS deploy
 
 LABEL maintainer=veritas9872@gmail.com
