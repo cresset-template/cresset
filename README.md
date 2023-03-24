@@ -119,7 +119,7 @@ IMAGE_NAME=cresset:train-USERNAME
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
-CCA=8.6                          # Compute capability. CCA=8.6 for RTX3090 and A100.
+CCA=8.6                          # Compute capability. CCA=8.6 for RTX3090.
 # CCA='8.6+PTX'                  # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
 # CCA='7.5 8.6+PTX'              # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
