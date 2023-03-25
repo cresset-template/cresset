@@ -182,6 +182,8 @@ Please read the Makefile to see the exact commands.
 
 - The `PROJECT`, `SERVICE`, and `COMMAND` variables in the Makefile
   use variables specified in the user's terminal if available.
+- If something does not work, first try `make down` to remove the current container and 
+  then `make up` to recreate a new container. Explicitly removing the container is often necessary.
 - `make up` is akin to rebooting a computer.
   The current container is removed and a new container is created from the current image.
 - `make build` is akin to resetting/formatting a computer.
