@@ -6,6 +6,9 @@
 # installation with pip.
 # Tip: Use `awk 'START_LINE<=NR && FINISH_LINE<=NR reqs/train-environment.yaml'`
 # to sort dependencies in the command line while preserving comments, etc.
+# Tip: The `conda-lock` command requires the `micromamba` flag to work properly.
+# To create a new conda lockfile, use the following command:
+# `conda-lock lock --micromamba -f ${CONDA_FILE} -p linux-64 --lockfile ${LOCKFILE}`
 name: base # Always use the `base` environment.
 channels:
   - nodefaults # Do not use the default environment.
@@ -29,6 +32,8 @@ dependencies: # Use conda packages if possible.
 
   # Utility packages.
   - attrs
+  - beartype
+  - conda-lock
   - git
   - htop
   - invoke
