@@ -86,7 +86,7 @@ If this is your first time using this project, follow these steps:
    cannot use host IPC as of the time of writing.
 
 3. Edit requirements in `reqs/apt-train.requirements.txt`
-   and `reqs/pip-train.requirements.txt`.
+   and `reqs/train-environment.yaml`.
    These contain project package dependencies.
    The `apt` requirements are designed to resemble an
    ordinary Python `requirements.txt` file.
@@ -149,9 +149,10 @@ TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files ar
    `Makefile` and target the `train` service by default.
    Run `make up` if the image has already been built and
    rebuilding the image from the Dockerfile is not necessary.
-2. Run `make exec` to enter the interactive container environment.
+2. Run `make exec` to enter the interactive container environment. 
+   Using `tmux` inside the container is recommended.
 3. There is no step 3. Just start coding.
-   Check out the documentation if anything goes wrong.
+   Check out the documentation or create an issue if anything goes wrong.
 
 ## Makefile Instructions
 
