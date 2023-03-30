@@ -204,6 +204,14 @@ Please read the Makefile to see the exact commands.
   try `make build` again with a stable internet connection.
 - If the build fails during `pip install`,
   check the PyPI mirror URLs and package requirements.
+- When one user switches between multiple Cresset-based containers on a single server,
+  VSCode may not be able to find the container workspace.
+  This is because the `docker-compose.yaml` file mounts the `~/.vscode-server` of the user to the
+  `/home/${USR}/.vscode-server` directory of all containers to preserve VSCode extensions between containers.
+  To fix this issue, create a new directory on the host to mount the containers' `.vscode-server` directories.
+  For example, one can set a volume pair as `${HOME}/.vscode-project1:/home/${USR}/.vscode-server` for project1.
+  Do not forget to create `${HOME}/.vscode-project1` on the host first. Otherwise, the directory will be owned by `root`,
+  which will cause VSCode to stall indefinately.
 
 ## Project Overview
 
