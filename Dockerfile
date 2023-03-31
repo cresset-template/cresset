@@ -561,8 +561,9 @@ RUN --mount=type=bind,from=install-conda,source=/opt/conda,target=/opt/conda \
 
 ########################################################################
 # Minimalist deployment Ubuntu image.
-# Currently failing for PyTorch 2.x because several packages must be compiled
-# during `pip` installation of packages. Use only for PyTorch 1.x.
+# Currently failing for PyTorch 2.x due to minor dependency issues.
+# If downloading the wheel, create a symbolic link to `libnvrtc.so`, then run `ldconfig`.
+# If building from source, include `libcupti-dev` in the `apt` requirements file.
 FROM ${DEPLOY_IMAGE} AS deploy
 
 LABEL maintainer=veritas9872@gmail.com
