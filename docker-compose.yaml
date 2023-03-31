@@ -25,9 +25,9 @@
 services:
   train: # Default service name. Change the name for each project.
     # Set to the service name. Makes terminals easier to tell apart.
-    hostname: ${HOST_NAME:-train}
+    hostname: ${HOSTNAME:-train}
     extra_hosts:
-      - "${HOST_NAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
+      - "${HOSTNAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
@@ -120,9 +120,9 @@ services:
   #              device_ids: [ "0" ]  # Use only GPU 0.
 
   deploy:
-    hostname: ${HOST_NAME:-deploy}
+    hostname: ${HOSTNAME:-deploy}
     extra_hosts:
-      - "${HOST_NAME:-deploy}:127.0.0.1"
+      - "${HOSTNAME:-deploy}:127.0.0.1"
     image: ${IMAGE_NAME}
     tty: true
     init: true
@@ -174,9 +174,9 @@ services:
 
   # This layer may be useful for PyTorch contributors.
   devel: # Skeleton service for development and debugging.
-    hostname: ${HOST_NAME:-devel}
+    hostname: ${HOSTNAME:-devel}
     extra_hosts:
-      - "${HOST_NAME:-devel}:127.0.0.1"
+      - "${HOSTNAME:-devel}:127.0.0.1"
     image: ${IMAGE_NAME}
     tty: true
     init: true
@@ -189,9 +189,9 @@ services:
       dockerfile: Dockerfile
 
   ngc: # NGC image service. Demonstrates the generality of the template.
-    hostname: ${HOST_NAME:-ngc}
+    hostname: ${HOSTNAME:-ngc}
     extra_hosts:
-      - "${HOST_NAME:-ngc}:127.0.0.1"
+      - "${HOSTNAME:-ngc}:127.0.0.1"
     image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
     #    ipc: host
     tty: true
