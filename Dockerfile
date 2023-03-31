@@ -91,11 +91,13 @@ ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge or Mambaforge is used as this is the default anyway.
+# Clean out package directories and `__pycache__` files to save space.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n" > /opt/conda.condarc && \
     $conda install -y python=${PYTHON_VERSION} && \
-    conda clean -ya
+    conda clean -ya --force-pkgs-dirs && \
+    find /opt/conda -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM install-conda AS install-mkl-base
@@ -116,7 +118,7 @@ FROM install-mkl-base AS install-include-mkl
 # All other packages should come from the conda-forge channel.
 ARG CUDA_VERSION
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-RUN --mount=type=cache,target=${CONDA_PKGS_DIRS} \
+RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda install -y \
         --file /tmp/conda/build-requirements.txt \
         pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
@@ -148,7 +150,7 @@ FROM install-mkl-base AS install-exclude-mkl
 # Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
 ARG CUDA_VERSION
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-RUN --mount=type=cache,target=${CONDA_PKGS_DIRS} \
+RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda install -y \
         --file /tmp/conda/build-requirements.txt \
         pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
@@ -258,7 +260,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM install-conda AS build-pillow
 # This stage is derived from `install-conda` instead of `build-base`
 # as it is very lightweight and does not require many dependencies.
-RUN $conda install -y libjpeg-turbo zlib && conda clean -ya
+RUN $conda install -y libjpeg-turbo zlib && conda clean -ya --force-pkgs-dirs
 
 # Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
 ARG PILLOW_SIMD_VERSION
@@ -392,14 +394,16 @@ ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 # Unclear which path `pip` inside a `conda` install uses for caching, however.
 # https://pip.pypa.io/en/stable/topics/caching
 # https://conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html#specify-package-directories-pkgs-dirs
+# Remove `__pycache__` directories to save a bit of space.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
 COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
-RUN --mount=type=cache,target=${PIP_CACHE_DIR} \
-    --mount=type=cache,target=${CONDA_PKGS_DIRS} \
+RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
-    $conda env update --file ${CONDA_ENV_FILE}
+    $conda env update --file ${CONDA_ENV_FILE} && \
+    find /opt/conda -name '__pycache__' | xargs rm -rf
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
@@ -517,17 +521,17 @@ WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
 
 ########################################################################
+FROM ${BUILD_IMAGE} AS deploy-builds-include
+
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
+
+########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-include
-
-COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
-COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM deploy-builds-${BUILD_MODE} AS deploy-builds
@@ -548,10 +552,18 @@ FROM deploy-builds-${BUILD_MODE} AS deploy-builds
 COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
 COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
 
+# Use the Python interpreter from `conda` to create wheel files while
+# the compilers and other build tools are still available.
+RUN --mount=type=bind,from=install-conda,source=/opt/conda,target=/opt/conda \
+    /opt/conda/bin/python -m pip wheel --wheel-dir /tmp/dist --find-links /tmp/dist \
+        -r /tmp/pip/requirements.txt \
+        /tmp/dist/*.whl
+
 ########################################################################
 # Minimalist deployment Ubuntu image.
-# Currently failing for PyTorch 2.x because several packages must be compiled
-# during `pip` installation of packages. Use only for PyTorch 1.x.
+# Currently failing for PyTorch 2.x due to minor dependency issues.
+# If downloading the wheel, create a symbolic link to `libnvrtc.so`, then run `ldconfig`.
+# If building from source, include `libcupti-dev` in the `apt` requirements file.
 FROM ${DEPLOY_IMAGE} AS deploy
 
 LABEL maintainer=veritas9872@gmail.com
@@ -592,10 +604,8 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/a
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 # Installing all packages in one command allows `pip` to resolve dependencies correctly.
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/pip,target=/tmp/pip \
-    --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
-    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/pip/requirements.txt \
+# No dependencies are included as they should all have been installed during the build.
+RUN --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
+    python -m pip install --no-cache-dir --no-deps --find-links /tmp/dist \
         /tmp/dist/*.whl && \
     ldconfig
