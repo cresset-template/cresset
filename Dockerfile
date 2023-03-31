@@ -548,6 +548,13 @@ FROM deploy-builds-${BUILD_MODE} AS deploy-builds
 COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
 COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
 
+# Use the Python interpreter from `conda` to create wheel files while
+# the compilers and other build tools are still available.
+RUN --mount=type=bind,from=install-conda,source=/opt/conda,target=/opt/conda \
+    /opt/conda/bin/python -m pip wheel --wheel-dir /tmp/dist --find-links /tmp/dist \
+        -r /tmp/pip/requirements.txt \
+        /tmp/dist/*.whl
+
 ########################################################################
 # Minimalist deployment Ubuntu image.
 # Currently failing for PyTorch 2.x because several packages must be compiled
@@ -592,10 +599,8 @@ RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/a
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 # Installing all packages in one command allows `pip` to resolve dependencies correctly.
 # Using multiple `pip` installs may break the dependencies of all but the last installation.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/pip,target=/tmp/pip \
-    --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
-    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/pip/requirements.txt \
+# No dependencies are included as they should all have been installed during the build.
+RUN --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
+    python -m pip install --no-cache-dir --no-deps --find-links /tmp/dist \
         /tmp/dist/*.whl && \
     ldconfig
