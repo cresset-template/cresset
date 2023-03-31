@@ -150,7 +150,7 @@ TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files ar
    `Makefile` and target the `train` service by default.
    Run `make up` if the image has already been built and
    rebuilding the image from the Dockerfile is not necessary.
-2. Run `make exec` to enter the interactive container environment. 
+2. Run `make exec` to enter the interactive container environment.
    Using `tmux` inside the container is recommended.
 3. There is no step 3. Just start coding.
    Check out the documentation or create an issue if anything goes wrong.
@@ -184,7 +184,7 @@ Please read the Makefile to see the exact commands.
 
 - The `PROJECT`, `SERVICE`, and `COMMAND` variables in the Makefile
   use variables specified in the user's terminal if available.
-- If something does not work, first try `make down` to remove the current container and 
+- If something does not work, first try `make down` to remove the current container and
   then `make up` to create a new container from the image.
   Explicitly tearing the container down is often necessary when something happens to the host.
 - `make up` is akin to rebooting a computer.
