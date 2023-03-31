@@ -47,6 +47,7 @@ GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
+HOST_NAME=${SERVICE}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
