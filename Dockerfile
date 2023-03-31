@@ -517,17 +517,17 @@ WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
 
 ########################################################################
+FROM ${BUILD_IMAGE} AS deploy-builds-include
+
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
+
+########################################################################
 FROM ${BUILD_IMAGE} AS deploy-builds-exclude
 
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-include
-
-COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
-COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 
 ########################################################################
 FROM deploy-builds-${BUILD_MODE} AS deploy-builds
