@@ -463,6 +463,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
+# Intel OpenMP thread blocking time in ms.
+ENV KMP_BLOCKTIME=0
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
@@ -472,6 +474,8 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 # Use Jemalloc for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+# Jemalloc memory allocation configuration.
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 USER ${USR}
 # Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
