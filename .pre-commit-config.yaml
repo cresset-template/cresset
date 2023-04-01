@@ -43,9 +43,12 @@ repos:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
 
-  # Perhaps replace with `PyInk` if a pre-commit hook becomes available.
+  - repo: https://github.com/google/pyink
+    rev: 23.3.0
+    hooks:  # Using PyInk, Google's fork of Black, for Python code formatting.
+      - id: pyink
+
   - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
+    rev: 23.3.0
+    hooks:  # Using black for Jupyter Notebook formatting.
       - id: black-jupyter

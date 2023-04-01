@@ -5,6 +5,12 @@ include = '\.pyi?$'
 # Black excludes files in `.gitignore` if no `exclude` is specified.
 # https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
 
+[tool.pyink]
+# PyInk is the Google fork of Black.
+# https://github.com/google/pyink
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
 
 [tool.pytest.ini_options]
 minversion = "7.0"  # Update to 7.2.3 ASAP.
