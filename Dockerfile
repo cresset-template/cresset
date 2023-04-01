@@ -453,9 +453,11 @@ FROM train-root AS train-user-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
 # uploading image to a container registry, where interactive configurations
 # are unnecessary and having the user set to `root` is most convenient.
+# Singularity users may also find this stage convenient.
 # It is designed to be as close to the interactive development environment as
 # possible, with the same `apt`, `conda`, and `pip` packages installed.
-# Most users may ignore this stage except when publishing the training image.
+# Most users may safely ignore this stage except when publishing an image
+# to a container repository for reproducibility.
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
@@ -465,7 +467,7 @@ FROM train-root AS train-user-include
 # This stage exists to create an interactive development environment with ease
 # of experimentation and debugging in mind. A new `sudo` user is created to help
 # prevent file ownership issues and accidents while not limiting freedom.
-# All user-related and interactive options should be placed here.
+# All user-related and interactive configurations should be placed here.
 # This is the default training stage that most users will use most of the time.
 
 ARG GID
