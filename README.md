@@ -141,6 +141,7 @@ TZ=Asia/Seoul                    # Set the container timezone.
 
 # Advanced Usage.
 TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
+USER_MODE=include                # Whether to create an interactive image or one for publishing.
 ```
 
 ## General Usage After Initial Installation and Configuration
