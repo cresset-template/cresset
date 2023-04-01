@@ -59,6 +59,7 @@ services:
       context: . # Nearly all files are ignored due to `.dockerignore` settings.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
+        USER_MODE: ${USER_MODE:-include}
         BUILD_MODE: ${BUILD_MODE:-exclude}
         BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
