@@ -20,13 +20,13 @@ dependencies: # Use conda packages if possible.
   - libjpeg-turbo # TorchVision dependency.
   - libpng # TorchVision dependency.
   - numpy # Intel optimized NumPy is not available on PyPI.
-  - mkl # Essential if BUILD_MODE=include and MKL_MODE=include.
   - sympy # A PyTorch dependency.
   - tqdm
   - typing_extensions # A PyTorch dependency.
 
   # Essential packages.
   - jemalloc
+  - mkl  # Intel OpenMP (iomp) and other Intel optimizations depend on MKL.
   - openssh
   - tzdata
 

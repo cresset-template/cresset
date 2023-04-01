@@ -465,13 +465,15 @@ RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Intel OpenMP thread blocking time in ms.
 ENV KMP_BLOCKTIME=0
+# Use Intel OpenMP with optimizations. See documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-# Use Intel OpenMP with optimizations. See documentation for details.
-# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+
 # Use Jemalloc for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # Jemalloc memory allocation configuration.
