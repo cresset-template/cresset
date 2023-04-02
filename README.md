@@ -127,13 +127,13 @@ CCA=8.6                          # Compute capability. CCA=8.6 for RTX3090.
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude               # Whether to build PyTorch from source.
-PYTORCH_VERSION_TAG=v1.13.1      # Any `git` branch or tag name can be used.
-TORCHVISION_VERSION_TAG=v0.14.1
+PYTORCH_VERSION_TAG=v2.0.0       # Any `git` branch or tag name can be used.
+TORCHVISION_VERSION_TAG=v0.15.1
 
 # General environment configurations.
 LINUX_DISTRO=ubuntu              # Visit the NVIDIA Docker Hub repo for available base images.
 DISTRO_VERSION=22.04             # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.7.1              # Must be compatible with hardware and CUDA driver.
+CUDA_VERSION=11.8.0              # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                  # Only major version specifications are available.
 PYTHON_VERSION=3.10              # Specify the Python version.
 MKL_MODE=include                 # Enable MKL for Intel CPUs.
@@ -141,7 +141,7 @@ TZ=Asia/Seoul                    # Set the container timezone.
 
 # Advanced Usage.
 TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
-INTERACTIVE_MODE=include         # Whether to create an interactive image or one for publishing.
+INTERACTIVE_MODE=include         # Whether to create an interactive image or a static one for publishing.
 ```
 
 ## General Usage After Initial Installation and Configuration
