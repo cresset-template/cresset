@@ -45,10 +45,10 @@ repos:
 
   - repo: https://github.com/google/pyink
     rev: 23.3.0
-    hooks:  # Using PyInk, the Google fork of Black, for Python code formatting.
+    hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0  # Always use the same version as PyInk.
-    hooks:  # Using black for Jupyter Notebook formatting.
+    rev: 23.3.0 # Always use the same version as PyInk.
+    hooks: # Using black for Jupyter Notebook formatting.
       - id: black-jupyter
