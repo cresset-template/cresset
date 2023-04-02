@@ -31,8 +31,8 @@
 # Users must specify the full version, e.g., `11.2.2`.
 
 ARG MKL_MODE
-ARG USER_MODE
 ARG BUILD_MODE
+ARG INTERACTIVE_MODE
 ARG USE_CUDA=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
@@ -521,7 +521,7 @@ RUN {   echo "alias ll='ls -lh'"; \
     } >> ${HOME}/.zshrc
 
 ########################################################################
-FROM train-user-${USER_MODE} AS train
+FROM train-user-${INTERACTIVE_MODE} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
