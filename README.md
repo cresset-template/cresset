@@ -3,6 +3,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/issues)
 [![GitHub forks](https://img.shields.io/github/forks/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/network)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![GitHub license](https://img.shields.io/github/license/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/blob/main/LICENSE)
 [![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)
 
@@ -216,8 +217,7 @@ Please read the Makefile to see the exact commands.
   Do not forget to create `${HOME}/.vscode-project1` on the host first. Otherwise, the directory will be owned by `root`,
   which will cause VSCode to stall indefinately.
 - If any networking issues arise, check `docker network ls` and check for conflicts.
-  Most networking and SSH problems can be solved by running `docker network prune`. 
-
+  Most networking and SSH problems can be solved by running `docker network prune`.
 
 ## Project Overview
 
