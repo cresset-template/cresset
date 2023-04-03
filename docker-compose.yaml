@@ -22,6 +22,11 @@
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 # The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
 
+networks: # Use the host network instead of creating a separate network.
+  default: # This reduces load and conflicts with the host network.
+    name: host # This may cause security issues in production, however.
+    external: true
+
 services:
   train: # Default service name. Change the name for each project.
     # Set to the service name. Makes terminals easier to tell apart.
@@ -59,6 +64,7 @@ services:
       context: . # Nearly all files are ignored due to `.dockerignore` settings.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         BUILD_MODE: ${BUILD_MODE:-exclude}
         BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
@@ -108,9 +114,6 @@ services:
       TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
       HISTSIZE: 50000 # Hard-coded large command history size.
       CUDA_DEVICE_ORDER: PCI_BUS_ID
-      KMP_BLOCKTIME: 0 # Intel OpenMP thread blocking time in ms.
-      # Jemalloc memory allocation configuration.
-      MALLOC_CONF: "background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
     deploy: # API dependent on compose version.
       resources:
         reservations:

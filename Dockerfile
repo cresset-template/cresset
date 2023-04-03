@@ -32,6 +32,7 @@
 
 ARG MKL_MODE
 ARG BUILD_MODE
+ARG INTERACTIVE_MODE
 ARG USE_CUDA=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
@@ -411,9 +412,10 @@ RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c &&
     gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
 
 ########################################################################
-FROM ${TRAIN_IMAGE} AS train
-# Example training image for Ubuntu 20.04+ on Intel x86_64 CPUs.
+FROM ${TRAIN_IMAGE} AS train-base
+# Example Ubuntu training image on Intel x86_64 CPUs.
 # Edit this section if necessary but use `docker-compose.yaml` if possible.
+# Common configurations performed before creating a user should be placed here.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -446,6 +448,28 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
+########################################################################
+FROM train-base AS train-interactive-exclude
+# This stage exists to create images for use in Kubernetes clusters or for
+# uploading image to a container registry, where interactive configurations
+# are unnecessary and having the user set to `root` is most convenient.
+# Singularity users may also find this stage convenient.
+# It is designed to be as close to the interactive development environment as
+# possible, with the same `apt`, `conda`, and `pip` packages installed.
+# Most users may safely ignore this stage except when publishing an image
+# to a container repository for reproducibility.
+
+COPY --link --from=train-builds /opt/conda /opt/conda
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+
+########################################################################
+FROM train-base AS train-interactive-include
+# This stage exists to create an interactive development environment with ease
+# of experimentation and debugging in mind. A new `sudo` user is created to help
+# prevent file ownership issues and accidents while not limiting freedom.
+# All user-related and interactive configurations should be placed here.
+# This is the default training stage that most users will use most of the time.
+
 ARG GID
 ARG UID
 ARG GRP=user
@@ -463,28 +487,10 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
-ENV MKL_DEBUG_CPU_TYPE=5
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-# Use Intel OpenMP with optimizations. See documentation for details.
-# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
-# Use Jemalloc for efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
-
 USER ${USR}
 # Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
 # Setting ${HOME} to its default value explicitly as a fix.
 ARG HOME=/home/${USR}
-
-# `PROJECT_ROOT` is where the project code will reside.
-# The conda root path must be placed at the end of the
-# PATH variable to prevent system program search errors.
-# This is the opposite of the build stage.
-ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
-ENV PYTHONPATH=${PROJECT_ROOT}
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
@@ -513,6 +519,37 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
     } >> ${HOME}/.zshrc
+
+########################################################################
+FROM train-interactive-${INTERACTIVE_MODE} AS train
+# Common configurations performed after `/opt/conda` installation
+# should be placed here. Do not include any user-related options.
+
+# Use Intel OpenMP with optimizations. See the documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
+# Intel OpenMP thread blocking time in ms.
+ENV KMP_BLOCKTIME=0
+# Configure CPU thread affinity.
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV MKL_DEBUG_CPU_TYPE=5
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+
+# Use Jemalloc for efficient memory management.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+# Jemalloc memory allocation configuration.
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+# `PROJECT_ROOT` is where the project code will reside.
+# The conda root path must be placed at the end of the
+# PATH variable to prevent system program search errors.
+# This is the opposite of the build stage.
+ARG PROJECT_ROOT=/opt/project
+ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
+ENV PYTHONPATH=${PROJECT_ROOT}
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.

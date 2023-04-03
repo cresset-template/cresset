@@ -5,9 +5,15 @@ include = '\.pyi?$'
 # Black excludes files in `.gitignore` if no `exclude` is specified.
 # https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
 
+[tool.pyink]
+# PyInk is the Google fork of Black.
+# https://github.com/google/pyink
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
 
 [tool.pytest.ini_options]
-minversion = "7.0"  # Update to 7.2.3 ASAP.
+minversion = "7.0"  # Update to 7.2.3 as soon as it becomes available.
 addopts = """\
     --capture=tee-sys \
     --doctest-modules \
@@ -57,7 +63,7 @@ ignore = [
   "D417", # Missing argument descriptions
   "E501", # line length violations
 ]
-# Enable autofix behavior by-default when running `ruff`
+# Enable autofix behavior by-default when running `ruff`.
 fix = true
 # By default, always enumerate fixed violations.
 show-fixes = true
