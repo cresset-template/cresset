@@ -91,10 +91,12 @@ ${OVERRIDE_FILE}:
 # Cannot use `override` as a recipe name as it is a `make` keyword.
 over: ${OVERRIDE_FILE}
 
-# Rebuilds the image from the Dockerfile before creating a new container.
-build: check vs
+build: check vs # Rebuilds the image before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
+build-only: check # Builds the image without creating a new container.
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
+	docker compose -p ${PROJECT} build ${SERVICE}
 up: check vs  # Start service. Creates a new container from the image.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up -d ${SERVICE}
