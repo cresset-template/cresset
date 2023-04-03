@@ -525,10 +525,12 @@ FROM train-interactive-${INTERACTIVE_MODE} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
+# Use Intel OpenMP with optimizations. See the documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
 # Intel OpenMP thread blocking time in ms.
 ENV KMP_BLOCKTIME=0
-# Use Intel OpenMP with optimizations. See documentation for details.
-# https://intel.github.io/intel-extension-for-pytorch/tutorials/performance_tuning/tuning_guide.html
+# Configure CPU thread affinity.
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
 # Enable Intel MKL optimizations on AMD CPUs.
