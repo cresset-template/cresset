@@ -22,6 +22,11 @@
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 # The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
 
+networks: # Use the host network instead of creating a separate network.
+  default: # This reduces load and conflicts with the host network.
+    name: host # This may cause security issues in production, however.
+    external: true
+
 services:
   train: # Default service name. Change the name for each project.
     # Set to the service name. Makes terminals easier to tell apart.
