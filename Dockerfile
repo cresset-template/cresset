@@ -449,7 +449,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm -rf /var/lib/apt/lists/*
 
 ########################################################################
-FROM train-root AS train-user-exclude
+FROM train-root AS train-interactive-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
 # uploading image to a container registry, where interactive configurations
 # are unnecessary and having the user set to `root` is most convenient.
@@ -463,7 +463,7 @@ COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
-FROM train-root AS train-user-include
+FROM train-root AS train-interactive-include
 # This stage exists to create an interactive development environment with ease
 # of experimentation and debugging in mind. A new `sudo` user is created to help
 # prevent file ownership issues and accidents while not limiting freedom.
@@ -521,7 +521,7 @@ RUN {   echo "alias ll='ls -lh'"; \
     } >> ${HOME}/.zshrc
 
 ########################################################################
-FROM train-user-${INTERACTIVE_MODE} AS train
+FROM train-interactive-${INTERACTIVE_MODE} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
