@@ -36,6 +36,7 @@ dependencies: # Use conda packages if possible.
   - conda-lock
   - git
   - htop
+  - hypothesis
   - invoke
   - lazygit
   - loguru
@@ -48,6 +49,7 @@ dependencies: # Use conda packages if possible.
   - pytype
   - rsync
   - shellcheck
+  - snoop
   - tmux==3.2a
   - tree
 
@@ -57,5 +59,4 @@ dependencies: # Use conda packages if possible.
   # Source compiled packages are installed via pip.
   - pip
   - pip:
-      - hypothesis
       - pyre-check
