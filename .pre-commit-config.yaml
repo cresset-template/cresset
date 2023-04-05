@@ -44,7 +44,7 @@ repos:
         files: \.(json|jsx|md|mdx|yaml)$
 
   - repo: https://github.com/google/pyink
-    rev: 23.3.0
+    rev: 23.3.1
     hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink
 
