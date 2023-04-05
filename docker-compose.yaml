@@ -39,11 +39,17 @@ services:
     image: ${IMAGE_NAME}
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
-    #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
+    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
+    # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
     tty: true # Equivalent to `-t` flag in `docker run`.
     init: true # Equivalent to `--init` flag in `docker run`.
     stdin_open: true # equivalent to `-i` flag in `docker run`.
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    user: ${UID:-1000}:${GID:-1000}
+    environment: # Environment variables for the container, not the build. Equivalent to `--env`
+      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+      HISTSIZE: 50000 # Hard-coded large command history size.
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
     # Setting `HOST_PATH:CONTAINER_PATH`
     # allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
@@ -56,8 +62,8 @@ services:
       # Preserve VSCode extensions between containers.
       # Assumes default VSCode server directory.
       - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
-    #    tmpfs:  # Create directory in RAM for fast data IO.
-    #      - /opt/data
+    # tmpfs:  # Create directory in RAM for fast data IO.
+    #   - /opt/data
     build: # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
       target: ${TARGET_STAGE:-train} # Specify build target.
@@ -73,6 +79,7 @@ services:
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         # Change the `CONDA_URL` for different hardware architectures.
@@ -108,12 +115,6 @@ services:
         # Comment out the PyPI mirrors to use the default PyPI repository.
         # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    user: ${UID:-1000}:${GID:-1000}
-    environment: # Environment variables for the container, not the build. Equivalent to `--env`
-      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
-      HISTSIZE: 50000 # Hard-coded large command history size.
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
     deploy: # API dependent on compose version.
       resources:
         reservations:
@@ -130,6 +131,10 @@ services:
     tty: true
     init: true
     stdin_open: true
+    network_mode: host
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    environment:
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
     volumes: # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
     build:
@@ -146,6 +151,7 @@ services:
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-runtime}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
         MKL_MODE: ${MKL_MODE:-include} # `include` or `exclude`. Disabled by default for deployment.
@@ -165,9 +171,6 @@ services:
     #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
     #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
     #        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    environment:
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
     deploy:
       resources:
         reservations:
@@ -184,6 +187,7 @@ services:
     tty: true
     init: true
     stdin_open: true
+    network_mode: host
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
@@ -191,38 +195,64 @@ services:
       context: .
       dockerfile: Dockerfile
 
-  ngc: # NGC image service. Demonstrates the generality of the template.
-    hostname: ${HOSTNAME:-ngc}
-    extra_hosts:
-      - "${HOSTNAME:-ngc}:127.0.0.1"
-    image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
-    #    ipc: host
+# Base service NGC and official PyTorch Docker catalog images.
+# These services also demonstrate the generality of the template.
+# Creating a ROCm PyTorch service is also possible but untested.
+  catalog:
     tty: true
     init: true
     stdin_open: true
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    build:
-      target: ngc
-      context: .
-      dockerfile: misc/ngc.Dockerfile
-      args:
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        YEAR: ${YEAR:-22}
-        MONTH: ${MONTH:-02}
-        GID: ${GID:-1000}
-        UID: ${UID:-1000}
-        GRP: ${GRP:-user}
-        USR: ${USR:-user}
-        TZ: ${TZ:-Asia/Seoul}
+    network_mode: host
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
     environment:
       TZ: ${TZ:-Asia/Seoul}
       CUDA_DEVICE_ORDER: PCI_BUS_ID
+      HISTSIZE: 50000 # Hard-coded large command history size.
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: train
+      context: .
+      dockerfile: misc/catalog.Dockerfile
+      args:
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+        GRP: ${GRP:-user}
+        USR: ${USR:-user}
+        TZ: ${TZ:-Asia/Seoul}
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [gpu]
+              capabilities: [ gpu ]
+
+  # Service based on images from the NGC PyTorch image catalog. Visit
+  # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
+  # for an up-to-date list of all NVIDIA NGC PyTorch images.
+  ngc:
+    extends:
+      service: catalog
+    hostname: ${HOSTNAME:-ngc}
+    image: {IMAGE_NAME}
+    extra_hosts:
+      - "${HOSTNAME:-ngc}:127.0.0.1"
+    build:
+      BASE_IMAGE: nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3
+
+  # Service based on the official PyTorch Docker image catalog. Visit
+  # https://hub.docker.com/r/pytorch/pytorch/tags to find available images.
+  official:
+    extends:
+      service: catalog
+    hostname: ${HOSTNAME:-official}
+    image: ${IMAGE_NAME}
+    extra_hosts:
+      - "${HOSTNAME:-official}:127.0.0.1"
+    build:  # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
+      BASE_IMAGE: |-
+        pytorch/pytorch:${PYTORCH_VERSION:-2.0.0}-cuda${CUDA_SHORT_VERSION:-11.7}
+        -cudnn${CUDNN_VERSION:-8}-${IMAGE_FLAVOR:-devel}
