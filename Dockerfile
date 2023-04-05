@@ -505,8 +505,10 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 # Add `ll` alias for convenience. The Mac version of `ll` is used
 # instead of the Ubuntu version due to better configurability.
 # Add `wns` as an alias for `watch nvidia-smi`, which is used often.
+# Add `hist` as a shortcut to see the full history in `zsh`.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
     } >> ${HOME}/.zshrc
 
 ########################################################################
