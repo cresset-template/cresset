@@ -1,0 +1,133 @@
+# syntax = docker/dockerfile:1.4
+# The top line is used by BuildKit. _**DO NOT ERASE IT**_.
+ARG BASE_IMAGE
+ARG INTERACTIVE_MODE
+
+# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
+ARG GIT_IMAGE=alpine/git:edge-2.38.1
+
+########################################################################
+FROM ${GIT_IMAGE} AS stash
+
+# Z-Shell related libraries.
+ARG PURE_URL=https://github.com/sindresorhus/pure.git
+ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
+ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
+
+RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
+RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
+RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
+
+# Copy and install `apt` requirements for catalog images.
+COPY --link ../reqs/apt-catalog.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/catalog-environment.yaml /tmp/req/environment.yaml
+
+########################################################################
+FROM ${BASE_IMAGE} AS train-base
+
+LABEL maintainer="veritas9872@gmail.com"
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+ARG PYTHONDONTWRITEBYTECODE=1
+ARG PYTHONUNBUFFERED=1
+
+# Install `apt` requirements.
+# `tzdata` requires noninteractive mode.
+ARG DEBIAN_FRONTEND=noninteractive
+RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
+    apt-get update && \
+    sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
+    xargs -r apt-get install -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# `/opt/conda/bin` is expected to be on the $PATH already.
+ARG PIP_CACHE_DIR=/root/.cache/pip
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+ARG CONDA_ENV_FILE=/tmp/req/environment.yaml
+# `conda` is intentionally left as a `root` directory.
+# Use `sudo` to install new `conda` packages during development if necessary.
+# Delete the `--freeze-installed` flag if package incompatibilities arise.
+RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
+    --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
+    conda install -n base --freeze-installed conda-libmamba-solver && \
+    conda config --set solver libmamba && \
+    conda env update --freeze-installed --file ${CONDA_ENV_FILE} && \
+    echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+
+ENV MKL_DEBUG_CPU_TYPE=5
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+
+ENV KMP_BLOCKTIME=0
+ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+
+# Jemalloc configurations.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+# Set timezone. This is placed in `train-base` for timezone consistency,
+# though it may be more appropriate to have it only in interactive mode.
+ARG TZ
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+
+########################################################################
+FROM train-base AS train-interactive-include
+
+ARG GID
+ARG UID
+ARG GRP=user
+ARG USR=user
+ARG PASSWD=ubuntu
+# Create user with password-free `sudo` permissions.
+RUN groupadd -f -g ${GID} ${GRP} && \
+    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
+        -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER ${USR}
+ARG HOME=/home/${USR}
+WORKDIR $HOME/.zsh
+# Setting the prompt to `pure`.
+ARG PURE_PATH=${HOME}/.zsh/pure
+COPY --link --from=buffer --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${HOME}/.zshrc
+
+# Add syntax highlighting. This must be activated after auto-suggestions.
+ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
+COPY --link --from=buffer --chown=${UID}:${GID} \
+    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
+
+# Add custom aliases and settings.
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+    } >> ${HOME}/.zshrc
+
+########################################################################
+FROM train-base AS train-interactive-exclude
+# This stage exists to create images for use in Kubernetes clusters or for
+# uploading images to a container registry, where interactive configurations
+# are unnecessary and having the user set to `root` is most convenient.
+# Most users may safely ignore this stage except when publishing an image
+# to a container repository for reproducibility.
+RUN chsh --shell /bin/zsh
+
+########################################################################
+FROM train-interactive-${INTERACTIVE_MODE} AS train
+
+ARG PROJECT_ROOT=/opt/project
+ENV PATH=${PROJECT_ROOT}:$PATH
+ENV PYTHONPATH=${PROJECT_ROOT}
+
+WORKDIR ${PROJECT_ROOT}
+CMD ["/bin/zsh"]
