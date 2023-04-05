@@ -1,7 +1,5 @@
-ARG LINUX_DISTRO
-ARG DISTRO_VERSION
+ARG BASE_IMAGE
 ARG INTERACTIVE_MODE
-ARG BASE_IMAGE=${LINUX_DISTRO}:${DISTRO_VERSION}
 ARG CONDA_INSTALL_IMAGE=continuumio/miniconda3:latest
 
 ########################################################################
@@ -19,7 +17,7 @@ ARG PURE_URL=https://github.com/sindresorhus/pure.git
 ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
 ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
 
-# The `conda` image is expected to have `git`.
+# `CONDA_INSTALL_IMAGE` is expected to have `git`.
 RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting

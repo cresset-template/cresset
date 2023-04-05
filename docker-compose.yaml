@@ -256,8 +256,7 @@ services:
       context: .
       dockerfile: misc/simple.Dockerfile
       args:
-        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
+        BUILD_IMAGE: "${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}"
         INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
