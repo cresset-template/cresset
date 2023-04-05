@@ -44,7 +44,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [ gpu ]
+              capabilities: [gpu]
       #        device_ids: [ "0" ]  # Use only GPU 0.
 
   train: # Default service name. Change the name for each project.
@@ -128,7 +128,6 @@ services:
         # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
 
-
   deploy:
     extends:
       service: base
@@ -188,9 +187,9 @@ services:
       context: .
       dockerfile: Dockerfile
 
-# Base service NGC and official PyTorch Docker catalog images.
-# These services also demonstrate the generality of the template.
-# Creating a ROCm PyTorch service is also possible but untested.
+  # Base service NGC and official PyTorch Docker catalog images.
+  # These services also demonstrate the generality of the template.
+  # Creating a ROCm PyTorch service is also possible but untested.
   catalog:
     extends:
       service: base
@@ -220,7 +219,7 @@ services:
     extends:
       service: catalog
     hostname: ${HOSTNAME:-ngc}
-    image: {IMAGE_NAME}
+    image: { IMAGE_NAME }
     extra_hosts:
       - "${HOSTNAME:-ngc}:127.0.0.1"
     build:
@@ -235,7 +234,7 @@ services:
     image: ${IMAGE_NAME}
     extra_hosts:
       - "${HOSTNAME:-official}:127.0.0.1"
-    build:  # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
+    build: # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
       BASE_IMAGE: |-
         pytorch/pytorch:${PYTORCH_VERSION:-2.0.0}
         -cuda${CUDA_SHORT_VERSION:-11.7}
