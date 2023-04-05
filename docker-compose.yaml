@@ -28,7 +28,28 @@ networks: # Use the host network instead of creating a separate network.
     external: true
 
 services:
+  base: # Base service containing configurations common to all services.
+    tty: true # Equivalent to `-t` flag in `docker run`.
+    init: true # Equivalent to `--init` flag in `docker run`.
+    stdin_open: true # equivalent to `-i` flag in `docker run`.
+    working_dir: ${PROJECT_ROOT:-/opt/project}
+    network_mode: host # Use the same network as the host, may cause security issues.
+    # `ipc: host` removes the shared memory cap but is a known security vulnerability.
+    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
+    # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
+    environment:
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    deploy: # API dependent on compose version.
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [ gpu ]
+      #        device_ids: [ "0" ]  # Use only GPU 0.
+
   train: # Default service name. Change the name for each project.
+    extends:
+      service: base
     # Set to the service name. Makes terminals easier to tell apart.
     hostname: ${HOSTNAME:-train}
     extra_hosts:
@@ -37,19 +58,10 @@ services:
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: ${IMAGE_NAME}
-    network_mode: host # Use the same network as the host, may cause security issues.
-    # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
-    # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-    tty: true # Equivalent to `-t` flag in `docker run`.
-    init: true # Equivalent to `--init` flag in `docker run`.
-    stdin_open: true # equivalent to `-i` flag in `docker run`.
-    working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
     environment: # Environment variables for the container, not the build. Equivalent to `--env`
       TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
       HISTSIZE: 50000 # Hard-coded large command history size.
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
     # Setting `HOST_PATH:CONTAINER_PATH`
     # allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
@@ -115,26 +127,15 @@ services:
         # Comment out the PyPI mirrors to use the default PyPI repository.
         # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    deploy: # API dependent on compose version.
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
-  #              device_ids: [ "0" ]  # Use only GPU 0.
+
 
   deploy:
+    extends:
+      service: base
     hostname: ${HOSTNAME:-deploy}
     extra_hosts:
       - "${HOSTNAME:-deploy}:127.0.0.1"
     image: ${IMAGE_NAME}
-    tty: true
-    init: true
-    stdin_open: true
-    network_mode: host
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    environment:
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
     volumes: # Place user-specific directories in `docker-compose.override.yaml`.
       - .:${PROJECT_ROOT:-/opt/project}
     build:
@@ -171,23 +172,15 @@ services:
     #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
     #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
     #        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
 
   # This layer may be useful for PyTorch contributors.
   devel: # Skeleton service for development and debugging.
+    extends:
+      service: base
     hostname: ${HOSTNAME:-devel}
     extra_hosts:
       - "${HOSTNAME:-devel}:127.0.0.1"
     image: ${IMAGE_NAME}
-    tty: true
-    init: true
-    stdin_open: true
-    network_mode: host
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
@@ -199,15 +192,11 @@ services:
 # These services also demonstrate the generality of the template.
 # Creating a ROCm PyTorch service is also possible but untested.
   catalog:
-    tty: true
-    init: true
-    stdin_open: true
-    network_mode: host
-    working_dir: ${PROJECT_ROOT:-/opt/project}
+    extends:
+      service: base
     user: ${UID:-1000}:${GID:-1000}
     environment:
       TZ: ${TZ:-Asia/Seoul}
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
       HISTSIZE: 50000 # Hard-coded large command history size.
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
@@ -223,12 +212,6 @@ services:
         GRP: ${GRP:-user}
         USR: ${USR:-user}
         TZ: ${TZ:-Asia/Seoul}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [ gpu ]
 
   # Service based on images from the NGC PyTorch image catalog. Visit
   # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
@@ -254,5 +237,32 @@ services:
       - "${HOSTNAME:-official}:127.0.0.1"
     build:  # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
       BASE_IMAGE: |-
-        pytorch/pytorch:${PYTORCH_VERSION:-2.0.0}-cuda${CUDA_SHORT_VERSION:-11.7}
-        -cudnn${CUDNN_VERSION:-8}-${IMAGE_FLAVOR:-devel}
+        pytorch/pytorch:${PYTORCH_VERSION:-2.0.0}
+        -cuda${CUDA_SHORT_VERSION:-11.7}
+        -cudnn${CUDNN_VERSION:-8}
+        -${IMAGE_FLAVOR:-devel}
+
+  # Service installed purely from official/verified Docker images and `conda`.
+  basic:
+    extends:
+      service: base
+    user: ${UID:-1000}:${GID:-1000}
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      HISTSIZE: 50000 # Hard-coded large command history size.
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    build:
+      target: train
+      context: .
+      dockerfile: misc/basic.Dockerfile
+      args:
+        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
+        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+        GRP: ${GRP:-user}
+        USR: ${USR:-user}
+        TZ: ${TZ:-Asia/Seoul}
