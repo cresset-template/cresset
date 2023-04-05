@@ -26,7 +26,7 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 # The user can specify which `conda` environment file to install.
 # Any file that conda can understand can be used, including `conda-lock` files.
-ARG CONDA_ENVIRONMENT_FILE=../reqs/basic-environment.yaml
+ARG CONDA_ENVIRONMENT_FILE=../reqs/simple-environment.yaml
 # Variable to hold the environment file filepath during the build.
 ARG CONDA_INSTALL_FILE=/tmp/req/environment.yaml
 COPY --link ${CONDA_ENVIRONMENT_FILE} ${CONDA_INSTALL_FILE}
@@ -39,7 +39,7 @@ RUN conda install -n base -c conda-forge -c nodefaults --freeze-installed \
 ########################################################################
 FROM ${BASE_IMAGE} AS stash
 
-COPY --link ../reqs/apt-basic.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/apt-simple.requirements.txt /tmp/apt/requirements.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base

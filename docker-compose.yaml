@@ -190,7 +190,7 @@ services:
 
   # Base service NGC and official PyTorch Docker catalog images.
   # These services also demonstrate the generality of the template.
-  # Creating a ROCm PyTorch service is also possible but untested.
+  # Creating ROCm and other PyTorch catalog services is also possible.
   catalog:
     extends:
       service: base
@@ -225,15 +225,15 @@ services:
       args:
         BASE_IMAGE: nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3
 
-  # Service based on the official PyTorch Docker image catalog. Visit
+  # Service based on the official PyTorch Docker images from Docker Hub. Visit
   # https://hub.docker.com/r/pytorch/pytorch/tags to find available images.
-  official:
+  hub:
     extends:
       service: catalog
-    hostname: ${HOSTNAME:-official}
+    hostname: ${HOSTNAME:-hub}
     image: ${IMAGE_NAME}
     extra_hosts:
-      - "${HOSTNAME:-official}:127.0.0.1"
+      - "${HOSTNAME:-hub}:127.0.0.1"
     build: # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
       args:
         BASE_IMAGE: |-
@@ -243,7 +243,7 @@ services:
           -${IMAGE_FLAVOR:-devel}
 
   # Service installed purely from official/verified Docker images and `conda`.
-  basic:
+  simple:
     extends:
       service: base
     user: ${UID:-1000}:${GID:-1000}
@@ -254,7 +254,7 @@ services:
     build:
       target: train
       context: .
-      dockerfile: misc/basic.Dockerfile
+      dockerfile: misc/simple.Dockerfile
       args:
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
