@@ -131,12 +131,11 @@ install-compose: ${COMPOSE_FILE}
 pre-commit:
 	pre-commit run --all-files
 
-PYRE_CONFIGURATION = ${PROJECT_ROOT}/.pyre_configuration
+PYRE_CONFIGURATION = .pyre_configuration
 ${PYRE_CONFIGURATION}:
 	pyre init
 
 # Perform static analysis on the codebase and
 # apply the annotations to the code in-place.
-# Run this command from inside the container, not from the host.
 pyre-apply: ${PYRE_CONFIGURATION}
 	pyre infer -i
