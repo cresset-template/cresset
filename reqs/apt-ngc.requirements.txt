@@ -1,9 +1,0 @@
-curl
-git
-libjemalloc2
-nano
-openssh-server
-sudo
-tmux
-tzdata
-zsh

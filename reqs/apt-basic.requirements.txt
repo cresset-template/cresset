@@ -1,0 +1,4 @@
+# `sudo` and `zsh` are required packages.
+at
+sudo
+zsh

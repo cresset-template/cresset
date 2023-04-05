@@ -1,0 +1,4 @@
+openssh-server
+sudo
+tzdata
+zsh

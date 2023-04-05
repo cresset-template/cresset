@@ -1,0 +1,7 @@
+name: base # Always use the `base` environment.
+channels:
+  - nodefaults # Do not use the default environment.
+  - conda-forge # Always use conda-forge instead.
+  - nvidia
+dependencies: # Use conda packages if possible.
+  - python==3.10
