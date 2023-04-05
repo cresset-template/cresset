@@ -36,6 +36,7 @@ ARG INTERACTIVE_MODE
 ARG USE_CUDA=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
+ARG IMAGE_FLAVOR
 ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
@@ -46,9 +47,11 @@ ARG GIT_IMAGE=alpine/git:edge-2.38.1
 ARG CURL_IMAGE=curlimages/curl:latest
 
 # Build-related packages are pre-installed on CUDA `devel` images.
+# The `TRAIN_IMAGE` will use `devel` by default for convenience while
+# the `DEPLOY_IMAGE` will use `runtime` by default to reduce space.
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
-ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
-ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
+ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
+ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
 FROM ${CURL_IMAGE} AS curl-conda
@@ -417,7 +420,7 @@ FROM ${TRAIN_IMAGE} AS train-base
 # Edit this section if necessary but use `docker-compose.yaml` if possible.
 # Common configurations performed before creating a user should be placed here.
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -447,20 +450,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
-
-########################################################################
-FROM train-base AS train-interactive-exclude
-# This stage exists to create images for use in Kubernetes clusters or for
-# uploading image to a container registry, where interactive configurations
-# are unnecessary and having the user set to `root` is most convenient.
-# Singularity users may also find this stage convenient.
-# It is designed to be as close to the interactive development environment as
-# possible, with the same `apt`, `conda`, and `pip` packages installed.
-# Most users may safely ignore this stage except when publishing an image
-# to a container repository for reproducibility.
-
-COPY --link --from=train-builds /opt/conda /opt/conda
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-base AS train-interactive-include
@@ -519,6 +508,20 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
     } >> ${HOME}/.zshrc
+
+########################################################################
+FROM train-base AS train-interactive-exclude
+# This stage exists to create images for use in Kubernetes clusters or for
+# uploading images to a container registry, where interactive configurations
+# are unnecessary and having the user set to `root` is most convenient.
+# Singularity users may also find this stage useful.
+# It is designed to be as close to the interactive development environment as
+# possible, with the same `apt`, `conda`, and `pip` packages installed.
+# Most users may safely ignore this stage except when publishing an image
+# to a container repository for reproducibility.
+
+COPY --link --from=train-builds /opt/conda /opt/conda
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
