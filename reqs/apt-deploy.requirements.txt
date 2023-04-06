@@ -1,4 +1,0 @@
-libgomp1  # GNU OpenMP
-libjpeg-turbo8  # TorchVision dependency
-libpng16-16  # TorchVision dependency
-python3-pip
