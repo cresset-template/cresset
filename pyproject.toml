@@ -28,7 +28,7 @@ testpaths = [
 
 [tool.ruff]
 line-length = 100
-target-version = ['py38', 'py39', 'py310']
+target-version = 'py38'
 select = [
     "B", # flake8-bugbear
     "BLE", # flake8-blind-except
