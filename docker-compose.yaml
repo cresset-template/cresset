@@ -209,3 +209,6 @@ services:
       args:
         BASE_IMAGE: ${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}
         INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+        LOCK_MODE: ${LOCK_MODE:-exclude}
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
