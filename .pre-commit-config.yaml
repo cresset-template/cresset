@@ -32,7 +32,7 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.260"
+    rev: "v0.0.261"
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
