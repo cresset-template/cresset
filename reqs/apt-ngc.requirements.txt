@@ -1,0 +1,6 @@
+openssh-server
+libjemalloc-dev
+sudo
+tzdata
+zsh
+tmux
