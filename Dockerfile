@@ -96,7 +96,7 @@ ARG PYTHON_VERSION
 # Clean out package directories and `__pycache__` files to save space.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n" > /opt/conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya --force-pkgs-dirs && \
     find /opt/conda -name '__pycache__' | xargs rm -rf
