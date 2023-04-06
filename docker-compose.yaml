@@ -218,12 +218,13 @@ services:
     extends:
       service: catalog
     hostname: ${HOSTNAME:-ngc}
-    image: { IMAGE_NAME }
+    image: ${IMAGE_NAME}
     extra_hosts:
       - "${HOSTNAME:-ngc}:127.0.0.1"
     build:
       args:
-        BASE_IMAGE: nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3
+        BASE_IMAGE: |
+          "nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3"
 
   # Service based on the official PyTorch Docker images from Docker Hub. Visit
   # https://hub.docker.com/r/pytorch/pytorch/tags to find available images.
@@ -256,7 +257,7 @@ services:
       context: .
       dockerfile: misc/simple.Dockerfile
       args:
-        BUILD_IMAGE: "${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}"
+        BASE_IMAGE: "${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}"
         INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
