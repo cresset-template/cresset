@@ -22,16 +22,19 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-# The user can specify which `conda` environment file to install.
-# Any file that conda can understand can be used, including `conda-lock` files.
-ARG CONDA_ENVIRONMENT_FILE=../reqs/simple-environment.yaml
-# Variable to hold the environment file filepath during the build.
-ARG CONDA_INSTALL_FILE=/tmp/req/environment.yaml
-COPY --link ${CONDA_ENVIRONMENT_FILE} ${CONDA_INSTALL_FILE}
-RUN conda install -n base -c conda-forge -c nodefaults --freeze-installed \
+# Use package caching to speed up installs.
+ARG PIP_CACHE_DIR=/root/.cache/pip
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+ARG CONDA_ENV_FILE=/tmp/req/environment.yaml
+COPY --link ../reqs/simple-environment.yaml ${CONDA_ENV_FILE}
+RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
+    # Use the `libmamba` solver for faster dependency resolution.
+    conda install -n base -c conda-forge -c nodefaults --freeze-installed \
         conda-libmamba-solver && \
-    conda create --copy --solver libmamba --no-default-packages \
-        -p /opt/env --file ${CONDA_INSTALL_FILE} && \
+    # For `conda-lock` files, use `conda create --copy` instead of `conda env create`.
+    conda env create --solver libmamba --no-default-packages \
+        -p /opt/env --file ${CONDA_ENV_FILE} && \
     find /opt/env -name '__pycache__' | xargs rm -rf
 
 ########################################################################
@@ -84,7 +87,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=fetch --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 USER ${USR}
@@ -92,7 +95,7 @@ ARG HOME=/home/${USR}
 
 # Setting the prompt to `pure`.
 ARG PURE_PATH=${HOME}/.zsh/pure
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
+COPY --link --from=fetch --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
@@ -100,7 +103,7 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
 ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
-COPY --link --from=train-builds --chown=${UID}:${GID} \
+COPY --link --from=fetch --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
