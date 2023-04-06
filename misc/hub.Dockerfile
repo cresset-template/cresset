@@ -54,8 +54,8 @@ ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
-    conda install --freeze-installed -n base --file /tmp/req/requirements.txt && \
+    conda install --freeze-installed -n base -c conda-forge \
+        --file /tmp/req/requirements.txt && \
     echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Enable Intel MKL optimizations on AMD CPUs.
