@@ -5,3 +5,4 @@
 # Packages can also specify their channel by using `CHANNEL:PACKAGE_NAME`.
 hydra-core
 jemalloc  # Essential package.
+pytest

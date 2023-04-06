@@ -1,10 +1,13 @@
 # syntax = docker/dockerfile:1.4
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
-ARG BASE_IMAGE
+ARG PYTORCH_VERSION
+ARG CUDA_SHORT_VERSION
+ARG CUDNN_VERSION
+ARG IMAGE_FLAVOR
+ARG IMAGE_TAG=${PYTORCH_VERSION}-cuda${CUDA_SHORT_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}
+ARG BASE_IMAGE=pytorch/pytorch:${IMAGE_TAG}
 ARG INTERACTIVE_MODE
-
-# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
-ARG GIT_IMAGE=alpine/git:edge-2.38.1
+ARG GIT_IMAGE=bitnami/git:latest
 
 ########################################################################
 FROM ${GIT_IMAGE} AS stash
@@ -18,9 +21,9 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-# Copy and install `apt` requirements for catalog images.
-COPY --link ../reqs/apt-catalog.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/catalog-environment.yaml /tmp/req/environment.yaml
+# Copy and install `apt` requirements for hub images.
+COPY --link ../reqs/apt-hub.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/conda-hub.requirements.txt /tmp/req/requirements.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -44,24 +47,23 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
 # `/opt/conda/bin` is expected to be on the $PATH already.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-ARG CONDA_ENV_FILE=/tmp/req/environment.yaml
 # `conda` is intentionally left as a `root` directory.
 # Use `sudo` to install new `conda` packages during development if necessary.
-# Delete the `--freeze-installed` flag if package incompatibilities arise.
+# Configure conda use `conda-forge` and not `defaults`.
+# Previous installations are preserved via the `--freeze-installed` flag.
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
-    conda install -n base --freeze-installed conda-libmamba-solver && \
-    conda config --set solver libmamba && \
-    conda env update --freeze-installed --file ${CONDA_ENV_FILE} && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
+    conda install --freeze-installed -n base --file /tmp/req/requirements.txt && \
     echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+# This part requires `gcc`, which may not be present in `runtime` imags.
+ENV MKL_DEBUG_CPU_TYPE=5
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
     gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
-
-ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 ENV KMP_BLOCKTIME=0
@@ -96,7 +98,7 @@ ARG HOME=/home/${USR}
 WORKDIR $HOME/.zsh
 # Setting the prompt to `pure`.
 ARG PURE_PATH=${HOME}/.zsh/pure
-COPY --link --from=buffer --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
+COPY --link --from=stash --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
@@ -104,13 +106,14 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
 ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
-COPY --link --from=buffer --chown=${UID}:${GID} \
+COPY --link --from=stash --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
     } >> ${HOME}/.zshrc
 
 ########################################################################
@@ -126,7 +129,7 @@ RUN chsh --shell /bin/zsh
 FROM train-interactive-${INTERACTIVE_MODE} AS train
 
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:$PATH
+ENV PATH=${PROJECT_ROOT}:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 
 WORKDIR ${PROJECT_ROOT}
