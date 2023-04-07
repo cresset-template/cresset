@@ -5,6 +5,13 @@
 # See URL below for documentation on Docker Compose.
 # https://docs.docker.com/engine/reference/commandline/compose
 
+# Optionally read variables from the environment file if it exists.
+# The `-include` will include variables defined in the `${ENV_FILE}` but
+# will not cause an error if it does not exist.
+# This line must be placed before all other variable definitions to allow
+# variables in the `${ENV_FILE}` to be overridden by user-defined values.
+-include: ${ENV_FILE}
+
 # **Change `SERVICE` to specify other services and projects.**
 # `SERVICE`, `COMMAND`, and `PROJECT` take environment variables from
 # the user's shell if specified, making it easier to configure commands.
@@ -47,7 +54,8 @@ GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
-HOSTNAME=${SERVICE}\n$\
+SERVICE=${SERVICE}\n$\
+COMMAND=${COMMAND}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
