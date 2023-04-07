@@ -4,9 +4,8 @@
 # This Dockerfile exists to provide a method of installing all packages from
 # `conda` using only Official and Verified Docker images.
 # The base image for training is an Official Docker Linux image, e.g., Ubuntu.
-# The `git` and `conda` images are both from verified publishers.
-# Also, they are used only to download files and packages.
-# The training image does not include them and they remain in the build cache.
+# The `git` image is from a verified publisher and only used to download files.
+# The training image does not include it and it remains in the build cache.
 
 ARG LOCK_MODE
 ARG BASE_IMAGE
@@ -14,9 +13,7 @@ ARG INTERACTIVE_MODE
 # The Bitnami Docker verified git image has `curl` installed in `/usr/bin/curl`
 # and recent versions have both AMD64 and ARM64 architecture support.
 ARG GIT_IMAGE=bitnami/git:latest
-# The Miniconda3 verified image is only used
-# if strict requirements are installed via `conda-lock` files.
-ARG CONDA_IMAGE=continuumio/miniconda3:latest
+
 ########################################################################
 FROM ${GIT_IMAGE} AS stash
 
@@ -36,11 +33,14 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-ARG CONDA_URL
-RUN mkdir /tmp/conda && curl -fsSL -v -o /tmp/conda/miniconda.sh -O ${CONDA_URL}
-
 COPY --link ../reqs/apt-simple.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
+
+ARG CONDA_URL
+WORKDIR /tmp/conda
+RUN curl -fsSL -v -o /tmp/conda/miniconda.sh -O ${CONDA_URL} && \
+    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
+WORKDIR /
 
 ########################################################################
 FROM ${BASE_IMAGE} AS conda-lock-exclude
@@ -53,27 +53,41 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-RUN --mount=type=bind,from=stash,source=/tmp/conda,target=/tmp/conda \
-    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
+ARG PATH=/opt/conda/bin:$PATH
 
 # `CONDA_MANAGER` may be either `mamba` or `conda`.
 ARG CONDA_MANAGER
-ENV conda=/opt/conda/bin/${CONDA_MANAGER}
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 
-# Use package caching to speed up installs. Borrow `curl` from the git image.
+# Using package caching to speed up installs.
+# A `CondaVerificationError` may occur if the cache is corrupted.
+# Use `docker builder prune` to clear out the build cache if it does.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-RUN --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
-    --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+COPY --link --from=stash /opt/conda /opt/conda
+COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
+RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda env update --file /tmp/req/environment.yaml
 
+# Cleaning must be in a separate `RUN` command to preserve the Docker cache.
+RUN /opt/conda/bin/conda clean -fya
+
 ########################################################################
-FROM ${CONDA_IMAGE} AS conda-lock
+FROM stash AS lock-stash
+# Extra stash for using `conda-lock` files. This stage is derived from `stash`
+# to reduce code repitition at the cost of unnecessary extra build cache.
+
+ARG CONDA_MANAGER
+# Wierd paths necessary because `CONDA_PREFIX` is immutable post-installation.
+ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
+RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/_conda/.condarc && \
+    $conda install conda-lock
+
+########################################################################
+FROM ${BASE_IMAGE} AS conda-lock-include
 # Use this stage only if installing from `conda-lock`.
-# Users must create their own `simple-conda-lock.yaml` file to use this stage.
-COPY --link ../reqs/simple-conda-lock.yaml /tmp/conda/lock.yaml
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -82,26 +96,26 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+ARG PATH=/opt/_conda/bin:$PATH
+COPY --link --from=lock-stash /opt/_conda /opt/_conda
+COPY --link ../reqs/simple.conda-lock.yaml /tmp/conda/lock.yaml
+# Saves to `conda-linux-64.lock`, which can be installed via `conda create`
+RUN conda-lock render -p linux-64 /tmp/conda/lock.yaml
+
+ARG CONDA_MANAGER
+ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 ARG PIP_CACHE_DIR=/root/.cache/pip
-ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-# Set default channel to `conda-forge` for both the installing and installed
-# `conda` envirnments to prevent any ambiguities during and after installation.
+ARG CONDA_PKGS_DIRS=/opt/_conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
-    conda create -p /opt/env --copy --file /tmp/conda/lock.yaml && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/env/.condarc
-
-########################################################################
-FROM ${BASE_IMAGE} AS conda-lock-include
-
-COPY --link --from=conda-lock /opt/env /opt/conda
+    $conda create --no-deps --no-default-packages --copy -p /opt/conda \
+        --file conda-linux-64.lock && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
 
 ########################################################################
 FROM conda-lock-${LOCK_MODE} AS install-conda
 # Cleanup before copying to reduce image size.
-RUN /opt/conda/bin/conda clean -fya && \
-    find /opt/conda -name '__pycache__' | xargs rm -rf
+RUN find /opt/conda -name '__pycache__' | xargs rm -rf
 
 # Heuristic fix to find NVRTC for CUDA 11.2+.
 # Change this for older CUDA versions and for CUDA 12.x.
