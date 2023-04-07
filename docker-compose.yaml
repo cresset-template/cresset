@@ -28,22 +28,52 @@ networks: # Use the host network instead of creating a separate network.
     external: true
 
 services:
-  train: # Default service name. Change the name for each project.
-    # Set to the service name. Makes terminals easier to tell apart.
-    hostname: ${HOSTNAME:-train}
-    extra_hosts:
-      - "${HOSTNAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
+  base: # Base service containing configurations common to all services.
+    tty: true # Equivalent to `-t` flag in `docker run`.
+    init: true # Equivalent to `--init` flag in `docker run`.
+    stdin_open: true # equivalent to `-i` flag in `docker run`.
+    working_dir: ${PROJECT_ROOT:-/opt/project}
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: ${IMAGE_NAME}
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
-    #    shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-    tty: true # Equivalent to `-t` flag in `docker run`.
-    init: true # Equivalent to `--init` flag in `docker run`.
-    stdin_open: true # equivalent to `-i` flag in `docker run`.
+    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
+    # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
+    environment: # Common runtime environment variables.
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+    build:
+      context: . # Nearly all files are ignored due to `.dockerignore` settings.
+      args: # Common build-time environment variables.
+        # Even if these variables are unnecessary during the build,
+        # they can be ignored simply by not defining them in that stage.
+        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
+        GID: ${GID:-1000}
+        UID: ${UID:-1000}
+        GRP: ${GRP:-user}
+        USR: ${USR:-user}
+        # `TZ` is placed here even if not used for consistency with the runtime.
+        TZ: ${TZ:-Asia/Seoul}
+    deploy: # API dependent on compose version.
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+      #        device_ids: [ "0" ]  # Use only GPU 0.
+
+  train: # Default service name. Change the name for each project.
+    extends:
+      service: base
+    # Set to the service name. Makes terminals easier to tell apart.
+    hostname: ${HOSTNAME:-train}
+    extra_hosts:
+      - "${HOSTNAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
+    user: ${UID:-1000}:${GID:-1000}
+    environment: # Environment variables for the container, not the build. Equivalent to `--env`
+      HISTSIZE: 50000 # Hard-coded large command history size.
     # Setting `HOST_PATH:CONTAINER_PATH`
     # allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
     # See https://docs.docker.com/storage/volumes for details.
@@ -56,12 +86,11 @@ services:
       # Preserve VSCode extensions between containers.
       # Assumes default VSCode server directory.
       - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
-    #    tmpfs:  # Create directory in RAM for fast data IO.
-    #      - /opt/data
+    # tmpfs:  # Create directory in RAM for fast data IO.
+    #   - /opt/data
     build: # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
       target: ${TARGET_STAGE:-train} # Specify build target.
-      context: . # Nearly all files are ignored due to `.dockerignore` settings.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
@@ -73,6 +102,7 @@ services:
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         # Change the `CONDA_URL` for different hardware architectures.
@@ -95,12 +125,6 @@ services:
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        GID: ${GID:-1000}
-        UID: ${UID:-1000}
-        GRP: ${GRP:-user}
-        USR: ${USR:-user}
-        TZ: ${TZ:-Asia/Seoul}
         # URL for faster `apt` and `pip` installs. Optimized for Korean users.
         # Use URLs optimized for user location and security requirements.
         # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
@@ -108,121 +132,83 @@ services:
         # Comment out the PyPI mirrors to use the default PyPI repository.
         # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    user: ${UID:-1000}:${GID:-1000}
-    environment: # Environment variables for the container, not the build. Equivalent to `--env`
-      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
-      HISTSIZE: 50000 # Hard-coded large command history size.
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy: # API dependent on compose version.
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
-  #              device_ids: [ "0" ]  # Use only GPU 0.
-
-  deploy:
-    hostname: ${HOSTNAME:-deploy}
-    extra_hosts:
-      - "${HOSTNAME:-deploy}:127.0.0.1"
-    image: ${IMAGE_NAME}
-    tty: true
-    init: true
-    stdin_open: true
-    volumes: # Place user-specific directories in `docker-compose.override.yaml`.
-      - .:${PROJECT_ROOT:-/opt/project}
-    build:
-      target: ${TARGET_STAGE:-deploy}
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_MODE: ${BUILD_MODE:-exclude}
-        # The Anaconda `defaults` channel is not free for commercial use.
-        BUILD_TEST: 1 # Enable build tests for deployment.
-        USE_NNPACK: 0 # Enable NNPack for deployment if required.
-        USE_QNNPACK: 0 # Enable QNNPack for deployment if required.
-        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
-        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
-        # Requirements must include `mkl` if `MKL_MODE` is set to `include` for deployment.
-        MKL_MODE: ${MKL_MODE:-include} # `include` or `exclude`. Disabled by default for deployment.
-        # Change the `CONDA_URL` for different hardware architectures, etc.
-        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
-        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
-        TORCH_CUDA_ARCH_LIST: ${CCA} # This will fail if BUILD_MODE=include but CCA is not set explicitly.
-        # Variables for building PyTorch. Must be valid git tags.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.1}
-        # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-    #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-    #        DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-    #        INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-    #        TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    environment:
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
 
   # This layer may be useful for PyTorch contributors.
   devel: # Skeleton service for development and debugging.
+    extends:
+      service: base
     hostname: ${HOSTNAME:-devel}
     extra_hosts:
       - "${HOSTNAME:-devel}:127.0.0.1"
-    image: ${IMAGE_NAME}
-    tty: true
-    init: true
-    stdin_open: true
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: ${TARGET_STAGE:-build-base} # All builds begin at `build-base`.
-      context: .
       dockerfile: Dockerfile
 
-  ngc: # NGC image service. Demonstrates the generality of the template.
+  # Service based on images from the NGC PyTorch image catalog. Visit
+  # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
+  # for an up-to-date list of all NVIDIA NGC PyTorch images.
+  # Note that the NGC images are very unstable, with many differences between versions.
+  # This service may break for different `NGC_YEAR` and `NGC_MONTH` configurations.
+  ngc:
+    extends:
+      service: base
+    user: ${UID:-1000}:${GID:-1000}
+    environment:
+      HISTSIZE: 50000 # Hard-coded large command history size.
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
     hostname: ${HOSTNAME:-ngc}
     extra_hosts:
       - "${HOSTNAME:-ngc}:127.0.0.1"
-    image: cresset:ngc-${YEAR:-22}.${MONTH:-02}
-    #    ipc: host
-    tty: true
-    init: true
-    stdin_open: true
+    build:
+      target: ${TARGET_STAGE:-train}
+      dockerfile: misc/ngc.Dockerfile
+      args:
+        NGC_YEAR: ${NGC_YEAR:-23}
+        NGC_MONTH: ${NGC_MONTH:-03}
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+
+  # Service based on the official PyTorch Docker images from Docker Hub. Visit
+  # https://hub.docker.com/r/pytorch/pytorch/tags to find available images.
+  hub:
+    extends:
+      service: base
+    user: ${UID:-1000}:${GID:-1000}
+    environment:
+      HISTSIZE: 50000 # Hard-coded large command history size.
+    volumes:
+      - .:${PROJECT_ROOT:-/opt/project}
+    hostname: ${HOSTNAME:-hub}
+    extra_hosts:
+      - "${HOSTNAME:-hub}:127.0.0.1"
+    build:
+      target: ${TARGET_STAGE:-train}
+      dockerfile: misc/hub.Dockerfile
+      args:
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
+        # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
+        CUDA_SHORT_VERSION: ${CUDA_SHORT_VERSION:-11.7}
+        CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+
+  # Service installed purely from official/verified Docker images and `conda`.
+  simple:
+    extends:
+      service: base
+    user: ${UID:-1000}:${GID:-1000}
+    environment:
+      HISTSIZE: 50000 # Hard-coded large command history size.
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
-      target: ngc
-      context: .
-      dockerfile: misc/ngc.Dockerfile
+      target: ${TARGET_STAGE:-train}
+      dockerfile: misc/simple.Dockerfile
       args:
-        PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
-        YEAR: ${YEAR:-22}
-        MONTH: ${MONTH:-02}
-        GID: ${GID:-1000}
-        UID: ${UID:-1000}
-        GRP: ${GRP:-user}
-        USR: ${USR:-user}
-        TZ: ${TZ:-Asia/Seoul}
-    working_dir: ${PROJECT_ROOT:-/opt/project}
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      TZ: ${TZ:-Asia/Seoul}
-      CUDA_DEVICE_ORDER: PCI_BUS_ID
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              capabilities: [gpu]
+        BASE_IMAGE: ${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+        LOCK_MODE: ${LOCK_MODE:-exclude}
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}

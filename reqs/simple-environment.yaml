@@ -1,0 +1,14 @@
+name: base # Always use the `base` environment.
+channels:
+  - nodefaults # Do not use the default environment.
+  - conda-forge # Always use conda-forge instead.
+  - nvidia # CUDA-related packages are available in the NVIDIA channel.
+dependencies: # Use conda packages if possible.
+  - python==3.10
+  - pytorch::pytorch # Only install PyTorch-related packages from the PyTorch channel.
+  - pytorch::torchvision
+  - pytorch::pytorch-cuda==11.8
+  - tqdm
+  - mkl
+  - jemalloc
+  - pytest

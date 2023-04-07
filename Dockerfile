@@ -36,6 +36,7 @@ ARG INTERACTIVE_MODE
 ARG USE_CUDA=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
+ARG IMAGE_FLAVOR
 ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
@@ -46,9 +47,9 @@ ARG GIT_IMAGE=alpine/git:edge-2.38.1
 ARG CURL_IMAGE=curlimages/curl:latest
 
 # Build-related packages are pre-installed on CUDA `devel` images.
+# The `TRAIN_IMAGE` will use the `devel` flaavor by default for convenience.
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
-ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
-ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
+ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
 FROM ${CURL_IMAGE} AS curl-conda
@@ -95,7 +96,7 @@ ARG PYTHON_VERSION
 # Clean out package directories and `__pycache__` files to save space.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n" > /opt/conda.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && \
     conda clean -ya --force-pkgs-dirs && \
     find /opt/conda -name '__pycache__' | xargs rm -rf
@@ -417,7 +418,7 @@ FROM ${TRAIN_IMAGE} AS train-base
 # Edit this section if necessary but use `docker-compose.yaml` if possible.
 # Common configurations performed before creating a user should be placed here.
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -437,9 +438,8 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
-# See the `deploy` stage below to see how to add other apt reporitories.
 # `apt` requirements are copied from the outside instead of from
-# `train-builds` to allow parallel installation with pip.
+# `train-builds` to allow parallel installation with `conda`.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
@@ -447,20 +447,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
-
-########################################################################
-FROM train-base AS train-interactive-exclude
-# This stage exists to create images for use in Kubernetes clusters or for
-# uploading image to a container registry, where interactive configurations
-# are unnecessary and having the user set to `root` is most convenient.
-# Singularity users may also find this stage convenient.
-# It is designed to be as close to the interactive development environment as
-# possible, with the same `apt`, `conda`, and `pip` packages installed.
-# Most users may safely ignore this stage except when publishing an image
-# to a container repository for reproducibility.
-
-COPY --link --from=train-builds /opt/conda /opt/conda
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-base AS train-interactive-include
@@ -485,6 +471,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+# The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 USER ${USR}
@@ -516,9 +503,25 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 # Add `ll` alias for convenience. The Mac version of `ll` is used
 # instead of the Ubuntu version due to better configurability.
 # Add `wns` as an alias for `watch nvidia-smi`, which is used often.
+# Add `hist` as a shortcut to see the full history in `zsh`.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
     } >> ${HOME}/.zshrc
+
+########################################################################
+FROM train-base AS train-interactive-exclude
+# This stage exists to create images for use in Kubernetes clusters or for
+# uploading images to a container registry, where interactive configurations
+# are unnecessary and having the user set to `root` is most convenient.
+# Singularity users may also find this stage useful.
+# It is designed to be as close to the interactive development environment as
+# possible, with the same `apt`, `conda`, and `pip` packages installed.
+# Most users may safely ignore this stage except when publishing an image
+# to a container repository for reproducibility.
+
+COPY --link --from=train-builds /opt/conda /opt/conda
+RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
@@ -556,93 +559,3 @@ ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
 
 CMD ["/bin/zsh"]
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-include
-
-COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
-COPY --link --from=build-vision  /tmp/dist  /tmp/dist
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-exclude
-
-COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
-COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
-COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
-
-########################################################################
-FROM deploy-builds-${BUILD_MODE} AS deploy-builds
-
-# Minimalist deployment preparation layer.
-
-# If any `pip` packages must be compiled on installation, create a wheel in the
-# `build` stages and move it to `/tmp/dist`. Otherwise, the installtion may fail.
-# See `Pillow-SIMD` in the TorchVision build process for an example.
-# The `deploy` image is a CUDA `runtime` image without compiler tools.
-
-# The Anaconda defaults channel and Intel MKL are not fully open-source.
-# Enterprise users may therefore wish to remove them from their final product.
-# The deployment therefore uses system Python.
-# Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
-# This may also be useful for non-Intel CPUs.
-
-COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
-COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
-
-# Use the Python interpreter from `conda` to create wheel files while
-# the compilers and other build tools are still available.
-RUN --mount=type=bind,from=install-conda,source=/opt/conda,target=/opt/conda \
-    /opt/conda/bin/python -m pip wheel --wheel-dir /tmp/dist --find-links /tmp/dist \
-        -r /tmp/pip/requirements.txt \
-        /tmp/dist/*.whl
-
-########################################################################
-# Minimalist deployment Ubuntu image.
-# Currently failing for PyTorch 2.x due to minor dependency issues.
-# If downloading the wheel, create a symbolic link to `libnvrtc.so`, then run `ldconfig`.
-# If building from source, include `libcupti-dev` in the `apt` requirements file.
-FROM ${DEPLOY_IMAGE} AS deploy
-
-LABEL maintainer=veritas9872@gmail.com
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONIOENCODING=UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Use mirror links optimized for user location and security level.
-ARG DEB_OLD
-ARG DEB_NEW
-
-# Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
-# The `readwrite` option is necessary as `apt` needs write permissions on `/tmp`.
-# Both `python` and `python3` are set to point to the installed version of Python.
-# The pre-installed system Python3 may be overridden if the installed and pre-installed
-# versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
-# `printf` is preferred over `echo` when escape characters are used due to
-# the inconsistent behavior of `echo` across different shells.
-# `software-properties-common` is required for the `add-apt-repository` command.
-# Using `sed` and `xargs` to imitate the behavior of a requirements file.
-ARG PYTHON_VERSION
-ARG DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/apt \
-    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION} \n" >> /tmp/apt/requirements.txt && \
-    sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt |  \
-    xargs apt-get install -y --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
-    update-alternatives --install /usr/bin/python  python  /usr/bin/python${PYTHON_VERSION} 1
-
-# The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
-# The MKL major version used at runtime must match the version used to build PyTorch.
-# The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
-# Installing all packages in one command allows `pip` to resolve dependencies correctly.
-# Using multiple `pip` installs may break the dependencies of all but the last installation.
-# No dependencies are included as they should all have been installed during the build.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
-    python -m pip install --no-cache-dir --no-deps --find-links /tmp/dist \
-        /tmp/dist/*.whl && \
-    ldconfig

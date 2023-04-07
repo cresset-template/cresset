@@ -1,0 +1,5 @@
+# `openssl`, `sudo`, and `zsh` are required packages.
+at
+openssl
+sudo
+zsh

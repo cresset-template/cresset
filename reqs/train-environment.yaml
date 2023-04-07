@@ -48,7 +48,6 @@ dependencies: # Use conda packages if possible.
   - pytest-xdist
   - pytype
   - rsync
-  - shellcheck
   - snoop
   - tmux==3.2a
   - tree

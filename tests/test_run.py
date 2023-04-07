@@ -25,8 +25,7 @@ Use your environment as you were using it for a fair comparison.
 import logging
 import platform
 import subprocess
-from collections.abc import Callable, Sequence
-from typing import NamedTuple
+from typing import Callable, NamedTuple, Sequence
 
 import pytest
 import torch
@@ -117,7 +116,10 @@ def test_inference_run(
 
 
 # Backwards compatibility with legacy Pytorch 1.x versions.
-@getattr(torch, "inference_mode", torch.no_grad)()
+no_grad = getattr(torch, "inference_mode", torch.no_grad)
+
+
+@no_grad()
 def _infer(network: nn.Module, inputs: Sequence[Tensor], num_steps: int) -> float:
     # Initialization
     tic = torch.cuda.Event(enable_timing=True)

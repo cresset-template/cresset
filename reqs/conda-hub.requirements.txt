@@ -1,0 +1,8 @@
+# Add additional requirements not available in the catalog images.
+# All requirements will be installed from the `conda-forge` channel by default.
+# Packages in the original image are frozen during the installation to prevent
+# overwriting but this may cause conflicts with the new packages.
+# Packages can also specify their channel by using `CHANNEL:PACKAGE_NAME`.
+hydra-core
+jemalloc  # Essential package.
+pytest

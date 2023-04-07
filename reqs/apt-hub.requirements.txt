@@ -1,5 +1,4 @@
 libjemalloc-dev
-openssh-server
 sudo
 tmux
 tzdata

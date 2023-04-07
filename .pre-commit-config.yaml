@@ -32,7 +32,7 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.260"
+    rev: "v0.0.261"
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
@@ -43,8 +43,14 @@ repos:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
 
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.9.0
+    hooks:
+      - id: shellcheck
+  #      args: ["--severity=warning"]  # Optionally only show errors and warnings
+
   - repo: https://github.com/google/pyink
-    rev: 23.3.0
+    rev: 23.3.1
     hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink
 

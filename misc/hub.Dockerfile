@@ -1,9 +1,13 @@
 # syntax = docker/dockerfile:1.4
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
-
+ARG PYTORCH_VERSION
+ARG CUDA_SHORT_VERSION
+ARG CUDNN_VERSION
+ARG IMAGE_FLAVOR
+ARG IMAGE_TAG=${PYTORCH_VERSION}-cuda${CUDA_SHORT_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}
+ARG BASE_IMAGE=pytorch/pytorch:${IMAGE_TAG}
 ARG INTERACTIVE_MODE
 ARG GIT_IMAGE=bitnami/git:latest
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3
 
 ########################################################################
 FROM ${GIT_IMAGE} AS stash
@@ -17,9 +21,9 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-# Copy and install `apt` requirements for ngc images.
-COPY --link ../reqs/apt-ngc.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/pip-ngc.requirements.txt /tmp/req/requirements.txt
+# Copy and install `apt` requirements for hub images.
+COPY --link ../reqs/apt-hub.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/conda-hub.requirements.txt /tmp/req/requirements.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -40,29 +44,34 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Use `sudo` to install new `pip` packages during development if necessary.
-# Previous installations are preserved via the `--ignore-installed` flag.
+# `/opt/conda/bin` is expected to be on the $PATH already.
 ARG PIP_CACHE_DIR=/root/.cache/pip
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+# `conda` is intentionally left as a `root` directory.
+# Use `sudo` to install new `conda` packages during development if necessary.
+# Configure conda use `conda-forge` and not `defaults`.
+# Previous installations are preserved via the `--freeze-installed` flag.
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
-    python -m pip install --ignore-installed -r /tmp/req/requirements.txt && ldconfig
+    conda install --freeze-installed -n base -c conda-forge \
+        --file /tmp/req/requirements.txt && \
+    echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 # This part requires `gcc`, which may not be present in `runtime` imags.
 ENV MKL_DEBUG_CPU_TYPE=5
-RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /tmp/fakeintel.c && \
-    gcc -shared -fPIC -o /usr/local/bin/libfakeintel.so /tmp/fakeintel.c
-ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so:${LD_PRELOAD}
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-# Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
-ENV LD_PRELOAD=/usr/local/lib/libiomp5.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 
-# The `jemalloc` binary location and name may change between NGC versions.
-# The `x86_64` architecture is also hard-coded by necessity.
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so:$LD_PRELOAD
+# Jemalloc configurations.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Set timezone. This is placed in `train-base` for timezone consistency,
