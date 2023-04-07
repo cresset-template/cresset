@@ -7,3 +7,5 @@
 !**/*requirements*.txt
 !*environment*.yaml
 !**/*environment*.yaml
+!*conda-lock.yaml
+!**/*conda-lock.yaml

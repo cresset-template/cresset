@@ -164,7 +164,7 @@ services:
       - "${HOSTNAME:-ngc}:127.0.0.1"
     build:
       target: ${TARGET_STAGE:-train}
-      dockerfile: misc/ngc.Dockerfile
+      dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
         NGC_MONTH: ${NGC_MONTH:-03}
@@ -185,7 +185,7 @@ services:
       - "${HOSTNAME:-hub}:127.0.0.1"
     build:
       target: ${TARGET_STAGE:-train}
-      dockerfile: misc/hub.Dockerfile
+      dockerfile: dockerfiles/hub.Dockerfile
       args:
         PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
         # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
@@ -205,7 +205,7 @@ services:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: ${TARGET_STAGE:-train}
-      dockerfile: misc/simple.Dockerfile
+      dockerfile: dockerfiles/simple.Dockerfile
       args:
         BASE_IMAGE: ${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}
         INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
