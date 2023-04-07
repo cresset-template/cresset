@@ -6,6 +6,8 @@
 # Variables are in ${VARIABLE:-DEFAULT_VALUE} format
 # to ensure that default values are given to the Dockerfile.
 # Using a `.env` file to set variables is strongly recommended.
+# However, note that variables in the host shell have
+# higher priority than the `.env` file for Docker Compose.
 
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
 # Compute Capability must be specified via the `CCA` variable.
@@ -68,9 +70,10 @@ services:
     extends:
       service: base
     # Set to the service name. Makes terminals easier to tell apart.
-    hostname: ${HOSTNAME:-train}
+    # `HOST_NAME` avoids conflict with the `HOSTNAME` shell builtin variable.
+    hostname: ${HOST_NAME:-train}
     extra_hosts:
-      - "${HOSTNAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
+      - "${HOST_NAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
     user: ${UID:-1000}:${GID:-1000}
     environment: # Environment variables for the container, not the build. Equivalent to `--env`
       HISTSIZE: 50000 # Hard-coded large command history size.
@@ -137,9 +140,9 @@ services:
   devel: # Skeleton service for development and debugging.
     extends:
       service: base
-    hostname: ${HOSTNAME:-devel}
+    hostname: ${HOST_NAME:-devel}
     extra_hosts:
-      - "${HOSTNAME:-devel}:127.0.0.1"
+      - "${HOST_NAME:-devel}:127.0.0.1"
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
     build:
@@ -159,9 +162,9 @@ services:
       HISTSIZE: 50000 # Hard-coded large command history size.
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
-    hostname: ${HOSTNAME:-ngc}
+    hostname: ${HOST_NAME:-ngc}
     extra_hosts:
-      - "${HOSTNAME:-ngc}:127.0.0.1"
+      - "${HOST_NAME:-ngc}:127.0.0.1"
     build:
       target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/ngc.Dockerfile
@@ -180,9 +183,9 @@ services:
       HISTSIZE: 50000 # Hard-coded large command history size.
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
-    hostname: ${HOSTNAME:-hub}
+    hostname: ${HOST_NAME:-hub}
     extra_hosts:
-      - "${HOSTNAME:-hub}:127.0.0.1"
+      - "${HOST_NAME:-hub}:127.0.0.1"
     build:
       target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/hub.Dockerfile
@@ -203,6 +206,9 @@ services:
       HISTSIZE: 50000 # Hard-coded large command history size.
     volumes:
       - .:${PROJECT_ROOT:-/opt/project}
+    hostname: ${HOST_NAME:-simple}
+    extra_hosts:
+      - "${HOST_NAME:-simple}:127.0.0.1"
     build:
       target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/simple.Dockerfile
