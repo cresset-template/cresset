@@ -6,17 +6,20 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 
 # Optionally read variables from the environment file if it exists.
-# The `-include` will include variables defined in the `${ENV_FILE}` but
-# will not cause an error if it does not exist.
+# The `-include` will include variables defined in the `${ENV_FILE}`
+# but will not cause an error if it does not exist.
 # This line must be placed before all other variable definitions to allow
 # variables in the `${ENV_FILE}` to be overridden by user-defined values.
--include: ${ENV_FILE}
+ENV_FILE = .env
+-include ${ENV_FILE}
 
 # **Change `SERVICE` to specify other services and projects.**
 # `SERVICE`, `COMMAND`, and `PROJECT` take environment variables from
 # the user's shell if specified, making it easier to configure commands.
 # The `?=` means that default variables are only used if the variable is
 # unset in the user's environment, i.e., the shell.
+# Note that variables defined in the host shell are ignored if the
+# `.env` file also defines those variables due to the current logic.
 SERVICE ?= train
 COMMAND ?= /bin/zsh
 
@@ -34,7 +37,6 @@ PROJECT_ROOT = /opt/project
 # which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
 # name collisions between different users.
-ENV_FILE = .env
 GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
@@ -49,6 +51,7 @@ IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
+# `HOST_NAME` avoids conflict with the `HOSTNAME` shell builtin variable.
 ENV_TEXT = "$\
 GID=${GID}\n$\
 UID=${UID}\n$\
@@ -56,13 +59,13 @@ GRP=${GRP}\n$\
 USR=${USR}\n$\
 SERVICE=${SERVICE}\n$\
 COMMAND=${COMMAND}\n$\
+HOST_NAME=${SERVICE}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
-${ENV_FILE}:  # Creates the `.env` file if it does not exist.
-	printf ${ENV_TEXT} >> ${ENV_FILE}
 
-env: ${ENV_FILE}
+env:  # Creates the `.env` file if it does not exist.
+	@test -f ${ENV_FILE} || printf ${ENV_TEXT} >> ${ENV_FILE}
 
 check:  # Checks if the `.env` file exists.
 	@if [ ! -f "${ENV_FILE}" ]; then \
