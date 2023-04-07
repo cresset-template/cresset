@@ -65,7 +65,8 @@ FROM ${CURL_IMAGE} AS curl-conda
 # https://www.anaconda.com/end-user-license-agreement-miniconda
 
 ARG CONDA_URL
-RUN mkdir /tmp/conda && curl -fsSL -v -o /tmp/conda/miniconda.sh -O ${CONDA_URL}
+WORKDIR /tmp/conda
+RUN curl -fvSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda

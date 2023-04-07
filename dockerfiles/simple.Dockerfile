@@ -37,7 +37,7 @@ COPY --link ../reqs/apt-simple.requirements.txt /tmp/apt/requirements.txt
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSL -v -o /tmp/conda/miniconda.sh -O ${CONDA_URL} && \
+RUN curl -fvSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
 WORKDIR /
