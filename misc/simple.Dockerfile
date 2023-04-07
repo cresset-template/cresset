@@ -103,6 +103,12 @@ FROM conda-lock-${LOCK_MODE} AS install-conda
 RUN /opt/conda/bin/conda clean -fya && \
     find /opt/conda -name '__pycache__' | xargs rm -rf
 
+# Heuristic fix to find NVRTC for CUDA 11.2+.
+# Change this for older CUDA versions and for CUDA 12.x.
+RUN if [ -f "/opt/conda/lib/libnvrtc.so.11.2" ]; then \
+        ln -s "/opt/conda/lib/libnvrtc.so.11.2" "/opt/conda/lib/libnvrtc.so"; \
+    fi
+
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
 
@@ -112,6 +118,9 @@ ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
+
+# Necessary to find the NVIDIA Driver.
+ENV NVIDIA_VISIBLE_DEVICES=all
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
