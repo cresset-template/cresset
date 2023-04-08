@@ -5,23 +5,11 @@
 # See URL below for documentation on Docker Compose.
 # https://docs.docker.com/engine/reference/commandline/compose
 
-# Optionally read variables from the environment file if it exists.
-# The `-include` will include variables defined in the `${ENV_FILE}`
-# but will not cause an error if it does not exist.
-# This line must be placed before all other variable definitions to allow
-# variables in the `${ENV_FILE}` to be overridden by user-defined values.
-ENV_FILE = .env
--include ${ENV_FILE}
-
 # **Change `SERVICE` to specify other services and projects.**
-# `SERVICE`, `COMMAND`, and `PROJECT` take environment variables from
-# the user's shell if specified, making it easier to configure commands.
-# The `?=` means that default variables are only used if the variable is
-# unset in the user's environment, i.e., the shell.
 # Note that variables defined in the host shell are ignored if the
 # `.env` file also defines those variables due to the current logic.
-SERVICE ?= train
-COMMAND ?= /bin/zsh
+SERVICE = train
+COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes,
@@ -101,6 +89,12 @@ ${OVERRIDE_FILE}:
 	printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
 # Cannot use `override` as a recipe name as it is a `make` keyword.
 over: ${OVERRIDE_FILE}
+
+# Optionally read variables from the environment file if it exists.
+# This line must be placed after all other variable definitions to allow
+# variables in the `${ENV_FILE}` to be overridden by user-defined values.
+ENV_FILE = .env
+-include ${ENV_FILE}
 
 build: check vs # Rebuild the image before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
