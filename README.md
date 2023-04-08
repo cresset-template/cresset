@@ -55,9 +55,12 @@ If this is your first time using this project, follow these steps:
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env` on the terminal at project root to create a basic `.env` file.
+4. Run `make env SERVICE=${YOUR_DESIRED_SERVICE}` on the terminal 
+   at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.
+   The Makefile has also been configured to read values from the `.env` file
+   if it exists, allowing non-default values to be specified only once.
    Each host should have a separate `.env` file for host-specific configurations.
 
 5. Run `make over` to create a `docker-compose.override.yaml` files.
@@ -66,8 +69,8 @@ If this is your first time using this project, follow these steps:
 
 ## Project Configuration
 
-1. To build PyTorch from source, set `BUILD_MODE=include` and set the
-   CUDA Compute Capability (CCA) of the target NVIDIA GPU.
+1. To build PyTorch from source, set `BUILD_MODE=include` and the
+   CUDA Compute Capability (CCA) of the target NVIDIA GPU in the `.env` file.
    Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
    to find compute capabilities of NVIDIA GPUs. Visit the
    [documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
@@ -97,7 +100,7 @@ If this is your first time using this project, follow these steps:
    Run `make over` to create a `docker-compose.override.yaml` file
    to add custom volumes and configurations.
    The `docker-compose.override.yaml` file is excluded from version control
-   to allow per-user/per-server settings.
+   to allow per-user and per-server settings.
 
 5. (Advanced) If an external file must be included in the Docker image build process,
    edit the `.dockerignore` file to allow the Docker context to find the external file.
@@ -106,8 +109,8 @@ If this is your first time using this project, follow these steps:
 
 Example `.env` file for user with username `USERNAME`,
 group name `GROUPNAME`, user id `1000`, group id `1000` on service `train`.
-Edit the `docker-compose.yaml` file and the
-`Makefile` to specify services other than `train`.
+Use the `simple` service if no dependencies need to be compiled and requirements
+can either be downloaded or installed via `apt`, `conda` and `pip`.
 
 ```text
 # Generated automatically by `make env`.
@@ -115,7 +118,7 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-HOSTNAME=train
+HOST_NAME=train
 IMAGE_NAME=cresset:train-USERNAME
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
@@ -431,7 +434,8 @@ To solve this problem, simply change the directory ownership to the
 user with `sudo chown -R $(id -u):$(id -g) ${HOME}/.vscode-server`.
 This command can be run either on the host or inside the container,
 which is useful if `sudo` permissions are unavailable on the host.
-For other problems concerning VSCode, try deleting `~/.vscode-server`.
+
+For other VSCode problems, try deleting `~/.vscode-server` on the host.
 
 # Known Issues
 
@@ -461,7 +465,7 @@ For other problems concerning VSCode, try deleting `~/.vscode-server`.
    [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
 6. `torch.cuda.is_available()` will return a `... UserWarning:
-CUDA initialization:...` error or the image will simply not start if
+   CUDA initialization:...` error or the image will simply not start if
    the CUDA driver on the host is incompatible with the CUDA version on
    the Docker image. Either upgrade the host CUDA driver or downgrade
    the CUDA version of the image. Check the
