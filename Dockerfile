@@ -66,7 +66,7 @@ FROM ${CURL_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fvSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
