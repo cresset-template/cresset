@@ -89,7 +89,9 @@ Different Docker Compose services are organized to serve different needs.
   Docker. It installs all packages via `conda` by default and can optionally
   install highly reproducible environments via `conda-lock`. Note that
   `pip` packages can also be installed via `conda`. Also, the base image can
-  be configured to use images other than the Official Linux Docker images.
+  be configured to use images other than the Official Linux Docker images
+  by specifying the `BASE_IMAGE` argument directly in the `.env` file.
+  PyTorch runtime performance may be superior in official NVIDIA CUDA images.
   **The `simple` service is recommended for users without compiled dependencies.**
 
 The `Makefile` has been configured to take values specified in the `.env` file
