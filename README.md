@@ -55,7 +55,7 @@ If this is your first time using this project, follow these steps:
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env SERVICE=${YOUR_DESIRED_SERVICE}` on the terminal 
+4. Run `make env SERVICE=(train|devel|ngc|hub|simple)` on the terminal 
    at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.
@@ -66,6 +66,35 @@ If this is your first time using this project, follow these steps:
 5. Run `make over` to create a `docker-compose.override.yaml` files.
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
+
+
+### Explanation of services
+Different Docker Compose services are organized to serve different needs.
+
+- `train`, the default service, is used when compiled dependencies are necessary
+  and when PyTorch needs to be compiled from source due to Compute Capability
+  issues, etc.
+- `devel` is designed for PyTorch CUDA/C++ developers who need to recompile 
+  frequently and have many complex dependencies.
+- `ngc` is derived from the official NVIDIA PyTorch HPC images with the option
+  to install additional packages. It is recommended for users who wish to base 
+  their projects on the NGC images provided by NVIDIA. Note that the NGC images
+  change greatly between different releases and that configurations for one
+  release may not work for another one.
+- `hub` is derived from the official PyTorch Docker Hub image and serves a
+  similar function as the `ngc` service described above.
+- `simple` is derived from the Official Ubuntu Linux image by default as some
+  corporations restrict the use of Docker images not officially verified by
+  Docker. It installs all packages via `conda` by default and can optionally
+  install reproducible environments via `conda-lock`. Note that `pip` packages
+  can also be installed via `conda`. Also, the base image can be configured to 
+  use images other than the Official Linux Docker images.
+  **The `simple` service is recommended for users without compiled dependencies.**
+
+The `Makefile` has been configured to take values specified in the `.env` file
+as the defaults if it exists. Therefore, all `make` commands will automatically
+use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
+`.env` file is created.
 
 ## Project Configuration
 
