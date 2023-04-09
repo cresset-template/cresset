@@ -128,7 +128,7 @@ COMPOSE_FILE = ${COMPOSE_PATH}/docker-compose
 
 ${COMPOSE_FILE}:
 	mkdir -p "${COMPOSE_PATH}"
-	curl -fvSL "${COMPOSE_URL}" -o "${COMPOSE_FILE}"
+	curl -fvL "${COMPOSE_URL}" -o "${COMPOSE_FILE}"
 	chmod +x "${COMPOSE_FILE}"
 
 install-compose: ${COMPOSE_FILE}
