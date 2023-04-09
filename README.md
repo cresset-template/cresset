@@ -71,9 +71,9 @@ If this is your first time using this project, follow these steps:
 ### Explanation of services
 Different Docker Compose services are organized to serve different needs.
 
-- `train`, the default service, is used when compiled dependencies are necessary
-  and when PyTorch needs to be compiled from source due to Compute Capability
-  issues, etc.
+- `train`, the default service, should be used when compiled dependencies are
+  necessary or when PyTorch needs to be compiled from source due to 
+  Compute Capability issues, etc.
 - `devel` is designed for PyTorch CUDA/C++ developers who need to recompile 
   frequently and have many complex dependencies.
 - `ngc` is derived from the official NVIDIA PyTorch HPC images with the option
@@ -82,13 +82,14 @@ Different Docker Compose services are organized to serve different needs.
   change greatly between different releases and that configurations for one
   release may not work for another one.
 - `hub` is derived from the official PyTorch Docker Hub image and serves a
-  similar function as the `ngc` service described above.
+  similar function as the `ngc` service described above. However,
+  the PyTorch Docker images are more stable compared to the NGC images.
 - `simple` is derived from the Official Ubuntu Linux image by default as some
   corporations restrict the use of Docker images not officially verified by
   Docker. It installs all packages via `conda` by default and can optionally
-  install reproducible environments via `conda-lock`. Note that `pip` packages
-  can also be installed via `conda`. Also, the base image can be configured to 
-  use images other than the Official Linux Docker images.
+  install highly reproducible environments via `conda-lock`. Note that
+  `pip` packages can also be installed via `conda`. Also, the base image can
+  be configured to use images other than the Official Linux Docker images.
   **The `simple` service is recommended for users without compiled dependencies.**
 
 The `Makefile` has been configured to take values specified in the `.env` file
