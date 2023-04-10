@@ -77,13 +77,18 @@ _configs = [
 ]
 
 
+@pytest.fixture(scope='session')
+def num_steps(pytestconfig):
+    return pytestconfig.getoption('num_steps')
+
+
 @pytest.mark.parametrize(["name", "network_func", "input_shapes"], _configs)
 def test_inference_run(
     name: str,
     network_func: Callable[[], nn.Module],
     input_shapes: Sequence[Sequence[int]],
     device: torch.device,
-    num_steps: int = 64,
+    num_steps,
     enable_amp: bool = False,
     enable_scripting: bool = False,
 ):
@@ -153,6 +158,9 @@ def get_cuda_info(device):  # Using as a fixture to get device info.
     logger.info(f"PyTorch Architecture List: {al}")
     logger.info(f"GPU Device Name: {dp.name}")
     logger.info(f"GPU Compute Capability: {dp.major}.{dp.minor}")
+    # No way to check if the GPU has TF32 hardware, only whether it is allowed.
+    logger.info(f'MatMul TF32 Allowed: {torch.backends.cuda.matmul.allow_tf32}')
+    logger.info(f'cuDNN TF32 Allowed: {torch.backends.cudnn.allow_tf32}')
 
     # Python3.7+ required for `subprocess` to work as intended.
     if int(platform.python_version_tuple()[1]) > 6:
