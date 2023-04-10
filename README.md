@@ -55,7 +55,7 @@ If this is your first time using this project, follow these steps:
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env SERVICE=(train|devel|ngc|hub|simple)` on the terminal 
+4. Run `make env SERVICE=(train|devel|ngc|hub|simple)` on the terminal
    at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.
@@ -67,17 +67,17 @@ If this is your first time using this project, follow these steps:
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
 
-
 ### Explanation of services
+
 Different Docker Compose services are organized to serve different needs.
 
 - `train`, the default service, should be used when compiled dependencies are
-  necessary or when PyTorch needs to be compiled from source due to 
+  necessary or when PyTorch needs to be compiled from source due to
   Compute Capability issues, etc.
-- `devel` is designed for PyTorch CUDA/C++ developers who need to recompile 
+- `devel` is designed for PyTorch CUDA/C++ developers who need to recompile
   frequently and have many complex dependencies.
 - `ngc` is derived from the official NVIDIA PyTorch HPC images with the option
-  to install additional packages. It is recommended for users who wish to base 
+  to install additional packages. It is recommended for users who wish to base
   their projects on the NGC images provided by NVIDIA. Note that the NGC images
   change greatly between different releases and that configurations for one
   release may not work for another one.
@@ -497,7 +497,7 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
    [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
 6. `torch.cuda.is_available()` will return a `... UserWarning:
-   CUDA initialization:...` error or the image will simply not start if
+CUDA initialization:...` error or the image will simply not start if
    the CUDA driver on the host is incompatible with the CUDA version on
    the Docker image. Either upgrade the host CUDA driver or downgrade
    the CUDA version of the image. Check the

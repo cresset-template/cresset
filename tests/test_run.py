@@ -44,7 +44,7 @@ def enable_cudnn_benchmarking():
     torch.backends.cudnn.benchmark = True
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def allow_tf32():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
@@ -83,9 +83,9 @@ _configs = [
 ]
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def num_steps(pytestconfig):
-    return pytestconfig.getoption('num_steps')
+    return pytestconfig.getoption("num_steps")
 
 
 @pytest.mark.parametrize(["name", "network_func", "input_shapes"], _configs)
@@ -165,8 +165,8 @@ def get_cuda_info(device):  # Using as a fixture to get device info.
     logger.info(f"GPU Device Name: {dp.name}")
     logger.info(f"GPU Compute Capability: {dp.major}.{dp.minor}")
     # No way to check if the GPU has TF32 hardware, only whether it is allowed.
-    logger.info(f'MatMul TF32 Allowed: {torch.backends.cuda.matmul.allow_tf32}')
-    logger.info(f'cuDNN TF32 Allowed: {torch.backends.cudnn.allow_tf32}')
+    logger.info(f"MatMul TF32 Allowed: {torch.backends.cuda.matmul.allow_tf32}")
+    logger.info(f"cuDNN TF32 Allowed: {torch.backends.cudnn.allow_tf32}")
 
     # Python3.7+ required for `subprocess` to work as intended.
     if int(platform.python_version_tuple()[1]) > 6:
