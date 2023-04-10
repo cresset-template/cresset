@@ -91,7 +91,8 @@ Different Docker Compose services are organized to serve different needs.
   `pip` packages can also be installed via `conda`. Also, the base image can
   be configured to use images other than the Official Linux Docker images
   by specifying the `BASE_IMAGE` argument directly in the `.env` file.
-  PyTorch runtime performance may be superior in official NVIDIA CUDA images.
+  PyTorch runtime performance may be superior in official NVIDIA CUDA images
+  under certain circumstances. Use the tests to benchmark runtime speeds.
   **The `simple` service is recommended for users without compiled dependencies.**
 
 The `Makefile` has been configured to take values specified in the `.env` file
@@ -261,7 +262,7 @@ The main components of the project are as follows. The other files are utilities
 1. Dockerfile
 2. docker-compose.yaml
 3. docker-compose.override.yaml
-4. reqs/\*requirements.txt
+4. reqs/(`*requirements.txt`|`*environment.yaml`)
 5. .env
 
 When the user inputs `make up` or another `make` command,
