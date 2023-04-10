@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.4
+# syntax = docker/dockerfile:1
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 
 # Use `export BUILDKIT_PROGRESS=plain` in the host terminal to see full build logs.

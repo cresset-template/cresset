@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.4
+# syntax = docker/dockerfile:1
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 ARG PYTORCH_VERSION
 ARG CUDA_SHORT_VERSION

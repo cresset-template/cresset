@@ -10,6 +10,7 @@ dependencies: # Use conda packages if possible.
   - pytorch::pytorch-cuda==11.8
   - jemalloc
   - intel::mkl
-  - intel::numpy  # Use Numpy built with the Intel compiler for best performance with MKL.
+  - intel::numpy # Use Numpy built with the Intel compiler for best performance with MKL.
   - pytest
+  - tmux==3.2a
   - tqdm

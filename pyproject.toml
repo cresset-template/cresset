@@ -13,7 +13,7 @@ target-version = ['py38', 'py39', 'py310']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
-minversion = "7.0"  # Update to 7.2.3 as soon as it becomes available.
+minversion = "7.3.0"
 addopts = """\
     --capture=tee-sys \
     --doctest-modules \
@@ -85,7 +85,7 @@ max-doc-length = 80
 [tool.ruff.per-file-ignores]
 # Ignore `E402` (import violations) in all `__init__.py` files.
 "__init__.py" = ["E402"]
-"*test*.py" = ["D"] # ignore all docstring lints in tests
+"*test*.py" = ["D"] # Ignore all docstring lints in tests.
 
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
