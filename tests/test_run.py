@@ -44,10 +44,16 @@ def enable_cudnn_benchmarking():
     torch.backends.cudnn.benchmark = True
 
 
+@pytest.fixture(scope='session', autouse=True)
+def allow_tf32():
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
+
 @pytest.fixture(scope="session")
-def device(gpu: int = 0) -> torch.device:
+def device(pytestconfig) -> torch.device:
     if torch.cuda.is_available():
-        device = torch.device(f"cuda:{int(gpu)}")
+        device = torch.device(f"cuda:{pytestconfig.getoption('gpu')}")
     else:
         device = torch.device("cpu")
         msg = "No GPUs found for this container. Please check run configurations."
