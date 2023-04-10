@@ -17,7 +17,7 @@ COMMAND = /bin/zsh
 # Specify `PROJECT` for the `make` command if this is the case.
 _PROJECT = "${SERVICE}-${USR}"
 # The `COMPOSE_PROJECT_NAME` variable must be lowercase.
-PROJECT ?= $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
+PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -45,6 +45,7 @@ GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
+PROJECT=${PROJECT}\n$\
 SERVICE=${SERVICE}\n$\
 COMMAND=${COMMAND}\n$\
 HOST_NAME=${SERVICE}\n$\
