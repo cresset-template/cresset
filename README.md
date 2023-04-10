@@ -151,8 +151,12 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
+PROJECT=train-username          # `PROJECT` must be in lowercase.
+SERVICE=train
+COMMAND=/bin/zsh                # Command to execute on starting the container.
 HOST_NAME=train
 IMAGE_NAME=cresset:train-USERNAME
+PROJECT_ROOT=/opt/project
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
