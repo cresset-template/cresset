@@ -250,7 +250,7 @@ Please read the Makefile to see the exact commands.
   To fix this issue, create a new directory on the host to mount the containers' `.vscode-server` directories.
   For example, one can set a volume pair as `${HOME}/.vscode-project1:/home/${USR}/.vscode-server` for project1.
   Do not forget to create `${HOME}/.vscode-project1` on the host first. Otherwise, the directory will be owned by `root`,
-  which will cause VSCode to stall indefinately.
+  which will cause VSCode to stall indefinitely.
 - If any networking issues arise, check `docker network ls` and check for conflicts.
   Most networking and SSH problems can be solved by running `docker network prune`.
 
