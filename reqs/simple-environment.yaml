@@ -12,4 +12,5 @@ dependencies: # Use conda packages if possible.
   - intel::mkl
   - intel::numpy  # Use Numpy built with the Intel compiler for best performance with MKL.
   - pytest
+  - tmux==3.2a
   - tqdm
