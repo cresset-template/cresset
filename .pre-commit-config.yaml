@@ -59,7 +59,6 @@ repos:
     rev: 23.3.0 # Always use the same version as PyInk.
     hooks: # Using black for Jupyter Notebook formatting.
       - id: black-jupyter
-
 #  - repo: local # Clear Jupyter outputs before committing.
 #    hooks:
 #      - id: jupyter-nb-clear-output
