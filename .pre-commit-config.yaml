@@ -19,7 +19,6 @@ repos:
       - id: check-toml
       - id: check-xml
       - id: check-yaml
-      - id: debug-statements
       - id: destroyed-symlinks
       - id: detect-private-key
       - id: end-of-file-fixer
@@ -45,22 +44,21 @@ repos:
     rev: v0.9.0
     hooks:
       - id: shellcheck
-  #      args: ["--severity=warning"]  # Optionally only show errors and warnings
 
   - repo: https://github.com/google/pyink
     rev: 23.3.1
     hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink
 
-  - repo: https://github.com/psf/black
-    rev: 23.3.0 # Always use the same version as PyInk.
-    hooks: # Using black for Jupyter Notebook formatting.
-      - id: black-jupyter
-
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
     hooks:
       - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
+
+  - repo: https://github.com/psf/black
+    rev: 23.3.0 # Always use the same version as PyInk.
+    hooks: # Using black for Jupyter Notebook formatting.
+      - id: black-jupyter
 
 #  - repo: local # Clear Jupyter outputs before committing.
 #    hooks:
