@@ -154,6 +154,7 @@ FROM train-base AS train-interactive-exclude
 # container registries such as Docker Hub. No users or interactive settings.
 COPY --link --from=install-conda /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+RUN chsh --shell /bin/zsh
 
 ########################################################################
 FROM train-base AS train-interactive-include
