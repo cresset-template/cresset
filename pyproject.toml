@@ -30,6 +30,7 @@ testpaths = [
 line-length = 100
 target-version = 'py38'
 select = [
+#    "A", # flake8-builtins
     "B", # flake8-bugbear
     "BLE", # flake8-blind-except
     "C4", # flake8-comprehensions
@@ -38,10 +39,16 @@ select = [
     "E", # pycodestyle errors
     "F", # pyflakes
     "I", # isort
+    "ICN", # flake8-import-conventions
+    "ISC", # flake8-implicit-str-concat
 #    "N", # PEP8-Naming
     "NPY", # NumPy-specific rules
-    "PLE", # Error
-    "PLW", # Warning
+    "PLC", # Pylint Convention
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+    "PT", # flake8-pytest-style
+    "SIM", # flake8-simplify
+    "T10", # flake8-debugger
 #    "UP", # PyUpgrade
     "W", # pycodestyle warnings
     "YTT",  # flake8-2020

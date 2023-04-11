@@ -523,6 +523,7 @@ FROM train-base AS train-interactive-exclude
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+RUN chsh --shell /bin/zsh
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
