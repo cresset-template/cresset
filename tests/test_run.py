@@ -40,12 +40,12 @@ logger.setLevel(logging.INFO)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def enable_cudnn_benchmarking():
+def _enable_cudnn_benchmarking():
     torch.backends.cudnn.benchmark = True
 
 
 @pytest.fixture(scope="session", autouse=True)
-def allow_tf32():
+def _allow_tf32():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
@@ -88,7 +88,7 @@ def num_steps(pytestconfig):
     return pytestconfig.getoption("num_steps")
 
 
-@pytest.mark.parametrize(["name", "network_func", "input_shapes"], _configs)
+@pytest.mark.parametrize(("name", "network_func", "input_shapes"), _configs)
 def test_inference_run(
     name: str,
     network_func: Callable[[], nn.Module],
@@ -150,7 +150,7 @@ def _infer(network: nn.Module, inputs: Sequence[Tensor], num_steps: int) -> floa
 
 
 @pytest.fixture(scope="session", autouse=True)
-def get_cuda_info(device):  # Using as a fixture to get device info.
+def _get_cuda_info(device):  # Using as a fixture to get device info.
     logger.info(f"Python Version: {platform.python_version()}")
     logger.info(f"PyTorch Version: {torch.__version__}")
     if not torch.cuda.is_available():
