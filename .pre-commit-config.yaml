@@ -66,7 +66,6 @@ repos:
         name: jupyter-nb-clear-output
         types: [jupyter]
         stages: [commit]
-        require_serial: true
         language: python
         entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
         additional_dependencies:
