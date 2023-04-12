@@ -106,7 +106,7 @@ RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
 FROM install-conda AS install-mkl-base
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
-COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
+COPY --link reqs/train-conda-build.requirements.txt /tmp/conda/build-requirements.txt
 
 ########################################################################
 FROM install-mkl-base AS install-include-mkl
@@ -337,7 +337,7 @@ FROM ${BUILD_IMAGE} AS train-stash
 # This layer prevents direct contact between the `train` stage and
 # outside files, also allowing Docker to cache the files.
 # Other files such as `.deb` package files may also be stashed here.
-COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
+COPY --link reqs/train-apt.requirements.txt /tmp/apt/requirements.txt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include

@@ -18,8 +18,8 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 # Copy and install `apt` requirements for ngc images.
-COPY --link ../reqs/apt-ngc.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/pip-ngc.requirements.txt /tmp/req/requirements.txt
+COPY --link ../reqs/ngc-apt.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/ngc-pip.requirements.txt /tmp/req/requirements.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
