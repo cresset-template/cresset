@@ -31,26 +31,22 @@ cannot be used for older versions of PyTorch and other libraries.
 
 `PyYAML` may cause issues for early versions of PyTorch.
 
-`FFmpeg` is also a frequent cause of problems in TorchVision compilation.
-Disable compilation with FFmpeg and possibly remove it as a build dependency
-if TorchVision fails to compile, even if the error message does not mention FFmpeg.
-
 More versioning issues will arise with the passing of time, but the latest
 versions of libraries will use the latest versions of their dependencies.
 
 ## Requirements File Explanation
 
 ```
-sed 's/#.*//g; s/\r//g' FILE | xargs -r COMMAND
+sed -e 's/#.*//g' -e 's/\r//g' FILE | xargs -r COMMAND
 ```
 
 Arbitrary commands can be executed from input text files with the syntax above.
 For the Cresset project, this technique was used to create requirements files
 for `apt`, which does not natively support them.
-However, this technique will prove invaluable for many applications,
+However, this technique may prove useful for many applications,
 which motivates this guide.
 
-The `sed 's/#.*//g; s/\r//g' FILE` reads `FILE`,
+The `sed -e 's/#.*//g' -e 's/\r//g' FILE` reads `FILE`,
 removes all comments, which start with a hash symbol, using `s/#.*//g`,
 then converts all line endings to `\n` by removing `\r`.
 
@@ -64,7 +60,7 @@ Having multiple newlines in succession does not affect the result.
 The final result is that `COMMAND` is executed on all elements in
 each line of `FILE` while ignoring comments and blank lines.
 
-Note that spaces in a single line may lead to bugs by splitting the line.
+Note that spaces within a single line may lead to bugs by splitting the line.
 To use spaces, check the `xargs` documentation on how it handles whitespace.
 
 # Adding Custom Code
