@@ -33,7 +33,7 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-COPY --link ../reqs/apt-simple.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 
 ARG CONDA_URL
 WORKDIR /tmp/conda

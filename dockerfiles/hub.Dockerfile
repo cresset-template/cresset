@@ -22,8 +22,8 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 # Copy and install `apt` requirements for hub images.
-COPY --link ../reqs/apt-hub.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/conda-hub.requirements.txt /tmp/req/requirements.txt
+COPY --link ../reqs/hub-apt.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/hub-conda.requirements.txt /tmp/req/requirements.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
