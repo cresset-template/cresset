@@ -59,14 +59,15 @@ repos:
     rev: 23.3.0 # Always use the same version as PyInk.
     hooks: # Using black for Jupyter Notebook formatting.
       - id: black-jupyter
-#  - repo: local # Clear Jupyter outputs before committing.
-#    hooks:
-#      - id: jupyter-nb-clear-output
-#        name: jupyter-nb-clear-output
-#        types: [jupyter]
-#        stages: [commit]
-#        require_serial: true
-#        language: python
-#        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
-#        additional_dependencies:
-#          - nbconvert
+
+  - repo: local # Comment this out if it is not the desired behavior.
+    hooks: # Clear all Jupyter outputs before committing.
+      - id: jupyter-nb-clear-output
+        name: jupyter-nb-clear-output
+        types: [jupyter]
+        stages: [commit]
+        require_serial: true
+        language: python
+        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+        additional_dependencies:
+          - nbconvert
