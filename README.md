@@ -67,6 +67,11 @@ If this is your first time using this project, follow these steps:
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
 
+6. If Cresset is being placed within a pre-existing project's subdirectory,
+   change the `volume` pairing from `.:${PROJECT_ROOT}` to `..:${PROJECT_ROOT}`.
+   All commands in Cresset assume that they are being run at the root of a project
+   but this can be changed easily.
+
 ### Explanation of services
 
 Different Docker Compose services are organized to serve different needs.
