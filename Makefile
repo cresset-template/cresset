@@ -53,7 +53,11 @@ IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
 
-env:  # Creates the `.env` file if it does not exist.
+# Creates the `.env` file if it does not exist.
+# The `.env` file must be checked via the shell
+# as is cannot be made into a Makefile target.
+# This would make it impossible to reference it in the `include` command.
+env:
 	@test -f ${ENV_FILE} || printf ${ENV_TEXT} >> ${ENV_FILE}
 
 check:  # Checks if the `.env` file exists.
