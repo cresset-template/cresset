@@ -135,6 +135,8 @@ ARG PYTHONUNBUFFERED=1
 
 # Necessary to find the NVIDIA Driver.
 ENV NVIDIA_VISIBLE_DEVICES=all
+# Order GPUs by PCIe bus IDs.
+ENV CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
