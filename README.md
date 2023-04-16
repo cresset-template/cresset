@@ -72,28 +72,6 @@ If this is your first time using this project, follow these steps:
    All commands in Cresset assume that they are being run at the root of a project
    but this can be changed easily.
 
-
-### Notes for Rootless Users
-
-Many companies forbid the use of Docker bacause it requires `root` permissions, compromising security.
-For users without Docker access, using `Podman Compose` is recommended.
-`Podman` is an alternative container management tool developed by RedHat with high compatibility with Docker.
-`Podman Compose` is a Python library designed to mimick the functionality of Docker Compose.
-
-**`Podman` and `Podman Compose` do not require `root` permissions by default.**
-
-Run `conda install -c conda-forge podman podman-compose` on a local Conda environment to install the latest versions.
-A desktop version of Podman is also available on the [website](https://podman-desktop.io/docs/Installation).
-
-To use Podman Compose, only two changes are needed.
-1. Convert all `COPY --link` instructions to `COPY` in the `Dockerfile`s.
-   Buildah, the build system behind Podman, does not support the `--link` flag as of the time of writing.
-2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
-   and remove the now redundant Docker-related variables.
-
-Note that Podman Compose in rootless mode is much slower than using Docker.
-
-
 ### Explanation of services
 
 Different Docker Compose services are organized to serve different needs.
@@ -126,6 +104,27 @@ The `Makefile` has been configured to take values specified in the `.env` file
 as the defaults if it exists. Therefore, all `make` commands will automatically
 use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 `.env` file is created.
+
+### Notes for Rootless Users
+
+Many companies forbid the use of Docker bacause it requires `root` permissions, compromising security.
+For users without Docker access, using `Podman Compose` is recommended.
+`Podman` is an alternative container management tool developed by RedHat with high compatibility with Docker.
+`Podman Compose` is a Python library designed to mimick the functionality of Docker Compose.
+
+**`Podman` and `Podman Compose` do not require `root` permissions by default.**
+
+Run `conda install -c conda-forge podman podman-compose` on a local Conda environment to install the latest versions.
+A desktop version of Podman is also available on the [website](https://podman-desktop.io/docs/Installation).
+
+To use Podman Compose, only two changes are needed.
+1. Convert all `COPY --link` instructions to `COPY` in the `Dockerfile`s.
+   Buildah, the build system behind Podman, does not support the `--link` flag as of the time of writing.
+2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
+   and remove the now redundant Docker-related variables.
+   For best results add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
+
+Note that Podman Compose in rootless mode is much slower than using Docker, even with the additional options.
 
 ## Project Configuration
 
