@@ -107,9 +107,9 @@ use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 
 ### Notes for Rootless Users
 
-Many companies forbid the use of Docker bacause it requires `root` permissions, compromising security.
+Many institutions forbid the use of Docker bacause it requires `root` permissions, compromising security.
 For users without Docker access, using `Podman Compose` is recommended.
-`Podman` is an alternative container management tool developed by RedHat with high compatibility with Docker.
+`Podman` is an alternative containerization tool developed by RedHat with high compatibility with Docker.
 `Podman Compose` is a Python library designed to mimick the functionality of Docker Compose.
 
 **`Podman` and `Podman Compose` do not require `root` permissions by default.**
@@ -122,7 +122,7 @@ To use Podman Compose, only two changes are needed.
    Buildah, the build system behind Podman, does not support the `--link` flag as of the time of writing.
 2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
    and remove the now redundant Docker-related variables.
-   For best results add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
+   For best results, add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
 
 Note that Podman Compose in rootless mode is much slower than using Docker, even with the additional options.
 
