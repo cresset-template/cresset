@@ -125,6 +125,8 @@ To use Podman Compose, only two changes are needed.
    For best results, add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
 
 Note that Podman Compose in rootless mode is much slower than using Docker, even with the additional options.
+Also, rootless Podman will not work out-of-the-box. Please refer to the 
+[documentation](https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md) for details.
 
 ## Project Configuration
 
