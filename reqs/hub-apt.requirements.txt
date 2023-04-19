@@ -1,4 +1,3 @@
-libjemalloc-dev
 sudo
 tmux
 tzdata
