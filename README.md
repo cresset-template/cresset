@@ -180,7 +180,6 @@ USR=USERNAME
 PROJECT=train-username          # `PROJECT` must be in lowercase.
 SERVICE=train
 COMMAND=/bin/zsh                # Command to execute on starting the container.
-HOST_NAME=train
 IMAGE_NAME=cresset:train-USERNAME
 PROJECT_ROOT=/opt/project
 
