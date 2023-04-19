@@ -9,13 +9,13 @@ channels:
   - conda-forge # Always use conda-forge instead.
   - nvidia # CUDA-related packages are available in the NVIDIA channel.
 dependencies: # Use conda packages if possible.
-  - intel::python==3.10
+  - python==3.10
   - pytorch::pytorch # Only install PyTorch-related packages from the PyTorch channel.
   - pytorch::torchvision
-  - pytorch::pytorch-cuda==11.8
+  - pytorch::pytorch-cuda==11.7
   - jemalloc
-  - intel::mkl
-  - intel::numpy # Use Numpy built with the Intel compiler for best performance with MKL.
+  - mkl
+  - numpy
   - pytest
   - tmux==3.2a
   - tqdm
