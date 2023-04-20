@@ -31,6 +31,10 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+# The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
+# ergo, `SHELL=''` is used for best compatibility with the other services.
+ENV SHELL=''
+
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
