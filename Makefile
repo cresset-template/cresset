@@ -20,7 +20,7 @@ _PROJECT = "${SERVICE}-${USR}"
 PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
 PROJECT_ROOT = /opt/project
 
-# Creates a `.env` file in PWD if it does not exist.
+# Creates a `.env` file in ${PWD} if it does not exist.
 # This will help prevent UID/GID bugs in `docker-compose.yaml`,
 # which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
@@ -39,7 +39,6 @@ IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
-# `HOST_NAME` avoids conflict with the `HOSTNAME` shell builtin variable.
 ENV_TEXT = "$\
 GID=${GID}\n$\
 UID=${UID}\n$\
@@ -48,16 +47,13 @@ USR=${USR}\n$\
 PROJECT=${PROJECT}\n$\
 SERVICE=${SERVICE}\n$\
 COMMAND=${COMMAND}\n$\
-HOST_NAME=${SERVICE}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
 "
 
-# Creates the `.env` file if it does not exist.
-# The `.env` file must be checked via the shell
-# as is cannot be made into a Makefile target.
-# This would make it impossible to reference it in the `include` command.
-env:
+# The `.env` file must be checked via shell as is cannot be a Makefile target.
+# Doing so would make it impossible to reference `.env` in the `-include` command.
+env:  # Creates the `.env` file if it does not exist.
 	@test -f ${ENV_FILE} || printf ${ENV_TEXT} >> ${ENV_FILE}
 
 check:  # Checks if the `.env` file exists.

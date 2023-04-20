@@ -1,28 +1,24 @@
-# Requires the Docker Compose V2.
+# Requires Docker Compose V2.
 # See https://docs.docker.com/compose/compose-file/compose-file-v3
 # and https://github.com/compose-spec/compose-spec/blob/master/spec.md
 # for details concerning the `docker-compose.yaml` file syntax.
 
-# Variables are in ${VARIABLE:-DEFAULT_VALUE} format
-# to ensure that default values are given to the Dockerfile.
-# Using a `.env` file to set variables is strongly recommended.
-# However, note that variables in the host shell have
-# higher priority than the `.env` file for Docker Compose.
-
-# Run `make env` to create a basic `.env` file with the UID and GID variables.
-# Compute Capability must be specified via the `CCA` variable.
-
-# Using a `docker-compose.yaml` file has many advantages
-# over creating custom shell scripts for each project.
+# Using `docker-compose.yaml` has many advantages over writing custom shell scripts.
 # The settings are much easier to see and maintain than scattered shell scripts.
 # Also, Compose is a native Docker component, simplifying project maintenance.
 
-# Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
-# https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
+# Run `make env` to create a basic `.env` file with the UID and GID variables.
+# Using a `.env` file to set variables is strongly recommended. However,
+# variables in the host shell have higher priority than `.env` for Docker Compose.
+# Variables are in ${VARIABLE:-DEFAULT_VALUE} format to specify default values.
 
 # See https://pytorch.org/docs/stable/cpp_extension.html for an
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
 # The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
+# Compute Capability must be specified via the `CCA` variable.
+
+# Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
+# https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
 
 networks: # Use the host network instead of creating a separate network.
   default: # This reduces load and conflicts with the host network.
@@ -35,22 +31,50 @@ services:
     init: true # Equivalent to `--init` flag in `docker run`.
     stdin_open: true # equivalent to `-i` flag in `docker run`.
     working_dir: ${PROJECT_ROOT:-/opt/project}
+    user: ${UID:-1000}:${GID:-1000} # Specify USR/GRP at runtime.
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
     image: ${IMAGE_NAME}
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
+    # ipc: host  # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
     # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-    environment: # Common runtime environment variables.
+    hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
+    extra_hosts: # Prevents "unknown host" issue when using `sudo`.
+      - "${SERVICE}:127.0.0.1"
+
+    # Common environment variables for the container runtime. No effect on build.
+    environment: # Equivalent to `--env`
       CUDA_DEVICE_ORDER: PCI_BUS_ID
+      HISTSIZE: 50000 # Hard-coded large command history size.
       TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+    # tmpfs:  # Create directory in RAM for fast data IO.
+    #   - /opt/data
+    # Default volume pairings of ${HOST_PATH}:${CONTAINER_PATH}.
+    # Allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
+    # See https://docs.docker.com/storage/volumes for details.
+    # Always use the ${HOME} variable to specify the host home directory.
+    # See https://github.com/docker/compose/issues/6506 for details.
+    volumes: # Equivalent to `-v` flag in `docker run`.
+      # Current working directory `.` is connected to `PROJECT_ROOT`.
+      # Mount `.` if the docker-compose.yaml file is at the project root.
+      # Mount `..` if Cresset is a subdirectory in a different project, etc.
+      - .:${PROJECT_ROOT:-/opt/project}
+      # Preserve VSCode extensions between containers.
+      # Assumes default VSCode server directory.
+      # May cause VSCode issues if multiple Cresset-based projects are on the
+      # same machine writing to the `${HOME}/.vscode-server` directory.
+      # If so, specify a different host directory for each project.
+      - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
+
     build:
       context: . # Nearly all files are ignored due to `.dockerignore` settings.
+      target: ${TARGET_STAGE:-train} # Specify Dockerfile target build stage.
       args: # Common build-time environment variables.
         # Even if these variables are unnecessary during the build,
         # they can be ignored simply by not defining them in that stage.
+        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -66,37 +90,13 @@ services:
               capabilities: [gpu]
       #        device_ids: [ "0" ]  # Use only GPU 0.
 
-  train: # Default service name. Change the name for each project.
+  train:
     extends:
       service: base
-    # Set to the service name. Makes terminals easier to tell apart.
-    # `HOST_NAME` avoids conflict with the `HOSTNAME` shell builtin variable.
-    hostname: ${HOST_NAME:-train}
-    extra_hosts:
-      - "${HOST_NAME:-train}:127.0.0.1" # Prevents "unknown host" issue when using `sudo`.
-    user: ${UID:-1000}:${GID:-1000}
-    environment: # Environment variables for the container, not the build. Equivalent to `--env`
-      HISTSIZE: 50000 # Hard-coded large command history size.
-    # Setting `HOST_PATH:CONTAINER_PATH`
-    # allows the container to access `HOST_PATH` as `CONTAINER_PATH`.
-    # See https://docs.docker.com/storage/volumes for details.
-    # Current working directory `.` is connected to `PROJECT_ROOT`.
-    # Always use the ${HOME} variable to specify the host home directory.
-    # See https://github.com/docker/compose/issues/6506 for details.
-    volumes: # Equivalent to `-v` flag in `docker run`.
-      # Use this if the docker-compose.yaml file is at the project root.
-      - .:${PROJECT_ROOT:-/opt/project}
-      # Preserve VSCode extensions between containers.
-      # Assumes default VSCode server directory.
-      - ${HOME}/.vscode-server:/home/${USR:-user}/.vscode-server
-    # tmpfs:  # Create directory in RAM for fast data IO.
-    #   - /opt/data
     build: # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
-      target: ${TARGET_STAGE:-train} # Specify build target.
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
-        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         BUILD_MODE: ${BUILD_MODE:-exclude}
         BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
@@ -110,84 +110,52 @@ services:
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
-        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html
-        # `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
-        # Mamba is a faster reimplementation of conda in C++
-        # However, there are occasions where mamba is unable to
-        # resolve conflicts that conda can resolve.
+        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
+        # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
+        # However, `mamba` may be unable to resolve conflicts that `conda` can.
         # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-        # Note that installing Mamba via Mambaforge is strongly recommended.
+        # Installing `mamba` via Mambaforge is strongly recommended.
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
-        TORCH_CUDA_ARCH_LIST: ${CCA}
-        # Variables for building PyTorch. Must be valid git tags.
+        TORCH_CUDA_ARCH_LIST: ${CCA} # Ignore the missing CCA warning otherwise.
+        # Variables for building PyTorch. Must be valid git tags or commits.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.1}
         # Variables for downloading PyTorch instead of building.
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
-        # URL for faster `apt` and `pip` installs. Optimized for Korean users.
-        # Use URLs optimized for user location and security requirements.
+        # URLs for faster `apt` and `pip` installs. Comment out to use the defaults.
+        # Use URLs optimized for location and security requirements.
         # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
         # DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        # Comment out the PyPI mirrors to use the default PyPI repository.
         # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
         # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
 
-  # This layer may be useful for PyTorch contributors.
   devel: # Skeleton service for development and debugging.
-    extends:
+    extends: # This service may be useful for PyTorch CUDA/C++ contributors.
       service: base
-    hostname: ${HOST_NAME:-devel}
-    extra_hosts:
-      - "${HOST_NAME:-devel}:127.0.0.1"
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
     build:
       target: ${TARGET_STAGE:-build-base} # All builds begin at `build-base`.
       dockerfile: Dockerfile
 
-  # Service based on images from the NGC PyTorch image catalog. Visit
-  # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
-  # for an up-to-date list of all NVIDIA NGC PyTorch images.
-  # Note that the NGC images are very unstable, with many differences between versions.
-  # This service may break for different `NGC_YEAR` and `NGC_MONTH` configurations.
-  ngc:
+  ngc: # Service based on images from the NGC PyTorch image catalog.
+    # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
+    # NGC images are very unstable, with many differences between versions.
+    # This service may break for different `NGC_YEAR` and `NGC_MONTH` values.
     extends:
       service: base
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      HISTSIZE: 50000 # Hard-coded large command history size.
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    hostname: ${HOST_NAME:-ngc}
-    extra_hosts:
-      - "${HOST_NAME:-ngc}:127.0.0.1"
     build:
-      target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
         NGC_MONTH: ${NGC_MONTH:-03}
-        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
 
-  # Service based on the official PyTorch Docker images from Docker Hub. Visit
-  # https://hub.docker.com/r/pytorch/pytorch/tags to find available images.
-  hub:
-    extends:
+  hub: # Service based on the official PyTorch Docker images from Docker Hub.
+    extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags
       service: base
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      HISTSIZE: 50000 # Hard-coded large command history size.
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    hostname: ${HOST_NAME:-hub}
-    extra_hosts:
-      - "${HOST_NAME:-hub}:127.0.0.1"
     build:
-      target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/hub.Dockerfile
       args:
         PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
@@ -195,26 +163,14 @@ services:
         CUDA_SHORT_VERSION: ${CUDA_SHORT_VERSION:-11.7}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
-        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
 
-  # Service installed purely from official/verified Docker images and `conda`.
-  simple:
+  simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
       service: base
-    user: ${UID:-1000}:${GID:-1000}
-    environment:
-      HISTSIZE: 50000 # Hard-coded large command history size.
-    volumes:
-      - .:${PROJECT_ROOT:-/opt/project}
-    hostname: ${HOST_NAME:-simple}
-    extra_hosts:
-      - "${HOST_NAME:-simple}:127.0.0.1"
     build:
-      target: ${TARGET_STAGE:-train}
       dockerfile: dockerfiles/simple.Dockerfile
       args:
         BASE_IMAGE: ${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}
-        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
         LOCK_MODE: ${LOCK_MODE:-exclude}
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
