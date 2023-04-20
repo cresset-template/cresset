@@ -47,7 +47,7 @@ ARG GIT_IMAGE=alpine/git:edge-2.38.1
 ARG CURL_IMAGE=curlimages/curl:latest
 
 # Build-related packages are pre-installed on CUDA `devel` images.
-# The `TRAIN_IMAGE` will use the `devel` flaavor by default for convenience.
+# The `TRAIN_IMAGE` will use the `devel` flavor by default for convenience.
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
 
