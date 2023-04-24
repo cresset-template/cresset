@@ -466,7 +466,7 @@ ARG PASSWD=ubuntu
 # Creating user with password-free sudo permissions.
 # This may cause security issues. Use at your own risk.
 RUN groupadd -f -g ${GID} ${GRP} && \
-    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
+    useradd --shell $(which zsh) --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -476,29 +476,30 @@ COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 USER ${USR}
-# Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
-# Setting ${HOME} to its default value explicitly as a fix.
-ARG HOME=/home/${USR}
+
+# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
+# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
+ENV ZDOTDIR=/home/${USR}
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
 # This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
-ARG PURE_PATH=${HOME}/.zsh/pure
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 ## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG ZSHA_PATH=${HOME}/.zsh/zsh-autosuggestions
+#ARG ZSHA_PATH=${ZDOTDIR}/.zsh/zsh-autosuggestions
 #COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
-#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${HOME}/.zshrc
+#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
 # Add custom aliases and settings.
 # Add `ll` alias for convenience. The Mac version of `ll` is used
@@ -508,7 +509,7 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-base AS train-interactive-exclude
@@ -523,7 +524,7 @@ FROM train-base AS train-interactive-exclude
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
-RUN chsh --shell /bin/zsh
+RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train

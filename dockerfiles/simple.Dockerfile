@@ -156,7 +156,7 @@ FROM train-base AS train-interactive-exclude
 # container registries such as Docker Hub. No users or interactive settings.
 COPY --link --from=install-conda /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
-RUN chsh --shell /bin/zsh
+RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-base AS train-interactive-include
@@ -170,7 +170,7 @@ ARG PASSWD=ubuntu
 # Creating user with password-free sudo permissions.
 # This may cause security issues. Use at your own risk.
 RUN groupadd -f -g ${GID} ${GRP} && \
-    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
+    useradd --shell $(which zsh) --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -179,27 +179,27 @@ COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 USER ${USR}
-ARG HOME=/home/${USR}
+ENV ZDOTDIR=/home/${USR}
 
 # Setting the prompt to `pure`.
-ARG PURE_PATH=${HOME}/.zsh/pure
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 COPY --link --from=stash --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train

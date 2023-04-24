@@ -89,32 +89,32 @@ ARG USR=user
 ARG PASSWD=ubuntu
 # Create user with password-free `sudo` permissions.
 RUN groupadd -f -g ${GID} ${GRP} && \
-    useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
+    useradd --shell $(which zsh) --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER ${USR}
-ARG HOME=/home/${USR}
-WORKDIR $HOME/.zsh
+ENV ZDOTDIR=/home/${USR}
+
 # Setting the prompt to `pure`.
-ARG PURE_PATH=${HOME}/.zsh/pure
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 COPY --link --from=stash --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 # Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash --chown=${UID}:${GID} \
     /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
-    } >> ${HOME}/.zshrc
+    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-base AS train-interactive-exclude
@@ -123,7 +123,7 @@ FROM train-base AS train-interactive-exclude
 # are unnecessary and having the user set to `root` is most convenient.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
-RUN chsh --shell /bin/zsh
+RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
