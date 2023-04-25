@@ -79,7 +79,7 @@ FROM stash AS lock-stash
 # to reduce code repitition at the cost of unnecessary extra build cache.
 
 ARG CONDA_MANAGER
-# Wierd paths necessary because `CONDA_PREFIX` is immutable post-installation.
+# Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/_conda/.condarc && \
