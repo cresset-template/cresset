@@ -34,6 +34,9 @@ ARG PYTHONUNBUFFERED=1
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
 # ergo, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
+# Change permissions for the `/root` directory (but not recursively) to allow
+# other users to share configurations. Only the NGC image needs explicit chmod.
+RUN chmod 755 /root
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -118,6 +121,7 @@ FROM train-base AS train-interactive-exclude
 # are unnecessary and having the user set to `root` is most convenient.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
+# Note that `zsh` configs are available but these images do not require `zsh`.
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
