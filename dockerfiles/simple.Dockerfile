@@ -39,7 +39,9 @@ ARG CONDA_URL
 WORKDIR /tmp/conda
 RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
+    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
 WORKDIR /
 
 ########################################################################
@@ -115,7 +117,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
 ########################################################################
 FROM conda-lock-${LOCK_MODE} AS install-conda
 # Cleanup before copying to reduce image size.
-RUN find /opt/conda -name '__pycache__' | xargs rm -rf
+RUN find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 # Heuristic fix to find NVRTC for CUDA 11.2+.
 # Change this for older CUDA versions and for CUDA 12.x.
@@ -150,13 +152,26 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
 ARG TZ
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 
+ENV ZDOTDIR=/root
+# Setting the prompt to `pure`.
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc
+
+# Add syntax highlighting. This must be activated after auto-suggestions.
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
+
 ########################################################################
 FROM train-base AS train-interactive-exclude
 # Stage used to create images for Kubernetes clusters or for uploading to
 # container registries such as Docker Hub. No users or interactive settings.
 COPY --link --from=install-conda /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
-RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-base AS train-interactive-include
@@ -178,28 +193,14 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
-USER ${USR}
-ENV ZDOTDIR=/home/${USR}
-
-# Setting the prompt to `pure`.
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=stash --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=stash --chown=${UID}:${GID} \
-    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
+
+USER ${USR}
+CMD ["/bin/zsh"]
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
@@ -222,7 +223,4 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
-
 WORKDIR ${PROJECT_ROOT}
-
-CMD ["/bin/zsh"]

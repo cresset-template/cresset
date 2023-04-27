@@ -99,8 +99,8 @@ RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && \
-    conda clean -ya --force-pkgs-dirs && \
-    find /opt/conda -name '__pycache__' | xargs rm -rf
+    conda clean -fya && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM install-conda AS install-mkl-base
@@ -263,11 +263,12 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM install-conda AS build-pillow
 # This stage is derived from `install-conda` instead of `build-base`
 # as it is very lightweight and does not require many dependencies.
-RUN $conda install -y libjpeg-turbo zlib && conda clean -ya --force-pkgs-dirs
+RUN $conda install -y libjpeg-turbo zlib && conda clean -fya
 
 # Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
 ARG PILLOW_SIMD_VERSION
 # Condition ensures that AVX2 instructions are built only if available.
+# May cause issues if the image is used on a machine with a different SIMD ISA.
 RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
@@ -406,7 +407,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
     $conda env update --file ${CONDA_ENV_FILE} && \
-    find /opt/conda -name '__pycache__' | xargs rm -rf
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
@@ -430,6 +431,30 @@ ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+
+# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
+# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
+ENV ZDOTDIR=/root
+
+# Setting the prompt to `pure`, which is available on all terminals without additional settings.
+# This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+COPY --link --from=train-builds /opt/zsh/pure ${PURE_PATH}
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc
+
+## Add autosuggestions from terminal history. May be somewhat distracting.
+#ARG ZSHA_PATH=${ZDOTDIR}/.zsh/zsh-autosuggestions
+#COPY --link --from=train-builds /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
+#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc
+
+# Add syntax highlighting. This must be activated after auto-suggestions.
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
+
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Enable caching for `apt` packages in Docker.
@@ -475,33 +500,7 @@ COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 # The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
-USER ${USR}
-
-# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
-# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
-ENV ZDOTDIR=/home/${USR}
-
-# Setting the prompt to `pure`, which is available on all terminals without additional settings.
-# This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG ZSHA_PATH=${ZDOTDIR}/.zsh/zsh-autosuggestions
-#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
-#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=train-builds --chown=${UID}:${GID} \
-    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Add custom aliases and settings.
+# Add custom `zsh` aliases and settings.
 # Add `ll` alias for convenience. The Mac version of `ll` is used
 # instead of the Ubuntu version due to better configurability.
 # Add `wns` as an alias for `watch nvidia-smi`, which is used often.
@@ -510,6 +509,9 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
+
+USER ${USR}
+CMD ["/bin/zsh"]
 
 ########################################################################
 FROM train-base AS train-interactive-exclude
@@ -524,7 +526,6 @@ FROM train-base AS train-interactive-exclude
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
-RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
@@ -560,5 +561,3 @@ ENV PYTHONPATH=${PROJECT_ROOT}
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
-
-CMD ["/bin/zsh"]

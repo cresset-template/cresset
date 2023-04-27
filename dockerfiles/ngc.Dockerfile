@@ -74,6 +74,20 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 ARG TZ
 RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 
+ENV ZDOTDIR=/root
+# Setting the prompt to `pure`.
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc
+
+# Add syntax highlighting. This must be activated after auto-suggestions.
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
+
 ########################################################################
 FROM train-base AS train-interactive-include
 
@@ -88,28 +102,14 @@ RUN groupadd -f -g ${GID} ${GRP} && \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-USER ${USR}
-ENV ZDOTDIR=/home/${USR}
-
-# Setting the prompt to `pure`.
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=stash --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=stash --chown=${UID}:${GID} \
-    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
+
+USER ${USR}
+CMD ["/bin/zsh"]
 
 ########################################################################
 FROM train-base AS train-interactive-exclude
@@ -118,7 +118,6 @@ FROM train-base AS train-interactive-exclude
 # are unnecessary and having the user set to `root` is most convenient.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
-RUN chsh --shell $(which zsh)
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
@@ -126,6 +125,4 @@ FROM train-interactive-${INTERACTIVE_MODE} AS train
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
-
 WORKDIR ${PROJECT_ROOT}
-CMD ["/bin/zsh"]
