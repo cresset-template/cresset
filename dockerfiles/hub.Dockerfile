@@ -123,6 +123,7 @@ FROM train-base AS train-interactive-exclude
 # are unnecessary and having the user set to `root` is most convenient.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
+# Note that `zsh` configs are available but these images do not require `zsh`.
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train

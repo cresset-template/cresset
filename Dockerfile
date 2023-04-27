@@ -523,6 +523,8 @@ FROM train-base AS train-interactive-exclude
 # possible, with the same `apt`, `conda`, and `pip` packages installed.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
+# Note that `zsh` configs are available but these images do not require `zsh`.
+# This allows users who download these images to use them interactively.
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig

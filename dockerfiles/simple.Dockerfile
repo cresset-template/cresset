@@ -170,6 +170,7 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 FROM train-base AS train-interactive-exclude
 # Stage used to create images for Kubernetes clusters or for uploading to
 # container registries such as Docker Hub. No users or interactive settings.
+# Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda /opt/conda
 RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
