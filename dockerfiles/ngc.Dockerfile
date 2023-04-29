@@ -34,9 +34,6 @@ ARG PYTHONUNBUFFERED=1
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
 # ergo, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
-# Change permissions for the `/root` directory (but not recursively) to allow
-# other users to share configurations. Only the NGC image needs explicit chmod.
-RUN chmod 755 /root
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -111,9 +108,6 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
 
-USER ${USR}
-CMD ["/bin/zsh"]
-
 ########################################################################
 FROM train-base AS train-interactive-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
@@ -126,7 +120,11 @@ FROM train-base AS train-interactive-exclude
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
 
+# Change `/root` directory permissions to allow configuration sharing.
+RUN chmod 711 /root
+
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
+CMD ["/bin/zsh"]
