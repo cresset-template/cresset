@@ -8,9 +8,14 @@
 # Also, Compose is a native Docker component, simplifying project maintenance.
 
 # Run `make env` to create a basic `.env` file with the UID and GID variables.
-# Using a `.env` file to set variables is strongly recommended. However,
-# variables in the host shell have higher priority than `.env` for Docker Compose.
 # Variables are in ${VARIABLE:-DEFAULT_VALUE} format to specify default values.
+# Using the `.env` file to set variables to non-default values is strongly recommended.
+# Note that the host shell has higher priority than `.env` for Docker Compose.
+# https://docs.docker.com/compose/environment-variables/envvars-precedence
+
+# Variables specified via Docker Compose have higher priority than those
+# specified in the Dockerfile, which only function as default values.
+# All default values in the Dockerfile are overridden by default values in Compose.
 
 # See https://pytorch.org/docs/stable/cpp_extension.html for an
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
