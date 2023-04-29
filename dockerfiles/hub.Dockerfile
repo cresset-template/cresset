@@ -113,9 +113,6 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
 
-USER ${USR}
-CMD ["/bin/zsh"]
-
 ########################################################################
 FROM train-base AS train-interactive-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
@@ -128,7 +125,11 @@ FROM train-base AS train-interactive-exclude
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
 
+# Change `/root` directory permissions to allow configuration sharing.
+RUN chmod 711 /root
+
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
+CMD ["/bin/zsh"]

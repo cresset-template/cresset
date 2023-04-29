@@ -118,6 +118,7 @@ Run `conda install -c conda-forge podman podman-compose` on a local Conda enviro
 A desktop version of Podman is also available on the [website](https://podman-desktop.io/docs/Installation).
 
 To use Podman Compose, only two changes are needed.
+
 1. Convert all `COPY --link` instructions to `COPY` in the `Dockerfile`s.
    Buildah, the build system behind Podman, does not support the `--link` flag as of the time of writing.
 2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
@@ -125,7 +126,7 @@ To use Podman Compose, only two changes are needed.
    For best results, add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
 
 Note that Podman Compose in rootless mode is much slower than using Docker, even with the additional options.
-Also, rootless Podman will not work out-of-the-box. Please refer to the 
+Also, rootless Podman will not work out-of-the-box. Please refer to the
 [documentation](https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md) for details.
 
 ## Project Configuration

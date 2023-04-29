@@ -49,6 +49,11 @@ services:
       CUDA_DEVICE_ORDER: PCI_BUS_ID
       HISTSIZE: 50000 # Hard-coded large command history size.
       TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+      # PyTorch cuDNN v8 info: https://github.com/pytorch/pytorch/pull/60755
+      TORCH_CUDNN_V8_API_ENABLED: 1 # cuDNN v8 uses cuDNN bfloat16 kernels directly.
+      TORCH_CUDNN_V8_API_DEBUG: 0 # Enable to verify whether the cuDNN v8 frontend is being used.
+      # Lazy loading: https://docs.nvidia.com/cuda/cuda-c-programming-guide/lazy-loading.html
+      CUDA_MODULE_LOADING: LAZY # Effective only on CUDA 11.7+.
     # tmpfs:  # Create directory in RAM for fast data IO.
     #   - /opt/data
     # Default volume pairings of ${HOST_PATH}:${CONTAINER_PATH}.
@@ -101,6 +106,7 @@ services:
         BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
         USE_NNPACK: 0
         USE_QNNPACK: 0
+        USE_EXPERIMENTAL_CUDNN_V8_API: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}

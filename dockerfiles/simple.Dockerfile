@@ -200,9 +200,6 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
 
-USER ${USR}
-CMD ["/bin/zsh"]
-
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
 
@@ -221,7 +218,11 @@ ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
+# Change `/root` directory permissions to allow configuration sharing.
+RUN chmod 711 /root
+
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
+CMD ["/bin/zsh"]
