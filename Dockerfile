@@ -218,6 +218,7 @@ ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK=0
 ARG USE_QNNPACK=0
 ARG BUILD_TEST=1
+ARG USE_EXPERIMENTAL_CUDNN_V8_API=1
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -510,9 +511,6 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
 
-USER ${USR}
-CMD ["/bin/zsh"]
-
 ########################################################################
 FROM train-base AS train-interactive-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
@@ -552,6 +550,11 @@ ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # Jemalloc memory allocation configuration.
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
+# Change `/root` directory permissions to allow configuration sharing.
+# Only the `/root` directory iteself needs permission modification.
+# Subdirectory permissions are intentionally left unmodified.
+RUN chmod 711 /root
+
 # `PROJECT_ROOT` is where the project code will reside.
 # The conda root path must be placed at the end of the
 # PATH variable to prevent system program search errors.
@@ -563,3 +566,4 @@ ENV PYTHONPATH=${PROJECT_ROOT}
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
+CMD ["/bin/zsh"]
