@@ -180,18 +180,18 @@ GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-PROJECT=train-username          # `PROJECT` must be in lowercase.
+PROJECT=train-username             # `PROJECT` must be in lowercase.
 SERVICE=train
-COMMAND=/bin/zsh                # Command to execute on starting the container.
-IMAGE_NAME=cresset:train-USERNAME
+COMMAND=/bin/zsh                   # Command to execute on starting the container.
+IMAGE_NAME=cresset:train-username  # `IMAGE_NAME` is also converted to lowercase.
 PROJECT_ROOT=/opt/project
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
-CCA=8.6                          # Compute capability. CCA=8.6 for RTX3090.
-# CCA='8.6+PTX'                  # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
-# CCA='7.5 8.6+PTX'              # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
+CCA=8.6              # Compute capability. CCA=8.6 for RTX3090.
+# CCA='8.6+PTX'      # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
+# CCA='7.5 8.6+PTX'  # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
 
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
@@ -200,17 +200,17 @@ PYTORCH_VERSION_TAG=v2.0.0       # Any `git` branch or tag name can be used.
 TORCHVISION_VERSION_TAG=v0.15.1
 
 # General environment configurations.
-LINUX_DISTRO=ubuntu              # Visit the NVIDIA Docker Hub repo for available base images.
-DISTRO_VERSION=22.04             # https://hub.docker.com/r/nvidia/cuda/tags
-CUDA_VERSION=11.8.0              # Must be compatible with hardware and CUDA driver.
-CUDNN_VERSION=8                  # Only major version specifications are available.
-PYTHON_VERSION=3.10              # Specify the Python version.
-MKL_MODE=include                 # Enable MKL for Intel CPUs.
-TZ=Asia/Seoul                    # Set the container timezone.
+LINUX_DISTRO=ubuntu   # Visit the NVIDIA Docker Hub repo for available base images.
+DISTRO_VERSION=22.04  # https://hub.docker.com/r/nvidia/cuda/tags
+CUDA_VERSION=11.8.0   # Must be compatible with hardware and CUDA driver.
+CUDNN_VERSION=8       # Only major version specifications are available.
+PYTHON_VERSION=3.10   # Specify the Python version.
+MKL_MODE=include      # Enable MKL for Intel CPUs.
+TZ=Asia/Seoul         # Set the container timezone.
 
 # Advanced Usage.
-TARGET_STAGE=train               # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
-INTERACTIVE_MODE=include         # Whether to create an interactive image or a static one for publishing.
+TARGET_STAGE=train        # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
+INTERACTIVE_MODE=include  # Whether to create an interactive image or a static one for publishing.
 ```
 
 ## General Usage After Initial Installation and Configuration
