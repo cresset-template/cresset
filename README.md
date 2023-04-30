@@ -276,14 +276,6 @@ Please read the Makefile to see the exact commands.
   try `make build` again with a stable internet connection.
 - If the build fails during `pip install`,
   check the PyPI mirror URLs and package requirements.
-- When one user switches between multiple Cresset-based containers on a single server,
-  VSCode may not be able to find the container workspace.
-  This is because the `docker-compose.yaml` file mounts the `~/.vscode-server` of the user to the
-  `/home/${USR}/.vscode-server` directory of all containers to preserve VSCode extensions between containers.
-  To fix this issue, create a new directory on the host to mount the containers' `.vscode-server` directories.
-  For example, one can set a volume pair as `${HOME}/.vscode-project1:/home/${USR}/.vscode-server` for project1.
-  Do not forget to create `${HOME}/.vscode-project1` on the host first. Otherwise, the directory will be owned by `root`,
-  which will cause VSCode to stall indefinitely.
 - If any networking issues arise, check `docker network ls` and check for conflicts.
   Most networking and SSH problems can be solved by running `docker network prune`.
 
@@ -479,7 +471,7 @@ free of charge to anyone with a valid university e-mail address.
 Install the Remote Development extension pack.
 See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
 
-##### VSCode Tip
+##### VSCode Tips
 
 VSCode may fail to start up when accessing remote containers created by
 Cresset because of the `${HOME}/.vscode-server` volume mounted in the
@@ -500,6 +492,21 @@ user with `sudo chown -R $(id -u):$(id -g) ${HOME}/.vscode-server`.
 This command can be run either on the host or inside the container,
 which is useful if `sudo` permissions are unavailable on the host.
 
+Also, when one user switches between multiple Cresset-based containers
+on a single machine, VSCode may not be able to find the container workspace.
+This is because the `docker-compose.yaml` file mounts the host's
+ `~/.vscode-server` directory to the `/home/${USR}/.vscode-server` directory 
+of all containers to preserve VSCode extensions between containers.
+To fix this issue, create a new directory on the host
+to mount the containers' `.vscode-server` directories.
+For example, one can set volume pairs as
+`${HOME}/.vscode-project1:/home/${USR}/.vscode-server` for project1 and
+`${HOME}/.vscode-project2:/home/${USR}/.vscode-server` for project2.
+Do not forget to create `${HOME}/.vscode-project1` and
+`${HOME}/.vscode-project2` on the host first.
+Otherwise, the directory will be owned by `root`,
+which will cause VSCode to stall indefinitely due to permission issues.
+
 For other VSCode problems, try deleting `~/.vscode-server` on the host.
 
 # Known Issues
@@ -509,37 +516,28 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
    wiping out all previous variables. Using `docker`/`docker compose`
    to enter containers is strongly recommended.
 
-2. iTerm2 users must change their settings to enable mouse wheel
-   scrolling inside `tmux`. Go to "Settings" > "Advanced" > "Mouse" >
-   "Scroll wheel sends arrow keys when in alternate screen mode".
-   Change the setting to "Yes".
-
-3. `pip install package[option]` will fail on the terminal because of
+2. `pip install package[option]` will fail on the terminal because of
    Z-shell globbing. Characters such as `[`,`]`,`*`, etc. will be
    interpreted by Z-shell as special commands. Use string literals,
    e.g., `pip install 'package[option]'` for cross-shell consistency.
 
-4. PyTorch source builds require a corresponding `magma-cudaXXX` package
-   in the PyTorch anaconda channel. CUDA 11.4.x is not available as
-   `magma-cuda114` is unavailable. Neither can new versions of CUDA be
-   used until a `magma` package is published.
-
-5. If the build fails during `git clone`, simply try `make build` again.
+3. If the build fails during `git clone`, simply try `make build` again.
    Most of the build will be cached. Failure is probably due to
    networking issues during installation. Updating git submodules is
    [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
-6. `torch.cuda.is_available()` will return a `... UserWarning:
-CUDA initialization:...` error or the image will simply not start if
-   the CUDA driver on the host is incompatible with the CUDA version on
-   the Docker image. Either upgrade the host CUDA driver or downgrade
-   the CUDA version of the image. Check the
+4. `torch.cuda.is_available()` will return a 
+   `... UserWarning: CUDA initialization:...` 
+   error or the image will simply not start if the host CUDA driver is
+   incompatible with the CUDA version on the Docker image.
+   Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
+   Check the
    [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
    to see if the host CUDA driver is compatible with the desired version of CUDA.
    Also, check if the CUDA driver has been configured correctly on the host.
    The CUDA driver version can be found using the `nvidia-smi` command.
 
-7. Docker Compose V2 will silently fail if the installed Docker engine
+5. Docker Compose V2 will silently fail if the installed Docker engine
    version is too low on Linux hosts. Update Docker to the latest
    version (20.10+) to use Docker Compose V2.
 
