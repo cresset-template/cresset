@@ -166,9 +166,9 @@ def _get_cuda_info(device):  # Using as a fixture to get device info.
     logger.info(f"GPU Device Name: {dp.name}")
     logger.info(f"GPU Compute Capability: {dp.major}.{dp.minor}")
     # No way to check if the GPU has TF32 hardware, only whether it is allowed.
-    mm_tf32 = os.environ.get("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE", False)
+    mm_tf32 = os.environ.get("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE", "0") != "0"
     mm_tf32 |= torch.backends.cuda.matmul.allow_tf32
-    logger.info(f"MatMul TF32 Allowed: {bool(mm_tf32)}")
+    logger.info(f"MatMul TF32 Allowed: {mm_tf32}")
     logger.info(f"cuDNN TF32 Allowed: {torch.backends.cudnn.allow_tf32}")
 
     # Python3.7+ required for `subprocess` to work as intended.
