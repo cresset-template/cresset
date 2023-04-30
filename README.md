@@ -190,8 +190,8 @@ PROJECT_ROOT=/opt/project
 
 # NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
 CCA=8.6              # Compute capability. CCA=8.6 for RTX3090.
-# CCA='8.6+PTX'      # The '+PTX' enables forward compatibility. Multi-architecture builds can also be specified.
-# CCA='7.5 8.6+PTX'  # Visit the documentation for details. https://pytorch.org/docs/stable/cpp_extension.html
+# CCA='8.6+PTX'      # The '+PTX' enables forward compatibility. Multiple CCAs can also be specified.
+# CCA='7.5 8.6+PTX'  # Visit https://pytorch.org/docs/stable/cpp_extension.html for details.
 
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
@@ -249,6 +249,9 @@ Please read the Makefile to see the exact commands.
 6. `make ls` shows all Docker Compose services, both active and inactive.
 7. `make run` is used for debugging. Containers are removed on exit.
    If a service fails to start, use it to find the error.
+8. `make build-only` builds the Docker image from the Dockerfile
+   without starting the service.
+   It exists to help publish images to container registries.
 
 ### Tips
 
