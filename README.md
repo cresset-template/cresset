@@ -498,7 +498,7 @@ which is useful if `sudo` permissions are unavailable on the host.
 Also, when one user switches between multiple Cresset-based containers
 on a single machine, VSCode may not be able to find the container workspace.
 This is because the `docker-compose.yaml` file mounts the host's
- `~/.vscode-server` directory to the `/home/${USR}/.vscode-server` directory 
+`~/.vscode-server` directory to the `/home/${USR}/.vscode-server` directory
 of all containers to preserve VSCode extensions between containers.
 To fix this issue, create a new directory on the host
 to mount the containers' `.vscode-server` directories.
@@ -529,8 +529,8 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
    networking issues during installation. Updating git submodules is
    [not fail-safe](https://stackoverflow.com/a/8573310/9289275).
 
-4. `torch.cuda.is_available()` will return a 
-   `... UserWarning: CUDA initialization:...` 
+4. `torch.cuda.is_available()` will return a
+   `... UserWarning: CUDA initialization:...`
    error or the image will simply not start if the host CUDA driver is
    incompatible with the CUDA version on the Docker image.
    Either upgrade the host CUDA driver or downgrade the CUDA version of the image.
