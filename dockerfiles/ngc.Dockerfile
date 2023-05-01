@@ -47,11 +47,13 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     rm -rf /var/lib/apt/lists/*
 
 # Use `sudo` to install new `pip` packages during development if necessary.
-# Previous installations are preserved via the `--ignore-installed` flag.
+# Note that new `pip` packages may overwrite existing packages if incompatible.
+# Check the installed packages before and after `pip` installation and minimize
+# the number of requirements to keep overwriting to a minumum.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
-    python -m pip install --ignore-installed -r /tmp/req/requirements.txt && ldconfig
+    python -m pip install -r /tmp/req/requirements.txt && ldconfig
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
