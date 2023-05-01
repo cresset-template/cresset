@@ -1,2 +1,4 @@
+# Pre-existing Python packages may be overwritten by new packages.
+# Minimize the number of requirements and check the installed packages
+# before and after `pip` installation to find any discrepencies.
 hydra-core
-pytest
