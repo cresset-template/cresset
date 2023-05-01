@@ -1,9 +1,11 @@
 # syntax = docker/dockerfile:1
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
 
+ARG NGC_YEAR
+ARG NGC_MONTH
 ARG INTERACTIVE_MODE
 ARG GIT_IMAGE=bitnami/git:latest
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:${NGC_YEAR:-23}.${NGC_MONTH:-03}-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:${NGC_YEAR}.${NGC_MONTH}-py3
 
 ########################################################################
 FROM ${GIT_IMAGE} AS stash
