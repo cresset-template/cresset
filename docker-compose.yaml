@@ -161,7 +161,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-03}
+        NGC_MONTH: ${NGC_MONTH:-04}
 
   hub: # Service based on the official PyTorch Docker images from Docker Hub.
     extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags
