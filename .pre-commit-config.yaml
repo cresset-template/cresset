@@ -29,7 +29,7 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.263"
+    rev: v0.0.264
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
@@ -49,6 +49,11 @@ repos:
     rev: 23.3.1
     hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink # Update to the `ruff` auto-formatter later.
+
+  - repo: https://github.com/PyCQA/prospector
+    rev: v1.9.0
+    hooks:
+      - id: prospector
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
