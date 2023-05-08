@@ -108,10 +108,9 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_TEST: 1 # Enable tests to have identical configurations with deployment.
-        USE_NNPACK: 0
-        USE_QNNPACK: 0
-        USE_EXPERIMENTAL_CUDNN_V8_API: 1
+        BUILD_TEST: 1
+        USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
+        USE_QNNPACK: 0 # legacy libraries and most users do not need them.
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
@@ -125,7 +124,7 @@ services:
         # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
         # However, `mamba` may be unable to resolve conflicts that `conda` can.
         # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-        # Installing `mamba` via Mambaforge is strongly recommended.
+        # Installing `mamba` via mamba-forge is strongly recommended.
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
