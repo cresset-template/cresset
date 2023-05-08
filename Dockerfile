@@ -211,14 +211,18 @@ COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
-# Variables without default values here recieve defaults from the top of the Dockerfile.
-# Disabling NNPack and QNNPack by default as they are legacy and most users do not need them.
+# Variables without defaults here recieve defaults from the top of the file.
+# Variables must be defined both in the Dockerfile and `docker-compose.yaml`
+# to be configurable via `.env`. Check `docker-compose.yaml` if a variable
+# cannot be specified via `.env`. Note that variable definitions in
+# `docker-compose.yaml` override default values specified in the Dockerfile.
+# Default values in `docker-compose.yaml` therefore have higher priority than
+# default values specified for variables in the Dockerfile.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
-ARG USE_NNPACK=0
-ARG USE_QNNPACK=0
-ARG BUILD_TEST=1
-ARG USE_EXPERIMENTAL_CUDNN_V8_API=1
+ARG USE_NNPACK
+ARG USE_QNNPACK
+ARG BUILD_TEST
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -236,7 +240,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 #    python setup.py build --cmake-only && \
 #    ccmake build  # or cmake-gui build
 
-# See the SetupTools documentation for more setup.py options.
+# Visit the Setuptools documentation for more `setup.py` options.
 # https://setuptools.pypa.io/en/latest
 
 # C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
