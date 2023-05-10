@@ -113,6 +113,7 @@ services:
         USE_QNNPACK: 0 # legacy libraries and most users do not need them.
         BUILD_CAFFE2: 0 # Most users do not need Caffe2.
         BUILD_CAFFE2_OPS: 0
+        USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
