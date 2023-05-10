@@ -40,7 +40,7 @@ ARG IMAGE_FLAVOR
 ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
-ARG USE_PRECOMPILED_HEADERS=1
+ARG USE_PRECOMPILED_HEADERS
 
 # Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
 ARG GIT_IMAGE=alpine/git:edge-2.38.1
@@ -182,6 +182,11 @@ ENV PATH=/opt/conda/bin/ccache:$PATH
 # Enable `ccache` with unlimited memory size for faster builds.
 RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
+# Ensure that `ccache` is used by `cmake`.
+ENV CMAKE_C_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CUDA_COMPILER_LAUNCHER=ccache
+
 # Use LLD as the default linker for faster linking. Also update dynamic links.
 RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld && ldconfig
 
@@ -205,6 +210,10 @@ FROM build-base AS build-torch
 WORKDIR /opt/pytorch
 COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 
+# Workaround for header dependency bug in nvcc.
+# Making this an `ENV` to allow downstream stages to use it as well.
+ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;ccache"
+
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without defaults here recieve defaults from the top of the file.
@@ -218,6 +227,8 @@ ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK
 ARG USE_QNNPACK
+ARG BUILD_CAFFE2
+ARG BUILD_CAFFE2_OPS
 ARG BUILD_TEST
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
