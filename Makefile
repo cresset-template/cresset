@@ -54,7 +54,8 @@ PROJECT_ROOT=${PROJECT_ROOT}\n$\
 # The `.env` file must be checked via shell as is cannot be a Makefile target.
 # Doing so would make it impossible to reference `.env` in the `-include` command.
 env:  # Creates the `.env` file if it does not exist.
-	@test -f ${ENV_FILE} || printf ${ENV_TEXT} >> ${ENV_FILE}
+	@if [ -f ${ENV_FILE} ]; then echo "\`${ENV_FILE}\` already exists!"; \
+  	else printf ${ENV_TEXT} >> ${ENV_FILE}; fi
 
 check:  # Checks if the `.env` file exists.
 	@if [ ! -f "${ENV_FILE}" ]; then \
@@ -62,7 +63,6 @@ check:  # Checks if the `.env` file exists.
 		printf "Run \`make env\` to create \`${ENV_FILE}\`.\n" && \
 		exit 1; \
 	fi
-
 
 # Creates VSCode server directory to prevent Docker Compose
 # from creating the directory with `root` ownership.

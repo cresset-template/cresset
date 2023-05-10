@@ -172,7 +172,6 @@ FROM train-base AS train-interactive-exclude
 # container registries such as Docker Hub. No users or interactive settings.
 # Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda /opt/conda
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-base AS train-interactive-include
@@ -192,7 +191,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
@@ -220,6 +218,9 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 
 # Change `/root` directory permissions to allow configuration sharing.
 RUN chmod 711 /root
+
+# Update dynamic linking locations.
+RUN ldconfig
 
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}

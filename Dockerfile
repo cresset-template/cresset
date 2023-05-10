@@ -40,7 +40,7 @@ ARG IMAGE_FLAVOR
 ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
-ARG USE_PRECOMPILED_HEADERS=1
+ARG USE_PRECOMPILED_HEADERS
 
 # Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
 ARG GIT_IMAGE=alpine/git:edge-2.38.1
@@ -182,12 +182,13 @@ ENV PATH=/opt/conda/bin/ccache:$PATH
 # Enable `ccache` with unlimited memory size for faster builds.
 RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 
-# Use LLD as the default linker for faster linking.
-RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld
+# Ensure that `ccache` is used by `cmake`.
+ENV CMAKE_C_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CUDA_COMPILER_LAUNCHER=ccache
 
-# Use `ldconfig` to update link directories and include `conda` in dynamic linking.
-# Setting `LD_LIBRARY_PATH` directly is bad practice.
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+# Use LLD as the default linker for faster linking. Also update dynamic links.
+RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld && ldconfig
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-torch
@@ -209,6 +210,10 @@ FROM build-base AS build-torch
 WORKDIR /opt/pytorch
 COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 
+# Workaround for header dependency bug in nvcc.
+# Making this an `ENV` to allow downstream stages to use it as well.
+ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;ccache"
+
 # Read `setup.py` and `CMakeLists.txt` to find build flags.
 # Different flags are available for different versions of PyTorch.
 # Variables without defaults here recieve defaults from the top of the file.
@@ -222,6 +227,8 @@ ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
 ARG USE_NNPACK
 ARG USE_QNNPACK
+ARG BUILD_CAFFE2
+ARG BUILD_CAFFE2_OPS
 ARG BUILD_TEST
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
@@ -502,8 +509,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
-# The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 # Add custom `zsh` aliases and settings.
 # Add `ll` alias for convenience. The Mac version of `ll` is used
@@ -529,7 +534,6 @@ FROM train-base AS train-interactive-exclude
 # This allows users who download these images to use them interactively.
 
 COPY --link --from=train-builds /opt/conda /opt/conda
-RUN echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train
@@ -558,6 +562,9 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 # Only the `/root` directory iteself needs permission modification.
 # Subdirectory permissions are intentionally left unmodified.
 RUN chmod 711 /root
+
+# Updae dynamic link cache.
+RUN ldconfig
 
 # `PROJECT_ROOT` is where the project code will reside.
 # The conda root path must be placed at the end of the

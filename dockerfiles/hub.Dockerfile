@@ -56,7 +56,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
     conda install --freeze-installed -n base -c conda-forge \
         --file /tmp/req/requirements.txt && \
-    echo /opt/conda/lib >> /etc/ld.so.conf.d/conda.conf && ldconfig
+    ldconfig  # Run `ldconfig` to update dynamic linking paths.
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html

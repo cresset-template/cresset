@@ -108,9 +108,12 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_TEST: 1
+        BUILD_TEST: 0
         USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
         USE_QNNPACK: 0 # legacy libraries and most users do not need them.
+        BUILD_CAFFE2: 0 # Most users do not need Caffe2.
+        BUILD_CAFFE2_OPS: 0
+        USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
@@ -130,12 +133,12 @@ services:
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA} # Ignore the missing CCA warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.2}
         # Variables for downloading PyTorch instead of building.
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.1}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.2}
         # URLs for faster `apt` and `pip` installs. Comment out to use the defaults.
         # Use URLs optimized for location and security requirements.
         # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
@@ -168,7 +171,7 @@ services:
     build:
       dockerfile: dockerfiles/hub.Dockerfile
       args:
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.0}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.1}
         # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
         CUDA_SHORT_VERSION: ${CUDA_SHORT_VERSION:-11.7}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
