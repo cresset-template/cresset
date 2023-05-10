@@ -53,7 +53,7 @@ ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR
 
 ########################################################################
 FROM ${CURL_IMAGE} AS curl-conda
-# An image used solely to download conda from the internet.
+# An image used solely to download `conda` from the internet.
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
 # The Anaconda `defaults` channel is no longer free for commercial use.
@@ -75,14 +75,14 @@ LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Python won’t try to write .pyc or .pyo files on the import of source modules.
+# Python won’t try to write `.pyc` or `.pyo` files on the import of source modules.
 ENV PYTHONDONTWRITEBYTECODE=1
 # Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
 ENV PYTHONUNBUFFERED=1
 # Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
 
-# Conda packages have higher priority than system packages during the build.
+# Conda packages have higher run priority than system packages during the build.
 ENV PATH=/opt/conda/bin:${PATH}
 
 # `CONDA_MANAGER` may be either `mamba` or `conda`.
@@ -94,7 +94,7 @@ ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge or Mambaforge is used as this is the default anyway.
-# Clean out package directories and `__pycache__` files to save space.
+# Clean out package and `__pycache__` directories to save space.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
@@ -118,7 +118,7 @@ FROM install-mkl-base AS install-include-mkl
 # For example, 11.5.1 becomes 115 and 10.2 becomes 102.
 # Using the MatchSpec syntax for the magma-cuda package,
 # which is only available from the PyTorch channel.
-# All other packages should come from the conda-forge channel.
+# All other packages should come from the `conda-forge` channel.
 ARG CUDA_VERSION
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
@@ -195,7 +195,7 @@ FROM ${GIT_IMAGE} AS clone-torch
 
 # Updating git submodules is not fail-safe.
 # If the build fails during `git clone`, just try again.
-# The reason for failure is likely due to networking issues during installation.
+# The failure is likely due to networking issues.
 # See https://stackoverflow.com/a/8573310/9289275
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
@@ -210,7 +210,7 @@ FROM build-base AS build-torch
 WORKDIR /opt/pytorch
 COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
 
-# Workaround for header dependency bug in nvcc.
+# Workaround for the header dependency bug in `nvcc`.
 # Making this an `ENV` to allow downstream stages to use it as well.
 ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;ccache"
 
@@ -221,7 +221,8 @@ ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;cca
 # to be configurable via `.env`. Check `docker-compose.yaml` if a variable
 # cannot be specified via `.env`. Note that variable definitions in
 # `docker-compose.yaml` override default values specified in the Dockerfile.
-# Default values in `docker-compose.yaml` therefore have higher priority than
+# Variables specified in the `.env` file set values in the `docker-compose.yaml`
+# file while default values in `docker-compose.yaml` have higher priority than
 # default values specified for variables in the Dockerfile.
 ARG USE_CUDA
 ARG USE_CUDNN=${USE_CUDA}
@@ -250,7 +251,8 @@ RUN --mount=type=cache,target=/opt/ccache \
 # Visit the Setuptools documentation for more `setup.py` options.
 # https://setuptools.pypa.io/en/latest
 
-# C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
+# C++ developers using Libtorch can find the library in
+# `torch/lib/tmp_install/lib/libtorch.so`.
 
 # The default configuration removes all files except requirements files from the Docker context.
 # To `COPY` your source files during the build, please edit the `.dockerignore` file.
@@ -261,7 +263,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 # https://github.com/mratsim/Arch-Data-Science/blob/master/frameworks/python-pytorch-magma-mkldnn-cudnn-git/PKGBUILD
 
 # Manually specify conda package versions if older PyTorch versions will not build.
-# PyYAML, MKL-DNN, and SetupTools are known culprits.
+# PyYAML, MKL-DNN, and Setuptools are known culprits.
 
 # Run the command below before building to enable ROCM builds.
 # RUN python tools/amd_build/build_amd.py
@@ -277,9 +279,9 @@ FROM install-conda AS build-pillow
 # as it is very lightweight and does not require many dependencies.
 RUN $conda install -y libjpeg-turbo zlib && conda clean -fya
 
-# Specify `Pillow-SIMD` version if necessary. Variable is not used yet.
+# Specify the `Pillow-SIMD` version if necessary. The variable is not used yet.
 ARG PILLOW_SIMD_VERSION
-# Condition ensures that AVX2 instructions are built only if available.
+# The condition ensures that AVX2 instructions are built only if available.
 # May cause issues if the image is used on a machine with a different SIMD ISA.
 RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
@@ -347,8 +349,7 @@ RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-stash
 
-# This layer prevents direct contact between the `train` stage and
-# outside files, also allowing Docker to cache the files.
+# This stage prevents direct contact between the `train` stage and external files.
 # Other files such as `.deb` package files may also be stashed here.
 COPY --link reqs/train-apt.requirements.txt /tmp/apt/requirements.txt
 
@@ -360,8 +361,8 @@ FROM ${BUILD_IMAGE} AS train-builds-include
 # Using an image other than `BUILD_IMAGE` may contaminate
 # `/opt/conda` and other key directories.
 
-# The `train` image is the one actually used for training.
-# It is designed to be separate from the `build` image,
+# The `train` stage is the one actually used for training.
+# It is designed to be separate from the `build` stage,
 # with only the build artifacts (e.g., pip wheels) copied over.
 COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
@@ -386,9 +387,9 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 # Gather Python packages built in previous stages and
 # install using both conda and pip with a single file.
 # Using a separate stage allows for build modularity
-# and and parallel installation with system packages.
+# and parallel installation with system packages.
 
-# Add a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
+# Adds a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
 ARG INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
@@ -449,7 +450,7 @@ RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezo
 ENV ZDOTDIR=/root
 
 # Setting the prompt to `pure`, which is available on all terminals without additional settings.
-# This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
+# This is a personal preference and users may use any prompt that they wish (e.g., `oh-my-zsh`).
 ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 COPY --link --from=train-builds /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
