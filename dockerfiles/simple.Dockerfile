@@ -219,7 +219,7 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 # Change `/root` directory permissions to allow configuration sharing.
 RUN chmod 711 /root
 
-# Update dynamic linking locations
+# Update dynamic linking locations.
 RUN ldconfig
 
 ARG PROJECT_ROOT=/opt/project
