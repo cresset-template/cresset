@@ -36,6 +36,7 @@ select = [
     "BLE", # flake8-blind-except
     "C4", # flake8-comprehensions
     "C90", # mccabe
+    "COM", # flake8-commas
     "D", # pydocstyle
     "E", # pycodestyle errors
 #    "EM", # flake8-errmsg
