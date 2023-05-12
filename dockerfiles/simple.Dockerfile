@@ -5,11 +5,14 @@
 # `conda` using only Official and Verified Docker images.
 # The base image for training is an Official Docker Linux image, e.g., Ubuntu.
 # The `git` image is from a verified publisher and only used to download files.
+# The `gcc` image is an Official Docker image used for compilation.
 # The training image does not include it and it remains in the build cache.
 
 ARG LOCK_MODE
 ARG BASE_IMAGE
 ARG INTERACTIVE_MODE
+# Fix `gcc` to a specific version if necessary.
+ARG GCC_IMAGE=gcc:latest
 # The Bitnami Docker verified git image has `curl` installed in `/usr/bin/curl`
 # and recent versions have both AMD64 and ARM64 architecture support.
 ARG GIT_IMAGE=bitnami/git:latest
@@ -46,7 +49,7 @@ WORKDIR /
 
 ########################################################################
 FROM ${BASE_IMAGE} AS conda-lock-exclude
-# Use this stage for loose requirements during development.
+# Use this stage for rough requirements specified during development.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -101,7 +104,7 @@ ARG PYTHONUNBUFFERED=1
 ARG PATH=/opt/_conda/bin:$PATH
 COPY --link --from=lock-stash /opt/_conda /opt/_conda
 COPY --link ../reqs/simple.conda-lock.yaml /tmp/conda/lock.yaml
-# Saves to `conda-linux-64.lock`, which can be installed via `conda create`
+# Saves to `conda-linux-64.lock`, which can be installed via `conda create`.
 RUN conda-lock render -p linux-64 /tmp/conda/lock.yaml
 
 ARG CONDA_MANAGER
@@ -115,6 +118,16 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
 
 ########################################################################
+FROM ${GCC_IMAGE} AS train-builds
+
+WORKDIR /opt/conda
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+
+########################################################################
 FROM conda-lock-${LOCK_MODE} AS install-conda
 # Cleanup before copying to reduce image size.
 RUN find /opt/conda -type d -name '__pycache__' | xargs rm -rf
@@ -124,6 +137,9 @@ RUN find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 RUN if [ -f "/opt/conda/lib/libnvrtc.so.11.2" ]; then \
         ln -s "/opt/conda/lib/libnvrtc.so.11.2" "/opt/conda/lib/libnvrtc.so"; \
     fi
+
+# Copy the binary file to enable acceleration of AMD CPUs by the latest MKL versions.
+COPY --link --from=train-builds /opt/conda/libfakeintel.so /opt/conda/libfakeintel.so
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -210,16 +226,15 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
-# Enable if compilation is included later.
-#ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+# Configure Jemalloc as the default memory allocator.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Change `/root` directory permissions to allow configuration sharing.
 RUN chmod 711 /root
 
-# Update dynamic linking locations.
+# Update dynamic linking paths.
 RUN ldconfig
 
 ARG PROJECT_ROOT=/opt/project
