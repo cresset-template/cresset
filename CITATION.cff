@@ -1,0 +1,24 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: 'Cresset: The One Template to Train Them All'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Joonhyung
+    family-names: Lee
+    email: veritas9872@gmail.com
+    orcid: 'https://orcid.org/0000-0002-2853-9433'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.7939089
+repository-code: 'https://github.com/cresset-template/cresset'
+abstract: >-
+  A new MLOps paradigm for deep learning development using
+  Docker Compose with the aim of providing reproducible and
+  easy-to-use interactive development environments for deep
+  learning practitioners.
+license: MIT
