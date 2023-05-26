@@ -29,7 +29,7 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.267
+    rev: v0.0.270
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
@@ -46,7 +46,7 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/google/pyink
-    rev: 23.3.1
+    rev: 23.5.0
     hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
       - id: pyink # Update to the `ruff` auto-formatter later.
 
@@ -61,7 +61,7 @@ repos:
       - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0 # Always use the same version as PyInk.
+    rev: 23.3.0
     hooks: # Using black for Jupyter Notebook formatting.
       - id: black-jupyter
 

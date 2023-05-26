@@ -5,6 +5,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/network)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![GitHub license](https://img.shields.io/github/license/cresset-template/cresset?style=flat)](https://github.com/cresset-template/cresset/blob/main/LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7939089.svg)](https://doi.org/10.5281/zenodo.7939089)
 [![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)](https://twitter.com/intent/tweet?text=Awesome_Project!!!:&url=https%3A%2F%2Fgithub.com%2Fcresset-template%2Fcresset)
 
 ![Cresset Logo](https://github.com/cresset-template/cresset/blob/main/assets/logo.png "Logo")
@@ -13,8 +14,7 @@
 
 ## TL;DR
 
-**_A new MLOps paradigm for deep learning development
-is proposed using Docker Compose
+**_A new MLOps system for deep learning development using Docker Compose
 with the aim of providing reproducible and easy-to-use interactive
 development environments for deep learning practitioners.
 Hopefully, the methods presented here will become
@@ -29,7 +29,7 @@ best practice in both academia and industry._**
 If this is your first time using this project, follow these steps:
 
 1. Install the NVIDIA CUDA [Driver](https://www.nvidia.com/download/index.aspx)
-   appropriate for the target host and NVIDIA GPU. The CUDA toolkit is not necessary.
+   appropriate for the target host and NVIDIA GPU.
    If the driver has already been installed,
    check that the installed version is compatible with the target CUDA version.
    CUDA driver version mismatch is the single most common issue for new users.
@@ -37,9 +37,9 @@ If this is your first time using this project, follow these steps:
    [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
    for compatible versions of the CUDA driver and CUDA Toolkit.
 
-2. Install [Docker](https://docs.docker.com/get-docker) (v20.10+ is recommended)
+2. Install [Docker](https://docs.docker.com/get-docker) (v23.0+ is recommended)
    or update to a recent version compatible with Docker Compose V2.
-   Docker incompatibility with Docker Compose V2 is also a common issue for new users.
+   Docker incompatibility with Docker Compose V2 is another common issue for new users.
    Note that Windows users may use WSL (Windows Subsystem for Linux).
    Cresset has been tested on Windows 11 WSL2 with the Windows CUDA driver
    using Docker Desktop for Windows. There is no need to install a separate
@@ -69,7 +69,7 @@ If this is your first time using this project, follow these steps:
 
 6. If Cresset is being placed within a pre-existing project's subdirectory,
    change the `volume` pairing from `.:${PROJECT_ROOT}` to `..:${PROJECT_ROOT}`.
-   All commands in Cresset assume that they are being run at the root of a project
+   All commands in Cresset assume that they are being run at project root
    but this can be changed easily.
 
 ### Explanation of services
@@ -84,11 +84,11 @@ Different Docker Compose services are organized to serve different needs.
 - `ngc` is derived from the official NVIDIA PyTorch NGC images with the option
   to install additional packages. It is recommended for users who wish to base
   their projects on the NGC images provided by NVIDIA. Note that the NGC images
-  change greatly between different releases and that configurations for one
+  change between different releases and that configurations for one
   release may not work for another one.
 - `hub` is derived from the official PyTorch Docker Hub image and serves a
   similar function as the `ngc` service described above. However,
-  the PyTorch Docker images are more stable compared to the NGC images.
+  the PyTorch Docker images have a more stable interface than the NGC images.
 - `simple` is derived from the Official Ubuntu Linux image by default as some
   corporations restrict the use of Docker images not officially verified by
   Docker. It installs all packages via `conda` by default and can optionally
@@ -107,10 +107,10 @@ use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 
 ### Notes for Rootless Users
 
-Many institutions forbid the use of Docker bacause it requires `root` permissions, compromising security.
+Many institutions forbid the use of Docker because it requires `root` permissions, compromising security.
 For users without Docker access, using `Podman Compose` is recommended.
 `Podman` is an alternative containerization tool developed by RedHat with high compatibility with Docker.
-`Podman Compose` is a Python library designed to mimick the functionality of Docker Compose.
+`Podman Compose` is a Python library designed to mimic the functionality of Docker Compose.
 
 **`Podman` and `Podman Compose` do not require `root` permissions by default.**
 
@@ -120,7 +120,7 @@ A desktop version of Podman is also available on the [website](https://podman-de
 To use Podman Compose, only two changes are needed.
 
 1. Convert all `COPY --link` instructions to `COPY` in the `Dockerfile`s.
-   Buildah, the build system behind Podman, does not support the `--link` flag as of the time of writing.
+   The build system behind Podman, `buildah`, does not support the `--link` flag as of the time of writing.
 2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
    and remove the now redundant Docker-related variables.
    For best results, add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
@@ -260,6 +260,8 @@ Please read the Makefile to see the exact commands.
 - If something does not work, first try `make down` to remove the current container and
   then `make up` to create a new container from the image.
   Explicitly tearing the container down is often necessary when something happens to the host.
+- If the service startup stalls during `make up`,
+  check `docker system df` to see if there is space left on the host machine.
 - `make up` is akin to rebooting a computer.
   The current container is removed and a new container is created from the current image.
 - `make build` is akin to resetting/formatting a computer.
@@ -332,9 +334,8 @@ the `train` stage specified in the `Dockerfile`, which assumes an Ubuntu image.
 
 ## _Raison d'Être_
 
-The purpose of this section is
-to introduce a new paradigm for deep learning development.
-I hope that Cresset, or at least the ideas behind it, will eventually become
+The purpose of this section is to introduce a new paradigm for deep learning development.
+The hope is that Cresset, or at least the ideas behind it, will eventually become
 best practice for small to medium-scale deep learning research and development.
 
 Developing in local environments with `conda` or `pip`
@@ -385,8 +386,7 @@ been spilled turning research code into anything resembling a production-ready p
 Often, even the original developers cannot recreate the same model after a few months.
 Many firms thus have entire teams dedicated to model translation, a huge expenditure.
 
-To alleviate these problems,
-I propose the use of Docker Compose as a simple MLOps solution.
+To alleviate these problems, Docker Compose is proposed as a simple MLOps solution.
 Using Docker and Docker Compose, the entire training environment can be reproduced.
 Compose has not yet caught on in the deep learning community,
 possibly because it is usually advertised as a multi-container solution.
@@ -397,11 +397,13 @@ A `docker-compose.yaml` file is provided for easy management of containers.
 **Using the provided `docker-compose.yaml` file will create an interactive environment,
 providing a programming experience very similar to using a terminal on a remote server.
 Integrations with popular IDEs (PyCharm, VSCode) are also available.**
+
 Moreover, it also allows the user to specify settings for both build and run,
 removing the need to manage the environment with custom shell scripts.
 Connecting a new volume or port is as simple as removing the current container,
 adding a line in the `docker-compose.yaml` file, then running `make up`
 to create a new container from the same image.
+
 Build caches allow new images to be built very quickly,
 removing another barrier to Docker adoption, the long initial build time.
 For more information on Compose, visit the
@@ -416,39 +418,24 @@ and smooth the path to MLOps adoption.
 Accelerating time-to-market by streamlining the development process
 is a competitive edge for any firm, whether lean startup or tech titan.
 
-With luck, the techniques I propose here will enable
+With luck, the techniques proposed here will enable
 the deep learning community to "_write once, train anywhere_".
-But even if I fail in persuading most users of the merits of my method,
-I may still spare many a hapless grad student from the
+But even if most users are not persuaded of the merits of this method,
+Many a hapless grad student may be spared from the
 sisyphean labor of setting up their `conda` environment,
 only to have it crash and burn right before their paper submission is due.
 
 ## Compose as Best Practice
 
-Docker Compose is superior to using
-custom shell scripts for each environment.
+Docker Compose is superior to using custom shell scripts for each environment.
 Not only does it gather all variables and commands
 for both build and run into a single file,
 but its native integration with Docker means that it makes complicated
 Docker build/run setups simple to implement and use.
 
-I wish to emphasize that using Docker Compose
-this way is a general-purpose technique
+Using Docker Compose this way is a general-purpose technique
 that does not depend on anything about this project.
-As an example, an image from the NVIDIA NGC PyTorch repository
-has been used as the base image in `ngc.Dockerfile`.
-The NVIDIA NGC PyTorch images contain many optimizations
-for the latest GPU architectures and provide
-a multitude of pre-installed machine learning libraries.
-For those starting new projects,
-using the latest NGC image is recommended.
-
-To use the NGC images, use the following commands:
-
-1. `docker compose up -d ngc`
-2. `docker compose exec ngc zsh`
-
-The only difference with the previous example is the service name.
+The other services available in the project emphasize this point. 
 
 ### Using Compose with PyCharm and VSCode
 
@@ -461,18 +448,18 @@ are compatible with Docker Compose.
 
 Both Docker and Docker Compose are natively available as Python interpreters.
 See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) and
-[Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary) for details.
-JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
+[Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary)
+for details. JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
-JetBrains Fleet IDE, with much more advanced features,
-will become available sometime during 2022.
+
 _N.B._ PyCharm Professional and other JetBrains IDEs are available
 free of charge to anyone with a valid university e-mail address.
 
 #### VSCode
 
-Install the Remote Development extension pack.
-See [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial) for details.
+Install the Remote Development extension pack. See 
+[tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial)
+for details.
 
 ##### VSCode Tips
 
@@ -516,13 +503,13 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
 
 1. Connecting to a running container by `ssh` will remove all variables
    set by `ENV`. This is because `sshd` starts a new environment,
-   wiping out all previous variables. Using `docker`/`docker compose`
+   deleting all previous variables. Using `docker`/`docker compose`
    to enter containers is strongly recommended.
 
 2. `pip install package[option]` will fail on the terminal because of
    Z-shell globbing. Characters such as `[`,`]`,`*`, etc. will be
    interpreted by Z-shell as special commands. Use string literals,
-   e.g., `pip install 'package[option]'` for cross-shell consistency.
+   e.g., `pip install 'package[option]'`, for cross-shell consistency.
 
 3. If the build fails during `git clone`, simply try `make build` again.
    Most of the build will be cached. Failure is probably due to
@@ -542,7 +529,7 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
 
 5. Docker Compose V2 will silently fail if the installed Docker engine
    version is too low on Linux hosts. Update Docker to the latest
-   version (20.10+) to use Docker Compose V2.
+   version (23.0+) to use Docker Compose V2.
 
 # Desiderata
 
@@ -558,4 +545,4 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
    and especially NVIDIA Driver are up-to-date before doing so.
 
 4. Translations into other languages and updates to existing translations are welcome.
-   Please create a separate `LANG.README.md` file and make a Pull Request.
+   Please create a separate `LANG.README.md` file and make a pull request.
