@@ -31,28 +31,39 @@ line-length = 100
 target-version = 'py38'
 select = [
 #    "A", # flake8-builtins
+#    "ARG", # flake8-unused-arguments
     "B", # flake8-bugbear
     "BLE", # flake8-blind-except
     "C4", # flake8-comprehensions
     "C90", # mccabe
+    "COM", # flake8-commas
     "D", # pydocstyle
     "E", # pycodestyle errors
+#    "EM", # flake8-errmsg
     "F", # pyflakes
+    "G010", # logging-warn
     "I", # isort
     "ICN", # flake8-import-conventions
     "ISC", # flake8-implicit-str-concat
 #    "N", # PEP8-Naming
     "NPY", # NumPy-specific rules
+    "PD", # pandas-vet
+    "PIE", # flake8-pie
     "PLC", # Pylint Convention
     "PLE", # Pylint Error
+#    "PLR", # Pylint Refactor
     "PLW", # Pylint Warning
     "PT", # flake8-pytest-style
+    "RSE", # flake8-raise
+    "RUF",  # Ruff-specific rules
     "SIM", # flake8-simplify
     "T10", # flake8-debugger
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "TRY", # tryceratops
 #    "UP", # PyUpgrade
     "W", # pycodestyle warnings
     "YTT",  # flake8-2020
-    "RUF",  # Ruff-specific rules
 ]
 ignore = [
   "C408", # unnecessary-collection-call

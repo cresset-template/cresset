@@ -63,7 +63,7 @@ If this is your first time using this project, follow these steps:
    if it exists, allowing non-default values to be specified only once.
    Each host should have a separate `.env` file for host-specific configurations.
 
-5. Run `make over` to create a `docker-compose.override.yaml` files.
+5. Run `make over` to create a `docker-compose.override.yaml` file.
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
 
@@ -81,7 +81,7 @@ Different Docker Compose services are organized to serve different needs.
   Compute Capability issues, etc.
 - `devel` is designed for PyTorch CUDA/C++ developers who need to recompile
   frequently and have many complex dependencies.
-- `ngc` is derived from the official NVIDIA PyTorch HPC images with the option
+- `ngc` is derived from the official NVIDIA PyTorch NGC images with the option
   to install additional packages. It is recommended for users who wish to base
   their projects on the NGC images provided by NVIDIA. Note that the NGC images
   change between different releases and that configurations for one
@@ -101,7 +101,7 @@ Different Docker Compose services are organized to serve different needs.
   **The `simple` service is recommended for users without compiled dependencies.**
 
 The `Makefile` has been configured to take values specified in the `.env` file
-as the defaults if it exists. Therefore, all `make` commands will automatically
+if the `.env` file exists. Therefore, all `make` commands will automatically
 use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 `.env` file is created.
 
@@ -172,7 +172,7 @@ Also, rootless Podman will not work out-of-the-box. Please refer to the
 Example `.env` file for user with username `USERNAME`,
 group name `GROUPNAME`, user id `1000`, group id `1000` on service `train`.
 Use the `simple` service if no dependencies need to be compiled and requirements
-can either be downloaded or installed via `apt`, `conda` and `pip`.
+can either be downloaded or installed via `apt`, `conda`, or `pip`.
 
 ```text
 # Generated automatically by `make env`.
@@ -240,7 +240,7 @@ Please read the Makefile to see the exact commands.
    mounted volumes, shared memory configurations, etc.
    Recommended method for using this project.
 3. `make exec` enters the interactive terminal of the container
-   created by `make build` and `make up`.
+   created by `make build` or `make up`.
 4. `make down` stops Compose containers and deletes networks.
    Necessary for service teardown.
 5. `make start` restarts a stopped container without recreating it.
@@ -248,7 +248,7 @@ Please read the Makefile to see the exact commands.
    Not recommended unless data saved in container are absolutely necessary.
 6. `make ls` shows all Docker Compose services, both active and inactive.
 7. `make run` is used for debugging. Containers are removed on exit.
-   If a service fails to start, use it to find the error.
+   If a service fails to start, use this to find the error.
 8. `make build-only` builds the Docker image from the Dockerfile
    without starting the service.
    It exists to help publish images to container registries.
@@ -273,7 +273,7 @@ Please read the Makefile to see the exact commands.
   It is the most important command
   and allows the user to access the container's terminal interactively.
 - Configurations such as connected volumes and network ports cannot
-  be changed in a running container, requiring a new container.
+  be changed in a running container, requiring a new container to be created.
 - Docker automatically caches all builds up to `defaultKeepStorage`.
   Builds use caches from previous builds by default,
   greatly speeding up later builds by only building modified layers.

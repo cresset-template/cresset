@@ -477,7 +477,7 @@ RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
-# `apt` requirements are copied from the outside instead of from
+# `apt` requirements are copied from the `train-stash` stage instead of from
 # `train-builds` to allow parallel installation with `conda`.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -531,7 +531,7 @@ FROM train-base AS train-interactive-exclude
 # possible, with the same `apt`, `conda`, and `pip` packages installed.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
-# Note that `zsh` configs are available but these images do not require `zsh`.
+# Note that this image does not require `zsh` but has `zsh` configs available.
 # This allows users who download these images to use them interactively.
 
 COPY --link --from=train-builds /opt/conda /opt/conda
@@ -560,22 +560,16 @@ ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Change `/root` directory permissions to allow configuration sharing.
-# Only the `/root` directory iteself needs permission modification.
+# Only the `/root` directory itself needs permission modification.
 # Subdirectory permissions are intentionally left unmodified.
 RUN chmod 711 /root
 
-# Updae dynamic link cache.
+# Update dynamic link cache.
 RUN ldconfig
 
 # `PROJECT_ROOT` is where the project code will reside.
-# The conda root path must be placed at the end of the
-# PATH variable to prevent system program search errors.
-# This is the opposite of the build stage.
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
-
-# `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
-# Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]

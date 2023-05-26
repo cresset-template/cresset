@@ -100,7 +100,8 @@ def test_inference_run(
     enable_scripting: bool = False,
 ):
     if enable_amp and enable_scripting:
-        raise RuntimeError("AMP is incompatible with TorchScript.")
+        msg = "AMP is incompatible with TorchScript."
+        raise RuntimeError(msg)
     logger.info(f"Model: {name}.")
     logger.info(f"Input shapes: {input_shapes}.")
     logger.info(f"Automatic Mixed Precision Enabled: {enable_amp}.")
