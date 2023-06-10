@@ -10,6 +10,7 @@ repos:
     rev: v4.4.0
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=500"]
       - id: check-ast
       - id: check-case-conflict
       - id: check-docstring-first
@@ -45,16 +46,16 @@ repos:
     hooks:
       - id: shellcheck
 
-  - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
-    hooks:
-      - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
-
   - repo: https://github.com/psf/black
     rev: 23.3.0
     hooks: # Update to the `ruff` auto-formatter later.
       - id: black
-      - id: black-jupyter
+
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.0
+    hooks:
+      - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
+      - id: nbqa-black # Remove later when the `ruff` auto-formatter is ready.
 
   - repo: local # Clear all Jupyter outputs before committing.
     hooks: # Comment this out if it is not the desired behavior.
