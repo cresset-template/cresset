@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 100
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py310', 'py311']
 include = '\.pyi?$'
 # Black excludes files in `.gitignore` if no `exclude` is specified.
 # https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
@@ -9,7 +9,7 @@ include = '\.pyi?$'
 # PyInk is the Google fork of Black.
 # https://github.com/google/pyink
 line-length = 100
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py310', 'py311']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
@@ -28,7 +28,7 @@ testpaths = [
 
 [tool.ruff]
 line-length = 100
-target-version = 'py38'
+target-version = 'py310'
 select = [
 #    "A", # flake8-builtins
 #    "ARG", # flake8-unused-arguments

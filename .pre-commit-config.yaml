@@ -10,6 +10,7 @@ repos:
     rev: v4.4.0
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=500"]
       - id: check-ast
       - id: check-case-conflict
       - id: check-docstring-first
@@ -24,8 +25,8 @@ repos:
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: mixed-line-ending
+        args: ["--fix=lf"]
       - id: requirements-txt-fixer
-      - id: trailing-whitespace
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -45,25 +46,16 @@ repos:
     hooks:
       - id: shellcheck
 
-  - repo: https://github.com/google/pyink
-    rev: 23.5.0
-    hooks: # Using PyInk, the Google fork of Black, for Python code formatting.
-      - id: pyink # Update to the `ruff` auto-formatter later.
-
-  - repo: https://github.com/PyCQA/prospector
-    rev: v1.9.0
-    hooks:
-      - id: prospector
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks: # Update to the `ruff` auto-formatter later.
+      - id: black
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
     hooks:
       - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
-
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
-    hooks: # Using black for Jupyter Notebook formatting.
-      - id: black-jupyter
+      - id: nbqa-black # Remove later when the `ruff` auto-formatter is ready.
 
   - repo: local # Clear all Jupyter outputs before committing.
     hooks: # Comment this out if it is not the desired behavior.

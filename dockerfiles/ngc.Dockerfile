@@ -19,7 +19,7 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-# Copy and install `apt` requirements for ngc images.
+# Copy `apt` and `conda` requirements for ngc images.
 COPY --link ../reqs/ngc-apt.requirements.txt /tmp/apt/requirements.txt
 COPY --link ../reqs/ngc-conda.requirements.txt /tmp/req/requirements.txt
 
@@ -27,9 +27,10 @@ COPY --link ../reqs/ngc-conda.requirements.txt /tmp/req/requirements.txt
 FROM ${BASE_IMAGE} AS install-conda
 # Starting with the 22.11 PyTorch NGC container, miniforge is removed
 # and all Python packages are installed in the default Python environment.
-# A separate conda installation is provided to allow conda installation.
-# Also, this will prevent user-installed Python packages from overwriting
-# the default packages in the NGC image, which have been carefully configured.
+# A separate conda installation is provided to allow conda installation,
+# which will also prevent user-installed Python packages from overwriting
+# those in the NGC image, which have been carefully configured.
+# NGC images prior to 22.11 are **incompatible** with the current Dockerfile.
 
 LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
@@ -60,7 +61,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     $conda install --copy -p /opt/conda --file /tmp/req/requirements.txt && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
 
-# Create a symbolic link to add `site-packages` to the PYTHONPATH later.
+# Create a symbolic link to add Python `site-packages` to `PYTHONPATH` later on.
 RUN ln -s \
     /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /opt/conda/lib/python3
@@ -76,7 +77,7 @@ ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
-# ergo, `SHELL=''` is used for best compatibility with the other services.
+# therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
 
 # Install `apt` requirements.
@@ -146,6 +147,7 @@ FROM train-interactive-${INTERACTIVE_MODE} AS train
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 # Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
+# Using the older system MKL to prevent version clashes with NGC packages.
 ENV LD_PRELOAD=/usr/local/lib/libiomp5.so:${LD_PRELOAD}
 
 # Enable Intel MKL optimizations on AMD CPUs.
@@ -155,9 +157,7 @@ ENV MKL_DEBUG_CPU_TYPE=5
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /tmp/fakeintel.c && \
     gcc -shared -fPIC -o /usr/local/bin/libfakeintel.so /tmp/fakeintel.c
 ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so:${LD_PRELOAD}
-
-# The `jemalloc` binary location and name may change between NGC versions.
-# The `x86_64` architecture is also hard-coded by necessity.
+# Configure Jemalloc as the default memory allocator.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
@@ -167,7 +167,7 @@ RUN chmod 711 /root
 ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:${PATH}
 # Search for additional Python packages installed via `conda`.
-# This requires `/opt/conda/lib/python3` to be created as a symlink.
+# This requires `/opt/conda/lib/python3` to be created as a symlink beforehand.
 ENV PYTHONPATH=${PROJECT_ROOT}:/opt/conda/lib/python3/site-packages
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
