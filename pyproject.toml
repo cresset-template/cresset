@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py310', 'py311']
 include = '\.pyi?$'
 # Black excludes files in `.gitignore` if no `exclude` is specified.
 # https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
@@ -9,7 +9,7 @@ include = '\.pyi?$'
 # PyInk is the Google fork of Black.
 # https://github.com/google/pyink
 line-length = 100
-target-version = ['py310']
+target-version = ['py310', 'py311']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
