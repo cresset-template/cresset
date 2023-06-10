@@ -43,7 +43,7 @@ services:
     image: ${IMAGE_NAME}
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
-    ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
+    #    ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
     # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
     hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
     extra_hosts: # Prevents "unknown host" issue when using `sudo`.
@@ -92,6 +92,15 @@ services:
         USR: ${USR:-user}
         # `TZ` is placed here even if not used for consistency with the runtime.
         TZ: ${TZ:-Asia/Seoul}
+        # Change the `CONDA_URL` for different hardware architectures.
+        # URLs from https://github.com/conda-forge/miniforge are recommended over
+        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
+        # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
+        # However, `mamba` may be unable to resolve conflicts that `conda` can.
+        # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
+        # Installing `mamba` via mamba-forge is strongly recommended.
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
     deploy: # API dependent on compose version.
       resources:
         reservations:
@@ -121,15 +130,6 @@ services:
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
-        # Change the `CONDA_URL` for different hardware architectures.
-        # URLs from https://github.com/conda-forge/miniforge are recommended over
-        # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
-        # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
-        # However, `mamba` may be unable to resolve conflicts that `conda` can.
-        # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-        # Installing `mamba` via mamba-forge is strongly recommended.
-        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
-        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
         # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCA} # Ignore the missing CCA warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
@@ -163,7 +163,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-04}
+        NGC_MONTH: ${NGC_MONTH:-05}
 
   hub: # Service based on the official PyTorch Docker images from Docker Hub.
     extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags
@@ -185,5 +185,3 @@ services:
       args:
         BASE_IMAGE: ${LINUX_DISTRO:-ubuntu}:${DISTRO_VERSION:-22.04}
         LOCK_MODE: ${LOCK_MODE:-exclude}
-        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
-        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
