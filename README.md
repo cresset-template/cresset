@@ -435,7 +435,7 @@ Docker build/run setups simple to implement and use.
 
 Using Docker Compose this way is a general-purpose technique
 that does not depend on anything about this project.
-The other services available in the project emphasize this point. 
+The other services available in the project emphasize this point.
 
 ### Using Compose with PyCharm and VSCode
 
@@ -457,7 +457,7 @@ free of charge to anyone with a valid university e-mail address.
 
 #### VSCode
 
-Install the Remote Development extension pack. See 
+Install the Remote Development extension pack. See
 [tutorial](https://code.visualstudio.com/docs/remote/containers-tutorial)
 for details.
 
