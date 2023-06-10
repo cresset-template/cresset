@@ -1,0 +1,7 @@
+# Installing `conda` packages in a separate `/opt/conda` directory to not clash
+# with pre-installed Python packages, which are installed via the system Python.
+# If additional `pip` packages are needed, install them in `/opt/conda` as well.
+# The same version of Python is used in the `conda` installation as in the
+# system Python found in the image, so there should be no compatibility issues.
+hydra-core
+jemalloc
