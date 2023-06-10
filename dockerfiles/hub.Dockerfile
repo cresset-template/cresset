@@ -68,10 +68,10 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 # Jemalloc configurations.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Set timezone. This is placed in `train-base` for timezone consistency,

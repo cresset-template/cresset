@@ -221,14 +221,14 @@ FROM train-interactive-${INTERACTIVE_MODE} AS train
 # https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 # Configure Jemalloc as the default memory allocator.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Change `/root` directory permissions to allow configuration sharing.
