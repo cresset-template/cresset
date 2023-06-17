@@ -3,5 +3,15 @@
 # If additional `pip` packages are needed, install them in `/opt/conda` as well.
 # The same version of Python is used in the `conda` installation as in the
 # system Python found in the image, so there should be no compatibility issues.
-hydra-core
-jemalloc
+name: extras
+channels:
+  - nodefaults # Do not use the default environment.
+  - conda-forge # Always use conda-forge instead.
+dependencies: # Use conda packages if possible.
+  - hydra-core
+  - jemalloc
+
+  # For `pip` dependencies that are not available in conda.
+  - pip
+  - pip:
+      - pyre-check

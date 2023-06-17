@@ -21,7 +21,7 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 # Copy `apt` and `conda` requirements for ngc images.
 COPY --link ../reqs/ngc-apt.requirements.txt /tmp/apt/requirements.txt
-COPY --link ../reqs/ngc-conda.requirements.txt /tmp/req/requirements.txt
+COPY --link ../reqs/ngc-environment.yaml /tmp/env/environment.yaml
 
 ########################################################################
 FROM ${BASE_IMAGE} AS install-conda
@@ -52,19 +52,15 @@ RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     find /opt/_conda -type d -name '__pycache__' | xargs rm -rf
 
 # Install the same version of Python as the system Python in the NGC image.
+# The `readwrite` option is necessary for `pip` installation via `conda`.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/_conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
-    --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
+    --mount=type=bind,readwrite,from=stash,source=/tmp/env,target=/tmp/env \
     $conda create --copy -p /opt/conda python=$(python -V | cut -d ' ' -f2) && \
-    $conda install --copy -p /opt/conda --file /tmp/req/requirements.txt && \
+    $conda env update -p /opt/conda --file /tmp/env/environment.yaml && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
-
-# Create a symbolic link to add Python `site-packages` to `PYTHONPATH` later on.
-RUN ln -s \
-    /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
-    /opt/conda/lib/python3
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -168,6 +164,11 @@ ARG PROJECT_ROOT=/opt/project
 ENV PATH=${PROJECT_ROOT}:${PATH}
 # Search for additional Python packages installed via `conda`.
 # This requires `/opt/conda/lib/python3` to be created as a symlink beforehand.
+# Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
+RUN ln -s \
+    /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
+    /opt/conda/lib/python3
+
 ENV PYTHONPATH=${PROJECT_ROOT}:/opt/conda/lib/python3/site-packages
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
