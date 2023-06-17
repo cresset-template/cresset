@@ -168,6 +168,7 @@ ENV PATH=${PROJECT_ROOT}:${PATH}
 RUN ln -s \
     /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /opt/conda/lib/python3
+
 ENV PYTHONPATH=${PROJECT_ROOT}:/opt/conda/lib/python3/site-packages
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
