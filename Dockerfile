@@ -178,7 +178,7 @@ ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,mu
 # https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
 # https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
-ENV PATH=/opt/conda/bin/ccache:$PATH
+ENV PATH=/opt/conda/bin/ccache:${PATH}
 # Enable `ccache` with unlimited memory size for faster builds.
 RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
 

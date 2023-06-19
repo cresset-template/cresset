@@ -44,7 +44,7 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# `/opt/conda/bin` is expected to be on the $PATH already.
+# `/opt/conda/bin` is expected to be on the ${PATH} already.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 # `conda` is intentionally left as a `root` directory.
