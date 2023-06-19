@@ -161,7 +161,9 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 RUN chmod 711 /root
 
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:${PATH}
+# `conda` binaries are intentionally placed at the end of the ${PATH} to prevent
+# clashes with system binaries, especially between system and conda python.
+ENV PATH=${PROJECT_ROOT}:${PATH}:/opt/conda/bin
 # Search for additional Python packages installed via `conda`.
 # This requires `/opt/conda/lib/python3` to be created as a symlink beforehand.
 # Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
