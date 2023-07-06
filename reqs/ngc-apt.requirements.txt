@@ -1,3 +1,4 @@
+gdb
 sudo
 tmux
 tzdata
