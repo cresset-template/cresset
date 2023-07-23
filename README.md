@@ -256,7 +256,7 @@ Please read the Makefile to see the exact commands.
 ### Tips
 
 - The `PROJECT`, `SERVICE`, and `COMMAND` variables in the Makefile
-  use variables specified in the user's terminal if available.
+  use variables specified in the `.env` file if available.
 - If something does not work, first try `make down` to remove the current container and
   then `make up` to create a new container from the image.
   Explicitly tearing the container down is often necessary when something happens to the host.

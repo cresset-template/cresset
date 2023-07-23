@@ -103,7 +103,7 @@ ARG PYTHONUNBUFFERED=1
 
 ARG PATH=/opt/_conda/bin:${PATH}
 COPY --link --from=lock-stash /opt/_conda /opt/_conda
-COPY --link ../reqs/simple.conda-lock.yaml /tmp/conda/lock.yaml
+COPY --link ../reqs/simple-conda-lock.yaml /tmp/conda/lock.yaml
 # Saves to `conda-linux-64.lock`, which can be installed via `conda create`.
 RUN conda-lock render -p linux-64 /tmp/conda/lock.yaml
 
