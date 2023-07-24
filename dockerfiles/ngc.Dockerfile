@@ -161,14 +161,22 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 RUN chmod 711 /root
 
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:${PATH}
+# `conda` binaries are intentionally placed at the end of the ${PATH} to prevent
+# clashes with system binaries, especially between system and conda python.
+ENV PATH=${PROJECT_ROOT}:${PATH}:/opt/conda/bin
 # Search for additional Python packages installed via `conda`.
 # This requires `/opt/conda/lib/python3` to be created as a symlink beforehand.
 # Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
 RUN ln -s \
     /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
-    /opt/conda/lib/python3
+    /opt/conda/lib/python3 && \
+    ln -s \
+    /usr/local/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
+    /usr/local/lib/python3
 
-ENV PYTHONPATH=${PROJECT_ROOT}:/opt/conda/lib/python3/site-packages
+# Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
+# prevent conflict when `conda` installs different versions of the same package.
+ENV PYTHONPATH=${PROJECT_ROOT}:/usr/local/lib/python3/dist-packages
+ENV PYTHONPATH=${PYTHONPATH}:/opt/conda/lib/python3/site-packages
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]

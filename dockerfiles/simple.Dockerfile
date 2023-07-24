@@ -58,7 +58,7 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-ARG PATH=/opt/conda/bin:$PATH
+ARG PATH=/opt/conda/bin:${PATH}
 
 # `CONDA_MANAGER` may be either `mamba` or `conda`.
 ARG CONDA_MANAGER
@@ -101,7 +101,7 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-ARG PATH=/opt/_conda/bin:$PATH
+ARG PATH=/opt/_conda/bin:${PATH}
 COPY --link --from=lock-stash /opt/_conda /opt/_conda
 COPY --link ../reqs/simple-conda-lock.yaml /tmp/conda/lock.yaml
 # Saves to `conda-linux-64.lock`, which can be installed via `conda create`.
