@@ -4,8 +4,8 @@
 # to reduce dependency issues with conda and for greater flexibility.
 # Manually add dependencies of compiled libraries for reduced
 # installation with pip.
-# Tip: Use `awk 'START_LINE<=NR && NR<=FINISH_LINE {print $0}' TARGET_FILE`
-# to sort dependencies in the command line while preserving comments, etc.
+# Tip: Use `awk 'START_LINE<=NR && NR<=FINISH_LINE {print $0}' TARGET_FILE | sort -u` to
+# sort dependencies in the command-line and remove duplicates while preserving comments.
 # Tip: The `conda-lock` command requires the `micromamba` flag to work properly.
 # To create a new conda lockfile, use the following command:
 # `conda-lock lock --micromamba -f ${CONDA_FILE} -p linux-64 --lockfile ${LOCKFILE}`
