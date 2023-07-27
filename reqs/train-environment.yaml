@@ -4,7 +4,7 @@
 # to reduce dependency issues with conda and for greater flexibility.
 # Manually add dependencies of compiled libraries for reduced
 # installation with pip.
-# Tip: Use `awk 'START_LINE<=NR && FINISH_LINE<=NR reqs/train-environment.yaml'`
+# Tip: Use `awk 'START_LINE<=NR && FINISH_LINE<=NR {print $0}' TARGET_FILE`
 # to sort dependencies in the command line while preserving comments, etc.
 # Tip: The `conda-lock` command requires the `micromamba` flag to work properly.
 # To create a new conda lockfile, use the following command:
