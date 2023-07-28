@@ -2,6 +2,8 @@
 # Visit the pre-commit documentation for the configuration options.
 # https://pre-commit.com/#adding-pre-commit-plugins-to-your-project
 
+exclude: ^third_party/
+
 default_language_version:
   python: python3.10
 
@@ -30,13 +32,13 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.277
+    rev: v0.0.280
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.6
+    rev: v3.0.0
     hooks:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
@@ -47,7 +49,7 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.7.0
     hooks: # Update to the `ruff` auto-formatter later.
       - id: black
 
