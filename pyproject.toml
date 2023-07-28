@@ -5,12 +5,6 @@ include = '\.pyi?$'
 # Black excludes files in `.gitignore` if no `exclude` is specified.
 # https://black.readthedocs.io/en/stable/usage_and_configuration/file_collection_and_discovery.html#gitignore
 
-[tool.pyink]
-# PyInk is the Google fork of Black.
-# https://github.com/google/pyink
-line-length = 100
-target-version = ['py310', 'py311']
-include = '\.pyi?$'
 
 [tool.pytest.ini_options]
 minversion = "7.3.0"
@@ -37,7 +31,7 @@ select = [
     "C4", # flake8-comprehensions
     "C90", # mccabe
     "COM", # flake8-commas
-    "D", # pydocstyle
+#    "D", # pydocstyle
     "E", # pycodestyle errors
 #    "EM", # flake8-errmsg
     "F", # pyflakes
@@ -67,18 +61,6 @@ select = [
 ]
 ignore = [
   "C408", # unnecessary-collection-call
-  "D100", # public module
-  "D101", # public class
-  "D102", # public method
-  "D103", # public function
-  "D105", # magic methods
-  "D107", # init
-  "D202", # blank lines after function docstring
-  "D203", # blank line before class docstring
-  "D205", # blank line between summary line and description
-  "D213", # Multi-line docstring summary should start at the second line
-  "D402", # First line should not be the function's signature
-  "D417", # Missing argument descriptions
   "E501", # line length violations
 ]
 # Enable autofix behavior by-default when running `ruff`.
