@@ -182,6 +182,12 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
+# Add custom aliases and settings.
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc
+
 ########################################################################
 FROM train-base AS train-interactive-exclude
 # Stage used to create images for Kubernetes clusters or for uploading to
@@ -207,12 +213,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
-
-# Add custom aliases and settings.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-interactive-${INTERACTIVE_MODE} AS train

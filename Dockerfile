@@ -468,6 +468,16 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
+# Add custom `zsh` aliases and settings.
+# Add `ll` alias for convenience. The Mac version of `ll` is used
+# instead of the Ubuntu version due to better configurability.
+# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
+# Add `hist` as a shortcut to see the full history in `zsh`.
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc
+
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Enable caching for `apt` packages in Docker.
@@ -510,16 +520,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
-
-# Add custom `zsh` aliases and settings.
-# Add `ll` alias for convenience. The Mac version of `ll` is used
-# instead of the Ubuntu version due to better configurability.
-# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
-# Add `hist` as a shortcut to see the full history in `zsh`.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-base AS train-interactive-exclude
