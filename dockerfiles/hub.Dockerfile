@@ -6,7 +6,7 @@ ARG CUDNN_VERSION
 ARG IMAGE_FLAVOR
 ARG IMAGE_TAG=${PYTORCH_VERSION}-cuda${CUDA_SHORT_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}
 ARG BASE_IMAGE=pytorch/pytorch:${IMAGE_TAG}
-ARG INTERACTIVE_MODE
+ARG ADD_USER
 ARG GIT_IMAGE=bitnami/git:latest
 
 ########################################################################
@@ -100,7 +100,7 @@ RUN {   echo "alias ll='ls -lh'"; \
     } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
-FROM train-base AS train-interactive-include
+FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
@@ -114,7 +114,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 ########################################################################
-FROM train-base AS train-interactive-exclude
+FROM train-base AS train-adduser-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
 # uploading images to a container registry, where interactive configurations
 # are unnecessary and having the user set to `root` is most convenient.
@@ -123,7 +123,7 @@ FROM train-base AS train-interactive-exclude
 # Note that `zsh` configs are available but these images do not require `zsh`.
 
 ########################################################################
-FROM train-interactive-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${ADD_USER} AS train
 
 # Change `/root` directory permissions to allow configuration sharing.
 RUN chmod 711 /root

@@ -111,7 +111,7 @@ RUN {   echo "alias ll='ls -lh'"; \
     } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
-FROM train-base AS train-interactive-include
+FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
@@ -128,7 +128,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ########################################################################
-FROM train-base AS train-interactive-exclude
+FROM train-base AS train-adduser-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
 # uploading images to a container registry, where interactive configurations
 # are unnecessary and having the user set to `root` is most convenient.
@@ -138,7 +138,7 @@ FROM train-base AS train-interactive-exclude
 COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
-FROM train-interactive-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${INTERACTIVE_MODE} AS train
 
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"

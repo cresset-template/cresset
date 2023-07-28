@@ -84,7 +84,7 @@ services:
       args: # Common build-time environment variables.
         # Even if these variables are unnecessary during the build,
         # they can be ignored simply by not defining them in that stage.
-        INTERACTIVE_MODE: ${INTERACTIVE_MODE:-include}
+        ADD_USER: ${ADD_USER:-include}  # Whether to create a new sudo user in the image.
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}

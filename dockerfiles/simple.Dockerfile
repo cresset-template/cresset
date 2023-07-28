@@ -8,9 +8,9 @@
 # The `gcc` image is an Official Docker image used for compilation.
 # The training image does not include it and it remains in the build cache.
 
+ARG ADD_USER
 ARG LOCK_MODE
 ARG BASE_IMAGE
-ARG INTERACTIVE_MODE
 # Fix `gcc` to a specific version if necessary.
 ARG GCC_IMAGE=gcc:latest
 # The Bitnami Docker verified git image has `curl` installed in `/usr/bin/curl`
@@ -189,14 +189,14 @@ RUN {   echo "alias ll='ls -lh'"; \
     } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
-FROM train-base AS train-interactive-exclude
+FROM train-base AS train-adduser-exclude
 # Stage used to create images for Kubernetes clusters or for uploading to
 # container registries such as Docker Hub. No users or interactive settings.
 # Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
-FROM train-base AS train-interactive-include
+FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
@@ -215,7 +215,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ########################################################################
-FROM train-interactive-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${ADD_USER} AS train
 
 # Use Intel OpenMP with optimizations. See the documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
