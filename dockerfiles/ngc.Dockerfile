@@ -3,7 +3,7 @@
 
 ARG NGC_YEAR
 ARG NGC_MONTH
-ARG INTERACTIVE_MODE
+ARG ADD_USER
 ARG GIT_IMAGE=bitnami/git:latest
 ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:${NGC_YEAR}.${NGC_MONTH}-py3
 
@@ -138,7 +138,7 @@ FROM train-base AS train-adduser-exclude
 COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
-FROM train-adduser-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${ADD_USER} AS train
 
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"
