@@ -108,26 +108,14 @@ use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 ### Notes for Rootless Users
 
 Many institutions forbid the use of Docker because it requires `root` permissions, compromising security.
-For users without Docker access, using `Podman Compose` is recommended.
-`Podman` is an alternative containerization tool developed by RedHat with high compatibility with Docker.
-`Podman Compose` is a Python library designed to mimic the functionality of Docker Compose.
+For users without Docker `root` access, using rootless Docker 
+[link](https://docs.docker.com/engine/security/rootless) is recommended.
 
-**`Podman` and `Podman Compose` do not require `root` permissions by default.**
+While installing rootless Docker requires root permissions on the host, 
+root permissions are not necessary after the initial installation.
 
-Run `conda install -c conda-forge podman podman-compose` on a local Conda environment to install the latest versions.
-A desktop version of Podman is also available on the [website](https://podman-desktop.io/docs/Installation).
-
-To use Podman Compose, only two changes are needed.
-
-1. Convert all `COPY --link` instructions to `COPY` in the `Dockerfile`s.
-   The build system behind Podman, `buildah`, does not support the `--link` flag as of the time of writing.
-2. Convert all `docker compose` commands in the `Makefile` recipes to `podman-compose`
-   and remove the now redundant Docker-related variables.
-   For best results, add the `--podman-build-args='--format docker --jobs 2'` flag to build-related commands.
-
-Note that Podman Compose in rootless mode is much slower than using Docker, even with the additional options.
-Also, rootless Podman will not work out-of-the-box. Please refer to the
-[documentation](https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md) for details.
+When using rootless Docker, it is most convenient to set `ADD_USER=exclude` in the `.env` file
+as the `root` user will be the host user in rootless Docker.
 
 ## Project Configuration
 
@@ -209,8 +197,8 @@ MKL_MODE=include      # Enable MKL for Intel CPUs.
 TZ=Asia/Seoul         # Set the container timezone.
 
 # Advanced Usage.
-TARGET_STAGE=train        # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
-INTERACTIVE_MODE=include  # Whether to create an interactive image or a static one for publishing.
+TARGET_STAGE=train    # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
+ADD_USER=include      # Whether to create a new user (include) or use `root` user (exclude).
 ```
 
 ## General Usage After Initial Installation and Configuration

@@ -3,7 +3,7 @@
 
 ARG NGC_YEAR
 ARG NGC_MONTH
-ARG INTERACTIVE_MODE
+ARG ADD_USER
 ARG GIT_IMAGE=bitnami/git:latest
 ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:${NGC_YEAR}.${NGC_MONTH}-py3
 
@@ -104,8 +104,14 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
+# Add custom aliases and settings.
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc
+
 ########################################################################
-FROM train-base AS train-interactive-include
+FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
@@ -121,14 +127,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 
-# Add custom aliases and settings.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
-
 ########################################################################
-FROM train-base AS train-interactive-exclude
+FROM train-base AS train-adduser-exclude
 # This stage exists to create images for use in Kubernetes clusters or for
 # uploading images to a container registry, where interactive configurations
 # are unnecessary and having the user set to `root` is most convenient.
@@ -138,7 +138,7 @@ FROM train-base AS train-interactive-exclude
 COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
-FROM train-interactive-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${ADD_USER} AS train
 
 ENV KMP_BLOCKTIME=0
 ENV KMP_AFFINITY="granularity=fine,compact,1,0"

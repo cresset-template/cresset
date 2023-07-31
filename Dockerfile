@@ -32,7 +32,7 @@
 
 ARG MKL_MODE
 ARG BUILD_MODE
-ARG INTERACTIVE_MODE
+ARG ADD_USER
 ARG USE_CUDA=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
@@ -468,6 +468,16 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
+# Add custom `zsh` aliases and settings.
+# Add `ll` alias for convenience. The Mac version of `ll` is used
+# instead of the Ubuntu version due to better configurability.
+# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
+# Add `hist` as a shortcut to see the full history in `zsh`.
+RUN {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc
+
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Enable caching for `apt` packages in Docker.
@@ -488,13 +498,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm -rf /var/lib/apt/lists/*
 
 ########################################################################
-FROM train-base AS train-interactive-include
-# This stage exists to create an interactive development environment with ease
-# of experimentation and debugging in mind. A new `sudo` user is created to help
-# prevent file ownership issues and accidents while not limiting freedom.
-# All user-related and interactive configurations should be placed here.
+FROM train-base AS train-adduser-include
 # This is the default training stage that most users will use most of the time.
-
+# A new `sudo` user is created to help prevent file ownership issues and accidents.
 ARG GID
 ARG UID
 ARG GRP=user
@@ -511,33 +517,22 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 # Get conda with the directory ownership given to the user.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
-# Add custom `zsh` aliases and settings.
-# Add `ll` alias for convenience. The Mac version of `ll` is used
-# instead of the Ubuntu version due to better configurability.
-# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
-# Add `hist` as a shortcut to see the full history in `zsh`.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
-
 ########################################################################
-FROM train-base AS train-interactive-exclude
-# This stage exists to create images for use in Kubernetes clusters or for
-# uploading images to a container registry, where interactive configurations
-# are unnecessary and having the user set to `root` is most convenient.
+FROM train-base AS train-adduser-exclude
+# This stage exists to create images for use in Kubernetes clusters, for
+# uploading images to a container registry, or for use in rootless container environments,
+# where having the image user set to `root` is most convenient.
 # Singularity users may also find this stage useful.
 # It is designed to be as close to the interactive development environment as
 # possible, with the same `apt`, `conda`, and `pip` packages installed.
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
 # Note that this image does not require `zsh` but has `zsh` configs available.
-# This allows users who download these images to use them interactively.
 
 COPY --link --from=train-builds /opt/conda /opt/conda
 
 ########################################################################
-FROM train-interactive-${INTERACTIVE_MODE} AS train
+FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
