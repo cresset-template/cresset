@@ -141,7 +141,7 @@ COPY --link --from=install-conda /opt/conda /opt/conda
 FROM train-adduser-${ADD_USER} AS train
 
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 # Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
 # Using the older system MKL to prevent version clashes with NGC packages.
 ENV LD_PRELOAD=/usr/local/lib/libiomp5.so:${LD_PRELOAD}

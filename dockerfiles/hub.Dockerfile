@@ -67,7 +67,7 @@ RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c &&
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 # Jemalloc configurations.
