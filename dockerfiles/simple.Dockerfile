@@ -220,7 +220,7 @@ FROM train-adduser-${ADD_USER} AS train
 # Use Intel OpenMP with optimizations. See the documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_BLOCKTIME=0
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 # Enable Intel MKL optimizations on AMD CPUs.

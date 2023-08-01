@@ -541,7 +541,7 @@ FROM train-adduser-${ADD_USER} AS train
 # Intel OpenMP thread blocking time in ms.
 ENV KMP_BLOCKTIME=0
 # Configure CPU thread affinity.
-ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
 # Enable Intel MKL optimizations on AMD CPUs.
