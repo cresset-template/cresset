@@ -40,7 +40,7 @@ COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
+RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
@@ -181,6 +181,9 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
 ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
+
+# Configure `tmux` to use `zsh` on startup.
+RUN echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf
 
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \

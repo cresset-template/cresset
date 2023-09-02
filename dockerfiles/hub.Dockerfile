@@ -93,6 +93,9 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
 
+# Configure `tmux` to use `zsh` on startup.
+RUN echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf
+
 # Add custom aliases and settings.
 RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \

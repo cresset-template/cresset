@@ -66,7 +66,7 @@ FROM ${CURL_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -477,6 +477,9 @@ RUN {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc
+
+# Configure `tmux` to use `zsh` on startup.
+RUN echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf
 
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
