@@ -184,7 +184,7 @@ CCA=8.6              # Compute capability. CCA=8.6 for RTX3090.
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude               # Whether to build PyTorch from source.
-PYTORCH_VERSION_TAG=v2.0.0       # Any `git` branch or tag name can be used.
+PYTORCH_VERSION_TAG=v2.0.0       # Any `git` tag can be used.
 TORCHVISION_VERSION_TAG=v0.15.1
 
 # General environment configurations.
