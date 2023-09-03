@@ -84,7 +84,7 @@ services:
       args: # Common build-time environment variables.
         # Even if these variables are unnecessary during the build,
         # they can be ignored simply by not defining them in that stage.
-        ADD_USER: ${ADD_USER:-include}  # Whether to create a new sudo user in the image.
+        ADD_USER: ${ADD_USER:-include} # Whether to create a new sudo user in the image.
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}
@@ -163,7 +163,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-07}
+        NGC_MONTH: ${NGC_MONTH:-08}
 
   hub: # Service based on the official PyTorch Docker images from Docker Hub.
     extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags

@@ -34,6 +34,7 @@ ARG MKL_MODE
 ARG BUILD_MODE
 ARG ADD_USER
 ARG USE_CUDA=1
+ARG USE_CUDNN=1
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
 ARG IMAGE_FLAVOR
@@ -66,7 +67,7 @@ FROM ${CURL_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fvL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -82,9 +83,6 @@ ENV PYTHONUNBUFFERED=1
 # Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
 
-# Conda packages have higher run priority than system packages during the build.
-ENV PATH=/opt/conda/bin:${PATH}
-
 # `CONDA_MANAGER` may be either `mamba` or `conda`.
 ARG CONDA_MANAGER
 # Shortcut to simplify downstream installation.
@@ -95,21 +93,22 @@ ARG PYTHON_VERSION
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge or Mambaforge is used as this is the default anyway.
 # Clean out package and `__pycache__` directories to save space.
+# Configure aliases to use `conda` Python instead of system Python.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
-    $conda install -y python=${PYTHON_VERSION} && \
-    conda clean -fya && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+    $conda install -y python=${PYTHON_VERSION} && $conda clean -fya && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
+    update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
+    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1
 
 ########################################################################
-FROM install-conda AS install-mkl-base
+FROM install-conda AS build-base
+# `build-base` is the base stage for all heavy builds in the Dockerfile.
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
-COPY --link reqs/train-conda-build.requirements.txt /tmp/conda/build-requirements.txt
-
-########################################################################
-FROM install-mkl-base AS install-include-mkl
+ARG BUILD_REQS=/tmp/conda/build-requirements.txt
+COPY --link reqs/train-conda-build.requirements.txt ${BUILD_REQS}
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
@@ -119,30 +118,6 @@ FROM install-mkl-base AS install-include-mkl
 # Using the MatchSpec syntax for the magma-cuda package,
 # which is only available from the PyTorch channel.
 # All other packages should come from the `conda-forge` channel.
-ARG CUDA_VERSION
-ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
-    $conda install -y \
-        --file /tmp/conda/build-requirements.txt \
-        pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
-        mkl-include \
-        mkl
-
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
-ENV MKL_DEBUG_CPU_TYPE=5
-RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
-    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-
-# Use Intel OpenMP with optimizations enabled.
-# Some compilers can use OpenMP for faster builds.
-ENV KMP_BLOCKTIME=0
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
-
-########################################################################
-FROM install-mkl-base AS install-exclude-mkl
-
 # The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
 # though there are no restrictions on commercial use.
 # See the Intel(R) Simplified Software License (ISSL) for details.
@@ -151,17 +126,19 @@ FROM install-mkl-base AS install-exclude-mkl
 # See URL below for Intel licenses & EULAs.
 # https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
 # Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
+ARG MKL_MODE
 ARG CUDA_VERSION
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
-    $conda install -y \
-        --file /tmp/conda/build-requirements.txt \
-        pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
-        nomkl
-
-########################################################################
-FROM install-${MKL_MODE}-mkl AS build-base
-# `build-base` is the base stage for all heavy builds in the Dockerfile.
+    if [ "${MKL_MODE}" = "include" ]; then \
+    {   echo 'mkl'; \
+        echo 'mkl-include'; \
+    } >> ${BUILD_REQS}; \
+    elif [ "${MKL_MODE}" = "exclude" ]; then \
+      echo 'nomkl' >> ${BUILD_REQS}; \
+    else echo "Invalid `MKL_MODE`: ${MKL_MODE}." && exit -1; fi && \
+    echo "pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//')" >> ${BUILD_REQS} && \
+    $conda install -y --file ${BUILD_REQS}
 
 # Use Jemalloc as the system memory allocator for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
@@ -178,17 +155,17 @@ ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,mu
 # https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
 # https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
-ENV PATH=/opt/conda/bin/ccache:${PATH}
-# Enable `ccache` with unlimited memory size for faster builds.
-RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0
-
+# Add `/opt/conda/bin` to the end of the `PATH` during the build for portability.
+ENV PATH=/opt/conda/bin/ccache:${PATH}:/opt/conda/bin
 # Ensure that `ccache` is used by `cmake`.
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CUDA_COMPILER_LAUNCHER=ccache
 
 # Use LLD as the default linker for faster linking. Also update dynamic links.
-RUN ln -sf /opt/conda/bin/ld.lld /usr/bin/ld && ldconfig
+RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0 && \
+    ln -sf /opt/conda/bin/ld.lld /usr/bin/ld && \
+    ldconfig
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-torch
@@ -225,12 +202,12 @@ ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;cca
 # file while default values in `docker-compose.yaml` have higher priority than
 # default values specified for variables in the Dockerfile.
 ARG USE_CUDA
-ARG USE_CUDNN=${USE_CUDA}
+ARG USE_CUDNN
+ARG BUILD_TEST
 ARG USE_NNPACK
 ARG USE_QNNPACK
 ARG BUILD_CAFFE2
 ARG BUILD_CAFFE2_OPS
-ARG BUILD_TEST
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
@@ -277,7 +254,7 @@ RUN --mount=type=cache,target=/opt/ccache \
 FROM install-conda AS build-pillow
 # This stage is derived from `install-conda` instead of `build-base`
 # as it is very lightweight and does not require many dependencies.
-RUN $conda install -y libjpeg-turbo zlib && conda clean -fya
+RUN $conda install -y libjpeg-turbo zlib && $conda clean -fya
 
 # Specify the `Pillow-SIMD` version if necessary. The variable is not used yet.
 ARG PILLOW_SIMD_VERSION
@@ -306,7 +283,7 @@ COPY --link --from=clone-vision /opt/vision /opt/vision
 # Pillow will be uninstalled if it is present.
 RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
     python -m pip uninstall -y pillow && \
-    python -m pip install --force-reinstall --no-deps /tmp/dist/*
+    python -m pip install --no-deps /tmp/dist/*
 
 ARG USE_CUDA
 ARG USE_PRECOMPILED_HEADERS
@@ -400,8 +377,6 @@ RUN if [ ${INDEX_URL} ]; then \
     } > ${PIP_CONFIG_FILE}; \
     fi
 
-ARG PATH=/opt/conda/bin:${PATH}
-
 # `CONDA_MANAGER` should be either `mamba` or `conda`.
 # See the `install-conda` stage above for details.
 ARG CONDA_MANAGER
@@ -443,55 +418,18 @@ ARG PYTHONUNBUFFERED=1
 ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-
-# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
-# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
-ENV ZDOTDIR=/root
-
-# Setting the prompt to `pure`, which is available on all terminals without additional settings.
-# This is a personal preference and users may use any prompt that they wish (e.g., `oh-my-zsh`).
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=train-builds /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG ZSHA_PATH=${ZDOTDIR}/.zsh/zsh-autosuggestions
-#COPY --link --from=train-builds /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
-#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Add custom `zsh` aliases and settings.
-# Add `ll` alias for convenience. The Mac version of `ll` is used
-# instead of the Ubuntu version due to better configurability.
-# Add `wns` as an alias for `watch nvidia-smi`, which is used often.
-# Add `hist` as a shortcut to see the full history in `zsh`.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
-
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
-# Enable caching for `apt` packages in Docker.
-RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > \
-    /etc/apt/apt.conf.d/keep-cache
-
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # `apt` requirements are copied from the `train-stash` stage instead of from
 # `train-builds` to allow parallel installation with `conda`.
+# Intentionally ignoring the `apt` issue in Docker to reduce clutter and maybe space.
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md#example-cache-apt-packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
@@ -536,6 +474,19 @@ FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
+# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
+# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
+ENV ZDOTDIR=/root
+
+# Setting the prompt to `pure`, which is available on all terminals without additional settings.
+# This is a personal preference and users may use any prompt that they wish (e.g., `oh-my-zsh`).
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+#ARG ZSHA_PATH=${ZDOTDIR}/.zsh/zsh-autosuggestions
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds /opt/zsh/pure ${PURE_PATH}
+#COPY --link --from=train-builds /opt/zsh/zsh-autosuggestions ${ZSHA_PATH}
+COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+
 # Use Intel OpenMP with optimizations. See the documentation for details.
 # https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
 # Intel OpenMP thread blocking time in ms.
@@ -544,27 +495,44 @@ ENV KMP_BLOCKTIME=0
 # ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+# Enable Intel MKL optimizations on AMD CPUs. https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
 ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
 
 # Use Jemalloc for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
-# Jemalloc memory allocation configuration.
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-# Change `/root` directory permissions to allow configuration sharing.
-# Only the `/root` directory itself needs permission modification.
-# Subdirectory permissions are intentionally left unmodified.
-RUN chmod 711 /root
-
-# Update dynamic link cache.
-RUN ldconfig
+# Update configurations without adding `/opt/conda/bin` to `PATH`.
+RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
+    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1 && \
+    {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Add autosuggestions from terminal history. May be somewhat distracting.
+    # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Add the `conda` environment without adding `conda` to `PATH`.
+    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
+    # Add custom `zsh` aliases and settings.
+    {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Activate the `conda` environment.
+    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
+    # Syntax highlighting must be activated at the end of the `.zshrc` file.
+    echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` on startup.
+    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
+    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
+    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Change `ZDOTDIR` directory permissions to allow configuration sharing.
+    chmod 711 ${ZDOTDIR} && \
+    ldconfig  # Update dynamic link cache.
 
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:/opt/conda/bin:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]

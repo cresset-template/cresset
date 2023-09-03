@@ -44,6 +44,8 @@ If this is your first time using this project, follow these steps:
    Cresset has been tested on Windows 11 WSL2 with the Windows CUDA driver
    using Docker Desktop for Windows. There is no need to install a separate
    WSL CUDA driver or Docker for Linux inside WSL.
+   Note that only Docker Desktop is under a commercial EULA and Docker Engine 
+   (for Linux) and Lima Docker (for Mac) are still both open-source.
    _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
    Disable any active antivirus programs on Windows for best performance.
    _N.B._ Linux hosts may also install via this
@@ -108,10 +110,10 @@ use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 ### Notes for Rootless Users
 
 Many institutions forbid the use of Docker because it requires `root` permissions, compromising security.
-For users without Docker `root` access, using rootless Docker 
+For users without Docker `root` access, using rootless Docker
 [link](https://docs.docker.com/engine/security/rootless) is recommended.
 
-While installing rootless Docker requires root permissions on the host, 
+While installing rootless Docker requires root permissions on the host,
 root permissions are not necessary after the initial installation.
 
 When using rootless Docker, it is most convenient to set `ADD_USER=exclude` in the `.env` file
@@ -184,7 +186,7 @@ CCA=8.6              # Compute capability. CCA=8.6 for RTX3090.
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
 BUILD_MODE=exclude               # Whether to build PyTorch from source.
-PYTORCH_VERSION_TAG=v2.0.0       # Any `git` branch or tag name can be used.
+PYTORCH_VERSION_TAG=v2.0.0       # Any `git` tag can be used (but not just any commit hash).
 TORCHVISION_VERSION_TAG=v0.15.1
 
 # General environment configurations.

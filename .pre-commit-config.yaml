@@ -32,13 +32,13 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.280
+    rev: v0.0.287
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0
+    rev: v3.0.3
     hooks:
       - id: prettier
         files: \.(json|jsx|md|mdx|yaml)$
@@ -59,13 +59,13 @@ repos:
       - id: nbqa-ruff # Run `ruff` on Jupyter Notebooks.
       - id: nbqa-black # Remove later when the `ruff` auto-formatter is ready.
 
-  - repo: local # Clear all Jupyter outputs before committing.
-    hooks: # Comment this out if it is not the desired behavior.
-      - id: jupyter-nb-clear-output
-        name: jupyter-nb-clear-output
-        types: [jupyter]
-        stages: [commit]
-        language: python
-        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
-        additional_dependencies:
-          - nbconvert
+#  - repo: local # Clear all Jupyter outputs before committing.
+#    hooks: # Comment this out if it is not the desired behavior.
+#      - id: jupyter-nb-clear-output
+#        name: jupyter-nb-clear-output
+#        types: [jupyter]
+#        stages: [commit]
+#        language: python
+#        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+#        additional_dependencies:
+#          - nbconvert
