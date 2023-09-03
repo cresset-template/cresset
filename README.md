@@ -44,6 +44,8 @@ If this is your first time using this project, follow these steps:
    Cresset has been tested on Windows 11 WSL2 with the Windows CUDA driver
    using Docker Desktop for Windows. There is no need to install a separate
    WSL CUDA driver or Docker for Linux inside WSL.
+   Note that only Docker Desktop is under a commercial EULA and Docker Engine 
+   (for Linux) and Lima Docker (for Mac) are still both open-source.
    _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
    Disable any active antivirus programs on Windows for best performance.
    _N.B._ Linux hosts may also install via this
