@@ -108,10 +108,10 @@ use the `${SERVICE}` specified by `make env SERVICE=${SERVICE}` after the
 ### Notes for Rootless Users
 
 Many institutions forbid the use of Docker because it requires `root` permissions, compromising security.
-For users without Docker `root` access, using rootless Docker 
+For users without Docker `root` access, using rootless Docker
 [link](https://docs.docker.com/engine/security/rootless) is recommended.
 
-While installing rootless Docker requires root permissions on the host, 
+While installing rootless Docker requires root permissions on the host,
 root permissions are not necessary after the initial installation.
 
 When using rootless Docker, it is most convenient to set `ADD_USER=exclude` in the `.env` file
