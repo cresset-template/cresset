@@ -48,7 +48,7 @@ ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/_conda/.condarc && \
-    /opt/_conda/bin/conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
+    $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
     find /opt/_conda -type d -name '__pycache__' | xargs rm -rf
 
 # Install the same version of Python as the system Python in the NGC image.
@@ -76,6 +76,11 @@ ARG PYTHONUNBUFFERED=1
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
 
+# Set timezone. This is placed in `train-base` for timezone consistency,
+# though it may be more appropriate to have it only in interactive mode.
+ARG TZ
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
@@ -84,34 +89,6 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
-
-# Set timezone. This is placed in `train-base` for timezone consistency,
-# though it may be more appropriate to have it only in interactive mode.
-ARG TZ
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-
-ENV ZDOTDIR=/root
-# Setting the prompt to `pure`.
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Configure `tmux` to use `zsh` on startup.
-RUN echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf
-
-# Add custom aliases and settings.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
 
 ########################################################################
 FROM train-base AS train-adduser-include
@@ -160,26 +137,57 @@ ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so:${LD_PRELOAD}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-# Change `/root` directory permissions to allow configuration sharing.
-RUN chmod 711 /root
+ENV ZDOTDIR=/root
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
+COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 
-ARG PROJECT_ROOT=/opt/project
-# `conda` binaries are intentionally placed at the end of the ${PATH} to prevent
-# clashes with system binaries, especially between system and conda python.
-ENV PATH=${PROJECT_ROOT}:${PATH}:/opt/conda/bin
-# Search for additional Python packages installed via `conda`.
-# This requires `/opt/conda/lib/python3` to be created as a symlink beforehand.
-# Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
-RUN ln -s \
+# Ensure that Python is always system Python instead of `conda` python.
+# Update alternatives must come before `PATH` is set to include `conda` Python.
+RUN update-alternatives --install /opt/conda/bin/python  python  $(readlink -f $(which python))  1 && \
+    update-alternatives --install /opt/conda/bin/python3 python3 $(readlink -f $(which python3)) 1 && \
+    ln -s \
+    # Search for additional Python packages installed via `conda`.
     /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /opt/conda/lib/python3 && \
     ln -s \
+    # Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
     /usr/local/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
-    /usr/local/lib/python3
+    /usr/local/lib/python3 && \
+    # Setting the prompt to `pure`.
+    {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Add autosuggestions from terminal history. May be somewhat distracting.
+    # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Add custom `zsh` aliases and settings.
+    {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Syntax highlighting must be activated at the end of the `.zshrc` file.
+    echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` on startup.
+    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
+    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
+    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Change `ZDOTDIR` directory permissions to allow configuration sharing.
+    chmod 711 ${ZDOTDIR} && \
+    ldconfig  # Update dynamic link cache.
+
+# No alternative to adding the `/opt/conda/bin` directory to `PATH`.
+# Python will stay system Python due to the alternatives aliasing.
+# The `conda` binaries are placed in front of `PATH` as they are
+# preferable to system packages during runtime.
+ENV PATH=/opt/conda/bin:${PATH}
 
 # Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
 # prevent conflict when `conda` installs different versions of the same package.
+ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}:/usr/local/lib/python3/dist-packages
 ENV PYTHONPATH=${PYTHONPATH}:/opt/conda/lib/python3/site-packages
+
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]

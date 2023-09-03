@@ -22,7 +22,7 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 # Copy and install `apt` requirements for hub images.
-COPY --link ../reqs/hub-apt.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/hub-apt.requirements.txt   /tmp/apt/requirements.txt
 COPY --link ../reqs/hub-conda.requirements.txt /tmp/req/requirements.txt
 
 ########################################################################
@@ -35,8 +35,12 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-# Install `apt` requirements.
-# `tzdata` requires noninteractive mode.
+# Set timezone. This is placed in `train-base` for timezone consistency,
+# though it may be more appropriate to have it only in interactive mode.
+ARG TZ
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+
+# Install `apt` requirements. Note that `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     apt-get update && \
@@ -55,52 +59,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,from=stash,source=/tmp/req,target=/tmp/req \
     conda install --freeze-installed -n base -c conda-forge \
-        --file /tmp/req/requirements.txt && \
-    ldconfig  # Run `ldconfig` to update dynamic linking paths.
-
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
-# This part requires `gcc`, which may not be present in `runtime` imags.
-ENV MKL_DEBUG_CPU_TYPE=5
-RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
-    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
-
-ENV KMP_BLOCKTIME=0
-# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
-
-# Jemalloc configurations.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
-ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
-
-# Set timezone. This is placed in `train-base` for timezone consistency,
-# though it may be more appropriate to have it only in interactive mode.
-ARG TZ
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-
-ENV ZDOTDIR=/root
-# Setting the prompt to `pure`.
-ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
-COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
-RUN {   echo "fpath+=${PURE_PATH}"; \
-        echo "autoload -Uz promptinit; promptinit"; \
-        echo "prompt pure"; \
-    } >> ${ZDOTDIR}/.zshrc
-
-# Add syntax highlighting. This must be activated after auto-suggestions.
-ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
-COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc
-
-# Configure `tmux` to use `zsh` on startup.
-RUN echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf
-
-# Add custom aliases and settings.
-RUN {   echo "alias ll='ls -lh'"; \
-        echo "alias wns='watch nvidia-smi'"; \
-        echo "alias hist='history 1'"; \
-    } >> ${ZDOTDIR}/.zshrc
+        --file /tmp/req/requirements.txt
 
 ########################################################################
 FROM train-base AS train-adduser-include
@@ -128,11 +87,52 @@ FROM train-base AS train-adduser-exclude
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
 
-# Change `/root` directory permissions to allow configuration sharing.
-RUN chmod 711 /root
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV KMP_BLOCKTIME=0
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
+# This part requires `gcc`, which may not be present in `runtime` imags.
+ENV MKL_DEBUG_CPU_TYPE=5
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+
+# Jemalloc configurations.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+ENV ZDOTDIR=/root
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
+COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Add autosuggestions from terminal history. May be somewhat distracting.
+    # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Add the `conda` environment without adding `conda` to `PATH`.
+    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
+    # Add custom `zsh` aliases and settings.
+    {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Activate the `conda` environment.
+    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
+    # Syntax highlighting must be activated at the end of the `.zshrc` file.
+    echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` on startup.
+    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
+    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
+    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Change `ZDOTDIR` directory permissions to allow configuration sharing.
+    chmod 711 ${ZDOTDIR} && \
+    ldconfig  # Update dynamic link cache.
 
 ARG PROJECT_ROOT=/opt/project
-ENV PATH=${PROJECT_ROOT}:${PATH}
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]
