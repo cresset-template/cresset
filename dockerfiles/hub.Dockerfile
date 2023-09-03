@@ -35,14 +35,11 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-# Set timezone. This is placed in `train-base` for timezone consistency,
-# though it may be more appropriate to have it only in interactive mode.
+# Note that `tzdata` requires noninteractive mode.
 ARG TZ
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-
-# Install `apt` requirements. Note that `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
     apt-get update && \
     sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \

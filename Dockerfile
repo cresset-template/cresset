@@ -418,21 +418,18 @@ ARG PYTHONUNBUFFERED=1
 ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
 # `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
-# Enable caching for `apt` packages in Docker.
-RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > \
-    /etc/apt/apt.conf.d/keep-cache
-
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # `apt` requirements are copied from the `train-stash` stage instead of from
 # `train-builds` to allow parallel installation with `conda`.
+# Intentionally ignoring the `apt` issue in Docker to reduce clutter and maybe space.
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md#example-cache-apt-packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
     if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \

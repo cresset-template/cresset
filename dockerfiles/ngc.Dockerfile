@@ -76,15 +76,12 @@ ARG PYTHONUNBUFFERED=1
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
 
-# Set timezone. This is placed in `train-base` for timezone consistency,
-# though it may be more appropriate to have it only in interactive mode.
-ARG TZ
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
+ARG TZ
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
     apt-get update && \
     sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
