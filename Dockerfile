@@ -158,8 +158,8 @@ WORKDIR /opt/ccache
 # Force `ccache` to use the faster `direct_mode`.
 # N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
 ENV CCACHE_DIRECT=True
-# Add `/opt/conda/bin` to the end of the `PATH` during the build for portability.
-ENV PATH=/opt/conda/bin/ccache:${PATH}:/opt/conda/bin
+# Packages installed by `conda` have higher priority during the build.
+ENV PATH=/opt/conda/bin/ccache:/opt/conda/bin:${PATH}
 # Ensure that `ccache` is used by `cmake`.
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -213,7 +213,7 @@ ARG BUILD_CAFFE2
 ARG BUILD_CAFFE2_OPS
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
-ARG CMAKE_PREFIX_PATH=/opt/conda
+# ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
 # The `--threads` option is only available for CUDA 11.2+.
 ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads"
 # Build wheel for installation in later stages.
