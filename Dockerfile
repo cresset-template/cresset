@@ -155,6 +155,9 @@ ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,mu
 # https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
 # https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
+# Force `ccache` to use the faster `direct_mode`.
+# N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
+ENV CCACHE_DIRECT=True
 # Add `/opt/conda/bin` to the end of the `PATH` during the build for portability.
 ENV PATH=/opt/conda/bin/ccache:${PATH}:/opt/conda/bin
 # Ensure that `ccache` is used by `cmake`.
@@ -211,7 +214,8 @@ ARG BUILD_CAFFE2_OPS
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
 ARG CMAKE_PREFIX_PATH=/opt/conda
-ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+# The `--threads` option is only available for CUDA 11.2+.
+ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 RUN --mount=type=cache,target=/opt/ccache \
@@ -257,12 +261,13 @@ FROM install-conda AS build-pillow
 RUN $conda install -y libjpeg-turbo zlib && $conda clean -fya
 
 # Specify the `Pillow-SIMD` version if necessary. The variable is not used yet.
+# Set as `PILLOW_SIMD_VERSION="==VERSION_NUMBER"` for use in the current setup.
 ARG PILLOW_SIMD_VERSION
 # The condition ensures that AVX2 instructions are built only if available.
 # May cause issues if the image is used on a machine with a different SIMD ISA.
 RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
+        Pillow-SIMD${PILLOW_SIMD_VERSION}
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-vision
@@ -309,19 +314,33 @@ FROM install-conda AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
 ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
 ARG PYTORCH_VERSION
-RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+    python -m pip wheel \
+        --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
-        torch==${PYTORCH_VERSION}
+        torch==${PYTORCH_VERSION}; else \
+    python -m pip wheel --pre \
+        --no-deps --wheel-dir /tmp/dist \
+        --index-url ${PYTORCH_INDEX_URL} \
+        torch
 
 ########################################################################
 FROM install-conda AS fetch-vision
 
 ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
 ARG TORCHVISION_VERSION
-RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+    python -m pip wheel \
+        --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
-        torchvision==${TORCHVISION_VERSION}
+        torchvision==${TORCHVISION_VERSION}; else \
+    python -m pip wheel --pre \
+        --no-deps --wheel-dir /tmp/dist \
+        --index-url ${PYTORCH_INDEX_URL} \
+        torchvision
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-stash
@@ -366,16 +385,15 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 # Using a separate stage allows for build modularity
 # and parallel installation with system packages.
 
-# Adds a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
 ARG INDEX_URL
+ARG EXTRA_INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
-RUN if [ ${INDEX_URL} ]; then \
-    {   echo "[global]"; \
+RUN {   echo "[global]"; \
         echo "index-url=${INDEX_URL}"; \
+        echo "extra-index-url=${EXTRA_INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
-    } > ${PIP_CONFIG_FILE}; \
-    fi
+    } > ${PIP_CONFIG_FILE}
 
 # `CONDA_MANAGER` should be either `mamba` or `conda`.
 # See the `install-conda` stage above for details.
