@@ -141,7 +141,7 @@ RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda install -y --file ${BUILD_REQS}
 
 # Use Jemalloc as the system memory allocator for efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
@@ -513,14 +513,14 @@ COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 ENV KMP_BLOCKTIME=0
 # Configure CPU thread affinity.
 # ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Enable Intel MKL optimizations on AMD CPUs. https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Use Jemalloc for efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 # Update configurations without adding `/opt/conda/bin` to `PATH`.

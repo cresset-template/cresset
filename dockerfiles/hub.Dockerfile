@@ -87,15 +87,15 @@ FROM train-adduser-${ADD_USER} AS train
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV KMP_BLOCKTIME=0
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
 # This part requires `gcc`, which may not be present in `runtime` imags.
 ENV MKL_DEBUG_CPU_TYPE=5
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
     gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Jemalloc configurations.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 ENV ZDOTDIR=/root
