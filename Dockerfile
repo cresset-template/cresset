@@ -317,14 +317,15 @@ ARG PYTORCH_INDEX_URL
 ARG PYTORCH_FETCH_NIGHTLY
 ARG PYTORCH_VERSION
 RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
-    python -m pip wheel \
-        --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torch==${PYTORCH_VERSION}; else \
-    python -m pip wheel --pre \
-        --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torch
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch==${PYTORCH_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch
 
 ########################################################################
 FROM install-conda AS fetch-vision
@@ -333,14 +334,15 @@ ARG PYTORCH_INDEX_URL
 ARG PYTORCH_FETCH_NIGHTLY
 ARG TORCHVISION_VERSION
 RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
-    python -m pip wheel \
-        --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torchvision==${TORCHVISION_VERSION}; else \
-    python -m pip wheel --pre \
-        --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torchvision
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision==${TORCHVISION_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-stash
