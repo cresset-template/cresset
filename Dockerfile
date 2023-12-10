@@ -42,10 +42,8 @@ ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS
-
-# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
-ARG GIT_IMAGE=alpine/git:edge-2.38.1
-ARG CURL_IMAGE=curlimages/curl:latest
+# The bitnami `git` image also includes `curl`.
+ARG GIT_IMAGE=bitnami/git:latest
 
 # Build-related packages are pre-installed on CUDA `devel` images.
 # The `TRAIN_IMAGE` will use the `devel` flavor by default for convenience.
@@ -53,7 +51,7 @@ ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
-FROM ${CURL_IMAGE} AS curl-conda
+FROM ${GIT_IMAGE} AS curl-conda
 # An image used solely to download `conda` from the internet.
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
@@ -68,13 +66,6 @@ FROM ${CURL_IMAGE} AS curl-conda
 ARG CONDA_URL
 WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
-
-########################################################################
-FROM ${CURL_IMAGE} AS curl-brew
-
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-WORKDIR /tmp/brew
-RUN curl -fsSL -o /tmp/brew/install_brew.sh ${BREW_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -277,6 +268,16 @@ RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
         Pillow-SIMD${PILLOW_SIMD_VERSION}
 
 ########################################################################
+FROM install-conda AS fetch-brew
+
+ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+ARG PATH=/opt/conda/bin:${PATH}
+RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
+     $conda install -y curl git && $conda clean -fya && \
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+
+########################################################################
 FROM ${GIT_IMAGE} AS clone-vision
 
 ARG TORCHVISION_VERSION_TAG
@@ -332,7 +333,8 @@ RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
         python -m pip wheel --pre \
             --no-deps --wheel-dir /tmp/dist \
             --index-url ${PYTORCH_INDEX_URL} \
-            torch
+            torch; \
+    fi
 
 ########################################################################
 FROM install-conda AS fetch-vision
@@ -349,7 +351,8 @@ RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
         python -m pip wheel --pre \
             --no-deps --wheel-dir /tmp/dist \
             --index-url ${PYTORCH_INDEX_URL} \
-            torchvision
+            torchvision; \
+    fi
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-stash
@@ -373,6 +376,7 @@ COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
@@ -386,6 +390,7 @@ COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -441,10 +446,6 @@ ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
-
-# Install HomeBrew.
-RUN --mount=type=bind,from=curl-brew,source=/tmp/brew,target=/tmp/brew \
-    /bin/bash /tmp/brew/install_brew.sh
 
 ARG TZ
 ARG DEB_OLD
@@ -505,6 +506,9 @@ FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
+# Install HomeBrew for Linux.
+COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
+
 # The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
 # See the `zsh` manual for details. https://zsh-manual.netlify.app/files
 ENV ZDOTDIR=/root
@@ -540,8 +544,6 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
     # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Add the `conda` environment without adding `conda` to `PATH`.
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
     # Add custom `zsh` aliases and settings.
     {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
@@ -549,16 +551,18 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
     # Activate HomeBrew for Linux on login.
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
+ENV PATH=/opt/conda/bin:${PATH}
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}
