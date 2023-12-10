@@ -79,7 +79,7 @@ ENV SHELL=''
 
 # Install HomeBrew.
 ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -165,21 +165,22 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
     # Activate HomeBrew for Linux on login.
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
 # No alternative to adding the `/opt/conda/bin` directory to `PATH`.
 # The `conda` binaries are placed at the end of the `PATH` to ensure that
-# system Python is used instead of `conda` python.
+# system Python is used instead of `conda` python unlike in the other services.
 # If a `conda` package must have higher priority than a system package,
-# explicitly delete the system package.
+# explicitly delete the system package as a workaraound.
 ENV PATH=${PATH}:/opt/conda/bin
 
 # Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
