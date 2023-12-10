@@ -178,9 +178,10 @@ FROM ${GIT_IMAGE} AS clone-torch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
-        ${TORCH_URL} /opt/pytorch
+# Use at most 8 jobs for cloning the repository and its submodules.
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${PYTORCH_VERSION_TAG} ${TORCH_URL} /opt/pytorch
 
 ########################################################################
 FROM build-base AS build-torch
@@ -282,9 +283,9 @@ FROM ${GIT_IMAGE} AS clone-vision
 
 ARG TORCHVISION_VERSION_TAG
 ARG VISION_URL=https://github.com/pytorch/vision.git
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${TORCHVISION_VERSION_TAG} \
-        ${VISION_URL} /opt/vision
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${TORCHVISION_VERSION_TAG} ${VISION_URL} /opt/vision
 
 ########################################################################
 FROM build-torch AS build-vision
