@@ -32,10 +32,11 @@ repos:
 
   # Ruff should be executed before other formatters.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.287
+    rev: v0.1.15
     hooks:
       - id: ruff
         args: [--exit-non-zero-on-fix]
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.3
@@ -47,11 +48,6 @@ repos:
     rev: v0.9.0
     hooks:
       - id: shellcheck
-
-  - repo: https://github.com/psf/black
-    rev: 23.7.0
-    hooks: # Update to the `ruff` auto-formatter later.
-      - id: black
 
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
