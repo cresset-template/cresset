@@ -99,7 +99,7 @@ services:
         # However, `mamba` may be unable to resolve conflicts that `conda` can.
         # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
         # Installing `mamba` via mamba-forge is strongly recommended.
-        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
     deploy: # API dependent on compose version.
       resources:
