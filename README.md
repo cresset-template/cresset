@@ -57,7 +57,7 @@ If this is your first time using this project, follow these steps:
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env SERVICE=(train|devel|ngc|hub|simple)` on the terminal
+4. Run `make env SERVICE=(train|devel|ngc|simple)` on the terminal
    at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.
@@ -122,7 +122,7 @@ as the `root` user will be the host user in rootless Docker.
 ## Project Configuration
 
 1. To build PyTorch from source, set `BUILD_MODE=include` and the
-   CUDA Compute Capability (CCA) of the target NVIDIA GPU in the `.env` file.
+   CUDA Compute Capability (CCC) of the target NVIDIA GPU in the `.env` file.
    Visit the NVIDIA [website](https://developer.nvidia.com/cuda-gpus#compute)
    to find compute capabilities of NVIDIA GPUs. Visit the
    [documentation](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capabilities)
@@ -178,10 +178,10 @@ PROJECT_ROOT=/opt/project
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
-# NVIDIA GPU Compute Capability (CCA) values may be found at https://developer.nvidia.com/cuda-gpus
-CCA=8.6              # Compute capability. CCA=8.6 for RTX3090.
-# CCA='8.6+PTX'      # The '+PTX' enables forward compatibility. Multiple CCAs can also be specified.
-# CCA='7.5 8.6+PTX'  # Visit https://pytorch.org/docs/stable/cpp_extension.html for details.
+# NVIDIA GPU Compute Capability (CCC) values may be found at https://developer.nvidia.com/cuda-gpus
+CCC=8.6              # Compute capability. CCC=8.6 for RTX3090.
+# CCC='8.6+PTX'      # The '+PTX' enables forward compatibility. Multiple CCCs can also be specified.
+# CCC='7.5 8.6+PTX'  # Visit https://pytorch.org/docs/stable/cpp_extension.html for details.
 
 # Used only if building PyTorch from source (`BUILD_MODE=include`).
 # The `*_TAG` variables are used only if `BUILD_MODE=include`. No effect otherwise.
@@ -441,6 +441,10 @@ See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) a
 [Compose](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary)
 for details. JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
+
+When using the `ngc` service, add `/usr/local/lib/python3/dist-packages` and 
+`/opt/conda/lib/python3/site-packages` to the interpreter search paths via 
+the GUI to enable code assistance on the packages installed with `conda`.
 
 _N.B._ PyCharm Professional and other JetBrains IDEs are available
 free of charge to anyone with a valid university e-mail address.

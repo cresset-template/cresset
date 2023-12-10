@@ -44,6 +44,7 @@ dependencies: # Use conda packages if possible.
   - nano
   - pandera
   - parallel
+  - pdoc
   - pre-commit
   - pytest
   - pytest-xdist

@@ -53,6 +53,7 @@ RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
 
 # Install the same version of Python as the system Python in the NGC image.
 # The `readwrite` option is necessary for `pip` installation via `conda`.
+
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/_conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
@@ -75,6 +76,10 @@ ARG PYTHONUNBUFFERED=1
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
+
+# Install HomeBrew.
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -121,7 +126,7 @@ ENV KMP_BLOCKTIME=0
 # ENV KMP_AFFINITY="granularity=fine,compact,1,0"
 # Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
 # Using the older system MKL to prevent version clashes with NGC packages.
-ENV LD_PRELOAD=/usr/local/lib/libiomp5.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/usr/local/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
@@ -129,9 +134,9 @@ ENV LD_PRELOAD=/usr/local/lib/libiomp5.so:${LD_PRELOAD}
 ENV MKL_DEBUG_CPU_TYPE=5
 RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /tmp/fakeintel.c && \
     gcc -shared -fPIC -o /usr/local/bin/libfakeintel.so /tmp/fakeintel.c
-ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 # Configure Jemalloc as the default memory allocator.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 ENV ZDOTDIR=/root
@@ -140,17 +145,11 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 
-# Ensure that Python is always system Python instead of `conda` python.
-# Update alternatives must come before `PATH` is set to include `conda` Python.
-RUN update-alternatives --install /opt/conda/bin/python  python  $(readlink -f $(which python))  1 && \
-    update-alternatives --install /opt/conda/bin/python3 python3 $(readlink -f $(which python3)) 1 && \
-    ln -s \
-    # Search for additional Python packages installed via `conda`.
-    /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
+# Search for additional Python packages installed via `conda`.
+RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /opt/conda/lib/python3 && \
-    ln -s \
     # Create a symbolic link to add Python `site-packages` to `PYTHONPATH`.
-    /usr/local/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
+    ln -s /usr/local/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /usr/local/lib/python3 && \
     # Setting the prompt to `pure`.
     {   echo "fpath+=${PURE_PATH}"; \
@@ -166,19 +165,23 @@ RUN update-alternatives --install /opt/conda/bin/python  python  $(readlink -f $
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    # Activate HomeBrew for Linux on login.
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
-    chmod 711 ${ZDOTDIR} && \
+    chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
 # No alternative to adding the `/opt/conda/bin` directory to `PATH`.
-# Python will stay system Python due to the alternatives aliasing.
-# The `conda` binaries are placed in front of `PATH` as they are
-# preferable to system packages during runtime.
-ENV PATH=/opt/conda/bin:${PATH}
+# The `conda` binaries are placed at the end of the `PATH` to ensure that
+# system Python is used instead of `conda` python unlike in the other services.
+# If a `conda` package must have higher priority than a system package,
+# explicitly delete the system package as a workaraound.
+ENV PATH=${PATH}:/opt/conda/bin
 
 # Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
 # prevent conflict when `conda` installs different versions of the same package.

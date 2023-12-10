@@ -16,4 +16,5 @@ dependencies: # Use conda packages if possible.
   # For `pip` dependencies that are not available in conda.
   - pip
   - pip:
+      - deepspeed
       - pyre-check

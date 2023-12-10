@@ -42,10 +42,8 @@ ARG LINUX_DISTRO
 ARG DISTRO_VERSION
 ARG TORCH_CUDA_ARCH_LIST
 ARG USE_PRECOMPILED_HEADERS
-
-# Fixing `git` to 2.38.1 as it is the last version to support `jobs=0`.
-ARG GIT_IMAGE=alpine/git:edge-2.38.1
-ARG CURL_IMAGE=curlimages/curl:latest
+# The bitnami `git` image also includes `curl`.
+ARG GIT_IMAGE=bitnami/git:latest
 
 # Build-related packages are pre-installed on CUDA `devel` images.
 # The `TRAIN_IMAGE` will use the `devel` flavor by default for convenience.
@@ -53,12 +51,12 @@ ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
 
 ########################################################################
-FROM ${CURL_IMAGE} AS curl-conda
+FROM ${GIT_IMAGE} AS curl-conda
 # An image used solely to download `conda` from the internet.
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
 # The Anaconda `defaults` channel is no longer free for commercial use.
-# Using Miniforge or Mambaforge is strongly recommended. Viva la Open Source!
+# Using Miniforge is strongly recommended. Viva la Open Source!
 # Use Miniconda only if absolutely necessary.
 # The defaults channel will be removed and the conda-forge channel will be used.
 # https://conda.io/en/latest/license.html
@@ -91,7 +89,7 @@ ENV conda=/opt/conda/bin/${CONDA_MANAGER}
 ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
-# No effect if Miniforge or Mambaforge is used as this is the default anyway.
+# No effect if Miniforge is used as this is the default anyway.
 # Clean out package and `__pycache__` directories to save space.
 # Configure aliases to use `conda` Python instead of system Python.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
@@ -141,7 +139,7 @@ RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda install -y --file ${BUILD_REQS}
 
 # Use Jemalloc as the system memory allocator for efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
@@ -155,8 +153,11 @@ ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,mu
 # https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
 # https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
-# Add `/opt/conda/bin` to the end of the `PATH` during the build for portability.
-ENV PATH=/opt/conda/bin/ccache:${PATH}:/opt/conda/bin
+# Force `ccache` to use the faster `direct_mode`.
+# N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
+ENV CCACHE_DIRECT=True
+# Packages installed by `conda` have higher priority during the build.
+ENV PATH=/opt/conda/bin/ccache:/opt/conda/bin:${PATH}
 # Ensure that `ccache` is used by `cmake`.
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -210,8 +211,9 @@ ARG BUILD_CAFFE2
 ARG BUILD_CAFFE2_OPS
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
-ARG CMAKE_PREFIX_PATH=/opt/conda
-ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+# ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
+# The `--threads` option is only available for CUDA 11.2+.
+ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 RUN --mount=type=cache,target=/opt/ccache \
@@ -257,12 +259,23 @@ FROM install-conda AS build-pillow
 RUN $conda install -y libjpeg-turbo zlib && $conda clean -fya
 
 # Specify the `Pillow-SIMD` version if necessary. The variable is not used yet.
+# Set as `PILLOW_SIMD_VERSION="==VERSION_NUMBER"` for use in the current setup.
 ARG PILLOW_SIMD_VERSION
 # The condition ensures that AVX2 instructions are built only if available.
 # May cause issues if the image is used on a machine with a different SIMD ISA.
 RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
     python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
+        Pillow-SIMD${PILLOW_SIMD_VERSION}
+
+########################################################################
+FROM install-conda AS fetch-brew
+
+ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+ARG PATH=/opt/conda/bin:${PATH}
+RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
+     $conda install -y curl git && $conda clean -fya && \
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-vision
@@ -309,19 +322,37 @@ FROM install-conda AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
 ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
 ARG PYTORCH_VERSION
-RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torch==${PYTORCH_VERSION}
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch==${PYTORCH_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch; \
+    fi
 
 ########################################################################
 FROM install-conda AS fetch-vision
 
 ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
 ARG TORCHVISION_VERSION
-RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        --index-url ${PYTORCH_INDEX_URL} \
-        torchvision==${TORCHVISION_VERSION}
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision==${TORCHVISION_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision; \
+    fi
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-stash
@@ -345,6 +376,7 @@ COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
@@ -358,6 +390,7 @@ COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -366,16 +399,15 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 # Using a separate stage allows for build modularity
 # and parallel installation with system packages.
 
-# Adds a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
 ARG INDEX_URL
+ARG EXTRA_INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
-RUN if [ ${INDEX_URL} ]; then \
-    {   echo "[global]"; \
+RUN {   echo "[global]"; \
         echo "index-url=${INDEX_URL}"; \
+        echo "extra-index-url=${EXTRA_INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
-    } > ${PIP_CONFIG_FILE}; \
-    fi
+    } > ${PIP_CONFIG_FILE}
 
 # `CONDA_MANAGER` should be either `mamba` or `conda`.
 # See the `install-conda` stage above for details.
@@ -474,6 +506,9 @@ FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
+# Install HomeBrew for Linux.
+COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
+
 # The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
 # See the `zsh` manual for details. https://zsh-manual.netlify.app/files
 ENV ZDOTDIR=/root
@@ -493,44 +528,41 @@ COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 ENV KMP_BLOCKTIME=0
 # Configure CPU thread affinity.
 # ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Enable Intel MKL optimizations on AMD CPUs. https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Use Jemalloc for efficient memory management.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-# Update configurations without adding `/opt/conda/bin` to `PATH`.
-RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1 && \
-    {   echo "fpath+=${PURE_PATH}"; \
+RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
     # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Add the `conda` environment without adding `conda` to `PATH`.
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
     # Add custom `zsh` aliases and settings.
     {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \
-    # Activate the `conda` environment.
-    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    # Activate HomeBrew for Linux on login.
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
-    chmod 711 ${ZDOTDIR} && \
+    chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
+ENV PATH=/opt/conda/bin:${PATH}
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}

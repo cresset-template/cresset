@@ -38,14 +38,23 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 
+# Both `conda` and `brew` are installed here despite worries that
+# the differences between the base images will cause issues.
 ARG CONDA_URL
 WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
-    update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
+ARG CONDA_MANAGER
+ARG PATH=/opt/conda/bin:${PATH}
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
+ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
+     $conda install -y curl git && $conda clean -fya && \
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 WORKDIR /
 
@@ -198,15 +207,18 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 # https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
 ENV KMP_BLOCKTIME=0
 # ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
 ENV MKL_DEBUG_CPU_TYPE=5
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 # Configure Jemalloc as the default memory allocator.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:${LD_PRELOAD}
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+# Install HomeBrew for Linux.
+COPY --link --from=stash /home/linuxbrew /home/linuxbrew
 
 ENV ZDOTDIR=/root
 # Setting the prompt to `pure`.
@@ -214,33 +226,31 @@ ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1 && \
-    {   echo "fpath+=${PURE_PATH}"; \
+RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
     # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Add the `conda` environment without adding `conda` to `PATH`.
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
     # Add custom `zsh` aliases and settings.
     {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \
-    # Activate the `conda` environment.
-    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    # Activate HomeBrew for Linux on login.
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
-    chmod 711 ${ZDOTDIR} && \
+    chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
+ENV PATH=/opt/conda/bin:${PATH}
 ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}

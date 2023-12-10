@@ -9,7 +9,7 @@
 # Note that variables defined in the host shell are ignored if the
 # `.env` file also defines those variables due to the current logic.
 SERVICE = train
-COMMAND = /bin/zsh
+COMMAND = /usr/bin/zsh --login
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes,

@@ -19,8 +19,8 @@
 
 # See https://pytorch.org/docs/stable/cpp_extension.html for an
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
-# The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
-# Compute Capability must be specified via the `CCA` variable.
+# The variable `CCC` is used to specify `TORCH_CUDA_ARCH_LIST`.
+# Compute Capability must be specified via the `CCC` variable.
 
 # Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
 # https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
@@ -98,8 +98,8 @@ services:
         # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
         # However, `mamba` may be unable to resolve conflicts that `conda` can.
         # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-        # Installing `mamba` via mamba-forge is strongly recommended.
-        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh}
+        # Installing `mamba` via mini-forge is strongly recommended.
+        CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
     deploy: # API dependent on compose version.
       resources:
@@ -125,26 +125,30 @@ services:
         USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
+        CUDA_VERSION: ${CUDA_VERSION:-12.1.1}
         CUDNN_VERSION: ${CUDNN_VERSION:-8}
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
-        # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
-        TORCH_CUDA_ARCH_LIST: ${CCA} # Ignore the missing CCA warning otherwise.
+        # Fails if `BUILD_MODE=include` but `CCC` is not set explicitly.
+        TORCH_CUDA_ARCH_LIST: ${CCC} # Ignore the missing CCC warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.2}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.1.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.16.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.15.2}
-        # URLs for faster `apt` and `pip` installs. Comment out to use the defaults.
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}
+        # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
+        # Also remember to change the index url to the nightly version.
+        PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.1.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.16.1}
+        # URLs for faster `apt` and `pip` installs.
         # Use URLs optimized for location and security requirements.
-        # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        # DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
-        # INDEX_URL: ${INDEX_URL:-http://mirror.kakao.com/pypi/simple}
-        # TRUSTED_HOST: ${TRUSTED_HOST:-mirror.kakao.com}
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
+        INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
+        EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
+        TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
 
   devel: # Skeleton service for development and debugging.
     extends: # This service may be useful for PyTorch CUDA/C++ contributors.
@@ -163,19 +167,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-08}
-
-  hub: # Service based on the official PyTorch Docker images from Docker Hub.
-    extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags
-      service: base
-    build:
-      dockerfile: dockerfiles/hub.Dockerfile
-      args:
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.0.1}
-        # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
-        CUDA_SHORT_VERSION: ${CUDA_SHORT_VERSION:-11.7}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
+        NGC_MONTH: ${NGC_MONTH:-11}
 
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
