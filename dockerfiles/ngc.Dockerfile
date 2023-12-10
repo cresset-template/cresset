@@ -171,7 +171,7 @@ RUN update-alternatives --install /opt/conda/bin/python  python  $(readlink -f $
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
     cp /etc/tmux.conf /root/.tmux.conf && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
-    chmod 711 ${ZDOTDIR} && \
+    chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
 # No alternative to adding the `/opt/conda/bin` directory to `PATH`.

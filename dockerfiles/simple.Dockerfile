@@ -238,7 +238,7 @@ RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
     cp /etc/tmux.conf /root/.tmux.conf && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
-    chmod 711 ${ZDOTDIR} && \
+    chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
 ARG PROJECT_ROOT=/opt/project
