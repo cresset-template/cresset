@@ -12,7 +12,7 @@ dependencies: # Use conda packages if possible.
   - python==3.10
   - pytorch::pytorch # Only install PyTorch-related packages from the PyTorch channel.
   - pytorch::torchvision
-  - pytorch::pytorch-cuda==11.8
+  - pytorch::pytorch-cuda==12.1
   - jemalloc
   - mkl
   - numpy
