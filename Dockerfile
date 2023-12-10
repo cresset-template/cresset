@@ -56,7 +56,7 @@ FROM ${GIT_IMAGE} AS curl-conda
 
 # Use a different CONDA_URL for a different CPU architecture or specific version.
 # The Anaconda `defaults` channel is no longer free for commercial use.
-# Using Miniforge or Mambaforge is strongly recommended. Viva la Open Source!
+# Using Miniforge is strongly recommended. Viva la Open Source!
 # Use Miniconda only if absolutely necessary.
 # The defaults channel will be removed and the conda-forge channel will be used.
 # https://conda.io/en/latest/license.html
@@ -89,7 +89,7 @@ ENV conda=/opt/conda/bin/${CONDA_MANAGER}
 ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
-# No effect if Miniforge or Mambaforge is used as this is the default anyway.
+# No effect if Miniforge is used as this is the default anyway.
 # Clean out package and `__pycache__` directories to save space.
 # Configure aliases to use `conda` Python instead of system Python.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
