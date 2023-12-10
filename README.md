@@ -442,6 +442,10 @@ See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) a
 for details. JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
 
+When using the `ngc` service, add `/usr/local/lib/python3/dist-packages` and 
+`/opt/conda/lib/python3/site-packages` to the interpreter search paths via 
+the GUI to enable code assistance on the packages installed with `conda`.
+
 _N.B._ PyCharm Professional and other JetBrains IDEs are available
 free of charge to anyone with a valid university e-mail address.
 
