@@ -27,9 +27,6 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN curl -fsSL -o /tmp/brew/install_brew.sh ${BREW_URL}
-
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
 ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
@@ -41,12 +38,23 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 
+# Both `conda` and `brew` are installed here despite worries that
+# the differences between the base images will cause issues.
 ARG CONDA_URL
 WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
+ARG CONDA_MANAGER
+ARG PATH=/opt/conda/bin:${PATH}
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
+ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
+     $conda install -y curl git && $conda clean -fya && \
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 WORKDIR /
 
@@ -151,10 +159,6 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
-# Install HomeBrew.
-RUN --mount=type=bind,from=stash,source=/tmp/brew,target=/tmp/brew \
-    /bin/bash /tmp/brew/install_brew.sh
-
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # `tzdata` requires noninteractive mode.
@@ -213,6 +217,9 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
+# Install HomeBrew for Linux.
+COPY --link --from=stash /home/linuxbrew /home/linuxbrew
+
 ENV ZDOTDIR=/root
 # Setting the prompt to `pure`.
 ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
@@ -225,8 +232,6 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
     # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
-    # Add the `conda` environment without adding `conda` to `PATH`.
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> ${ZDOTDIR}/.zshrc && \
     # Add custom `zsh` aliases and settings.
     {   echo "alias ll='ls -lh'"; \
         echo "alias wns='watch nvidia-smi'"; \
@@ -234,16 +239,18 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
     # Activate HomeBrew for Linux on login.
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
-    # Configure `tmux` to use `zsh` on startup.
-    echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
-    # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
-    cp /etc/tmux.conf /root/.tmux.conf && \
+    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
+        # For some reason, `tmux` does not read `/etc/tmux.conf`.
+        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
+    } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     ldconfig  # Update dynamic link cache.
 
+ENV PATH=/opt/conda/bin:${PATH}
 ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}
 WORKDIR ${PROJECT_ROOT}
