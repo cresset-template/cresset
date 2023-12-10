@@ -66,12 +66,14 @@ FROM ${CURL_IMAGE} AS curl-conda
 # https://www.anaconda.com/end-user-license-agreement-miniconda
 
 ARG CONDA_URL
+WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${CURL_IMAGE} AS curl-brew
 
 ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+WORKDIR /tmp/brew
 RUN curl -fsSL -o /tmp/brew/install_brew.sh ${BREW_URL}
 
 ########################################################################
