@@ -57,7 +57,7 @@ If this is your first time using this project, follow these steps:
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env SERVICE=(train|devel|ngc|hub|simple)` on the terminal
+4. Run `make env SERVICE=(train|devel|ngc|simple)` on the terminal
    at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.

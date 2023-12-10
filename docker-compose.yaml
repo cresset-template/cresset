@@ -169,18 +169,6 @@ services:
         NGC_YEAR: ${NGC_YEAR:-23}
         NGC_MONTH: ${NGC_MONTH:-11}
 
-  hub: # Service based on the official PyTorch Docker images from Docker Hub.
-    extends: # Available images: https://hub.docker.com/r/pytorch/pytorch/tags
-      service: base
-    build:
-      dockerfile: dockerfiles/hub.Dockerfile
-      args:
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.1.1}
-        # Note that `CUDA_SHORT_VERSION` excludes the patch version numbers.
-        CUDA_SHORT_VERSION: ${CUDA_SHORT_VERSION:-12.1}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
-        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
-
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
       service: base

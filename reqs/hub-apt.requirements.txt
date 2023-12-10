@@ -1,4 +1,0 @@
-sudo
-tmux
-tzdata
-zsh
