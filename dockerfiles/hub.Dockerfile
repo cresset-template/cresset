@@ -35,6 +35,10 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+# Install HomeBrew.
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+
 # Note that `tzdata` requires noninteractive mode.
 ARG TZ
 ARG DEBIAN_FRONTEND=noninteractive
@@ -117,10 +121,10 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \
-    # Activate the `conda` environment.
-    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Activate HomeBrew for Linux on login.
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
     # Configure `tmux` to use `zsh` on startup.
     echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.

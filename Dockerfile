@@ -66,8 +66,13 @@ FROM ${CURL_IMAGE} AS curl-conda
 # https://www.anaconda.com/end-user-license-agreement-miniconda
 
 ARG CONDA_URL
-WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+
+########################################################################
+FROM ${CURL_IMAGE} AS curl-brew
+
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN curl -fsSL -o /tmp/brew/install_brew.sh ${BREW_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -435,6 +440,10 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+# Install HomeBrew.
+RUN --mount=type=bind,from=curl-brew,source=/tmp/brew,target=/tmp/brew \
+    /bin/bash /tmp/brew/install_brew.sh
+
 ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
@@ -523,10 +532,7 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-# Update configurations without adding `/opt/conda/bin` to `PATH`.
-RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1 && \
-    {   echo "fpath+=${PURE_PATH}"; \
+RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
@@ -539,10 +545,10 @@ RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \
-    # Activate the `conda` environment.
-    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Activate HomeBrew for Linux on login.
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
     # Configure `tmux` to use `zsh` on startup.
     echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.

@@ -27,6 +27,9 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN curl -fsSL -o /tmp/brew/install_brew.sh ${BREW_URL}
+
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
 ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
@@ -43,9 +46,7 @@ WORKDIR /tmp/conda
 RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
-    update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 WORKDIR /
 
@@ -150,6 +151,10 @@ ENV PYTHONIOENCODING=UTF-8
 ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
+# Install HomeBrew.
+RUN --mount=type=bind,from=stash,source=/tmp/brew,target=/tmp/brew \
+    /bin/bash /tmp/brew/install_brew.sh
+
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # `tzdata` requires noninteractive mode.
@@ -214,9 +219,7 @@ ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
-RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1 && \
-    {   echo "fpath+=${PURE_PATH}"; \
+RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
@@ -229,10 +232,10 @@ RUN update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \
-    # Activate the `conda` environment.
-    echo "conda activate" >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Activate HomeBrew for Linux on login.
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
     # Configure `tmux` to use `zsh` on startup.
     echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.

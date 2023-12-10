@@ -77,6 +77,10 @@ ARG PYTHONUNBUFFERED=1
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
 
+# Install HomeBrew.
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
 ARG TZ
@@ -161,6 +165,8 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Activate HomeBrew for Linux on login.
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ${ZDOTDIR}/.zprofile && \
     # Configure `tmux` to use `zsh` on startup.
     echo 'set-option -g default-shell /bin/zsh' >> /etc/tmux.conf && \
     # Root user does not use `/etc/tmux.conf`, only `/root/.tmux.conf`.
