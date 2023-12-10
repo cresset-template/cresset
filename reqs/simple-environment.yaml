@@ -19,3 +19,7 @@ dependencies: # Use conda packages if possible.
   - pytest
   - tmux==3.2a
   - tqdm
+  - pip
+  - pip:
+      - deepspeed
+      - pyre-check
