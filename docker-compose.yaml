@@ -19,8 +19,8 @@
 
 # See https://pytorch.org/docs/stable/cpp_extension.html for an
 # explanation of how to specify the `TORCH_CUDA_ARCH_LIST` variable.
-# The variable `CCA` is used to specify `TORCH_CUDA_ARCH_LIST`.
-# Compute Capability must be specified via the `CCA` variable.
+# The variable `CCC` is used to specify `TORCH_CUDA_ARCH_LIST`.
+# Compute Capability must be specified via the `CCC` variable.
 
 # Set the host environment variable `BUILDKIT_PROGRESS=plain` to see the full build log.
 # https://github.com/docker/cli/blob/master/docs/reference/commandline/cli.md#environment-variables
@@ -98,7 +98,7 @@ services:
         # The `CONDA_MANAGER` may be either `mamba` (the default) or `conda`.
         # However, `mamba` may be unable to resolve conflicts that `conda` can.
         # In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-        # Installing `mamba` via mamba-forge is strongly recommended.
+        # Installing `mamba` via mini-forge is strongly recommended.
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
     deploy: # API dependent on compose version.
@@ -130,8 +130,8 @@ services:
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
-        # Fails if `BUILD_MODE=include` but `CCA` is not set explicitly.
-        TORCH_CUDA_ARCH_LIST: ${CCA} # Ignore the missing CCA warning otherwise.
+        # Fails if `BUILD_MODE=include` but `CCC` is not set explicitly.
+        TORCH_CUDA_ARCH_LIST: ${CCC} # Ignore the missing CCC warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.1.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.16.0}
