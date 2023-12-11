@@ -212,9 +212,8 @@ ARG BUILD_CAFFE2
 ARG BUILD_CAFFE2_OPS
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
-# ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
-# The `--threads` option is only available for CUDA 11.2+.
-ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads"
+#ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
+ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 RUN --mount=type=cache,target=/opt/ccache \
