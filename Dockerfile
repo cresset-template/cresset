@@ -178,9 +178,10 @@ FROM ${GIT_IMAGE} AS clone-torch
 ARG PYTORCH_VERSION_TAG
 ARG TORCH_URL=https://github.com/pytorch/pytorch.git
 # Minimize downloads by only cloning shallow branches and not the full `git` history.
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${PYTORCH_VERSION_TAG} \
-        ${TORCH_URL} /opt/pytorch
+# Use at most 8 jobs for cloning the repository and its submodules.
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${PYTORCH_VERSION_TAG} ${TORCH_URL} /opt/pytorch
 
 ########################################################################
 FROM build-base AS build-torch
@@ -211,9 +212,8 @@ ARG BUILD_CAFFE2
 ARG BUILD_CAFFE2_OPS
 ARG USE_PRECOMPILED_HEADERS
 ARG TORCH_CUDA_ARCH_LIST
-# ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
-# The `--threads` option is only available for CUDA 11.2+.
-ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all --threads"
+#ARG CMAKE_PREFIX_PATH=/opt/conda -> Less portable binary.
+ARG TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
 # Build wheel for installation in later stages.
 # Install PyTorch for subsidiary libraries (e.g., TorchVision).
 RUN --mount=type=cache,target=/opt/ccache \
@@ -282,9 +282,9 @@ FROM ${GIT_IMAGE} AS clone-vision
 
 ARG TORCHVISION_VERSION_TAG
 ARG VISION_URL=https://github.com/pytorch/vision.git
-RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
-        --recurse-submodules --branch ${TORCHVISION_VERSION_TAG} \
-        ${VISION_URL} /opt/vision
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${TORCHVISION_VERSION_TAG} ${VISION_URL} /opt/vision
 
 ########################################################################
 FROM build-torch AS build-vision

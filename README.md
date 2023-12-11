@@ -44,7 +44,7 @@ If this is your first time using this project, follow these steps:
    Cresset has been tested on Windows 11 WSL2 with the Windows CUDA driver
    using Docker Desktop for Windows. There is no need to install a separate
    WSL CUDA driver or Docker for Linux inside WSL.
-   Note that only Docker Desktop is under a commercial EULA and Docker Engine 
+   Note that only Docker Desktop is under a commercial EULA and Docker Engine
    (for Linux) and Lima Docker (for Mac) are still both open-source.
    _N.B._ Windows Security real-time protection causes significant slowdown if enabled.
    Disable any active antivirus programs on Windows for best performance.
@@ -442,8 +442,8 @@ See tutorials for [Docker](https://www.jetbrains.com/help/pycharm/docker.html) a
 for details. JetBrains [Gateway](https://www.jetbrains.com/remote-development/gateway)
 can also be used to connect to running containers.
 
-When using the `ngc` service, add `/usr/local/lib/python3/dist-packages` and 
-`/opt/conda/lib/python3/site-packages` to the interpreter search paths via 
+When using the `ngc` service, add `/usr/local/lib/python3/dist-packages` and
+`/opt/conda/lib/python3/site-packages` to the interpreter search paths via
 the GUI to enable code assistance on the packages installed with `conda`.
 
 _N.B._ PyCharm Professional and other JetBrains IDEs are available
