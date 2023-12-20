@@ -485,7 +485,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -499,7 +500,8 @@ FROM train-base AS train-adduser-exclude
 # to a container repository for reproducibility.
 # Note that this image does not require `zsh` but has `zsh` configs available.
 
-COPY --link --from=train-builds /opt/conda /opt/conda
+COPY --link --from=train-builds /opt/conda      /opt/conda
+COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
@@ -507,7 +509,7 @@ FROM train-adduser-${ADD_USER} AS train
 # should be placed here. Do not include any user-related options.
 
 # Install HomeBrew for Linux.
-COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
+
 
 # The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
 # See the `zsh` manual for details. https://zsh-manual.netlify.app/files
