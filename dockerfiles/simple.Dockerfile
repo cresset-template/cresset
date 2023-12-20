@@ -176,6 +176,7 @@ FROM train-base AS train-adduser-exclude
 # container registries such as Docker Hub. No users or interactive settings.
 # Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=stash /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-include
@@ -195,6 +196,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=stash --chown=${UID}:${GID} /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
@@ -217,8 +219,7 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-# Install HomeBrew for Linux.
-COPY --link --from=stash /home/linuxbrew /home/linuxbrew
+
 
 ENV ZDOTDIR=/root
 # Setting the prompt to `pure`.
