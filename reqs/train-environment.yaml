@@ -60,5 +60,4 @@ dependencies: # Use conda packages if possible.
   # Source compiled packages are installed via pip.
   - pip
   - pip:
-      - deepspeed
       - pyre-check

@@ -508,9 +508,6 @@ FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
 
-# Install HomeBrew for Linux.
-
-
 # The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
 # See the `zsh` manual for details. https://zsh-manual.netlify.app/files
 ENV ZDOTDIR=/root

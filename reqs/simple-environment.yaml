@@ -21,5 +21,4 @@ dependencies: # Use conda packages if possible.
   - tqdm
   - pip
   - pip:
-      - deepspeed
       - pyre-check
