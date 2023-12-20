@@ -65,7 +65,7 @@ FROM ${GIT_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fsSkL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -91,10 +91,11 @@ ARG PYTHON_VERSION
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge is used as this is the default anyway.
 # Clean out package and `__pycache__` directories to save space.
-# Configure aliases to use `conda` Python instead of system Python.
+# Configure aliases to use `conda` Python instead of system Python
+# without prepending `/opt/conda/bin` to the `${PATH}`.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && $conda clean -fya && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
     update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
@@ -275,7 +276,7 @@ ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 ARG PATH=/opt/conda/bin:${PATH}
 RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
      $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSkL ${BREW_URL})"
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-vision

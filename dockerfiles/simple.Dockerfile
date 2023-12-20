@@ -42,9 +42,9 @@ COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 # the differences between the base images will cause issues.
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
+RUN curl -fsSkL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ARG CONDA_MANAGER
@@ -54,7 +54,7 @@ ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
 ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
      $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSkL ${BREW_URL})"
 
 WORKDIR /
 
@@ -80,8 +80,18 @@ ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 COPY --link --from=stash /opt/conda /opt/conda
 COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
+
+ARG INDEX_URL
+ARG EXTRA_INDEX_URL
+ARG TRUSTED_HOST
+ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
+    {   echo "[global]"; \
+        echo "index-url=${INDEX_URL}"; \
+        echo "extra-index-url=${EXTRA_INDEX_URL}"; \
+        echo "trusted-host=${TRUSTED_HOST}"; \
+    } > ${PIP_CONFIG_FILE} && \
     $conda env update --file /tmp/req/environment.yaml
 
 # Cleaning must be in a separate `RUN` command to preserve the Docker cache.
@@ -96,7 +106,7 @@ ARG CONDA_MANAGER
 # Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/_conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
     $conda install conda-lock
 
 ########################################################################
@@ -123,7 +133,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     $conda create --no-deps --no-default-packages --copy -p /opt/conda \
         --file conda-linux-64.lock && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc
 
 ########################################################################
 FROM ${GCC_IMAGE} AS train-builds
