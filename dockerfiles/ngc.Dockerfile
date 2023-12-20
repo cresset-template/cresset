@@ -64,6 +64,20 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
 
 ########################################################################
+FROM ${BASE_IMAGE} AS install-brew
+
+LABEL maintainer="veritas9872@gmail.com"
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+ARG PYTHONDONTWRITEBYTECODE=1
+ARG PYTHONUNBUFFERED=1
+
+# Install HomeBrew.
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+
+########################################################################
 FROM ${BASE_IMAGE} AS train-base
 
 LABEL maintainer="veritas9872@gmail.com"
@@ -76,10 +90,6 @@ ARG PYTHONUNBUFFERED=1
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
-
-# Install HomeBrew.
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -107,7 +117,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=install-brew --chown=${UID}:${GID}  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -117,7 +128,8 @@ FROM train-base AS train-adduser-exclude
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
 # Note that `zsh` configs are available but these images do not require `zsh`.
-COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=install-conda /opt/conda      /opt/conda
+COPY --link --from=install-brew  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
