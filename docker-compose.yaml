@@ -53,7 +53,7 @@ services:
     environment: # Equivalent to `--env`
       CUDA_DEVICE_ORDER: PCI_BUS_ID
       HISTSIZE: 50000 # Hard-coded large command history size.
-      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+      TZ: ${TZ:-UTC} # Timezone settings used during runtime.
       # PyTorch cuDNN v8 info: https://github.com/pytorch/pytorch/pull/60755
       TORCH_CUDNN_V8_API_ENABLED: 1 # cuDNN v8 uses cuDNN bfloat16 kernels directly.
       TORCH_CUDNN_V8_API_DEBUG: 0 # Enable to verify whether the cuDNN v8 frontend is being used.
@@ -91,7 +91,7 @@ services:
         GRP: ${GRP:-user}
         USR: ${USR:-user}
         # `TZ` is placed here even if not used for consistency with the runtime.
-        TZ: ${TZ:-Asia/Seoul}
+        TZ: ${TZ:-UTC}
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
         # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.

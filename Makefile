@@ -25,6 +25,8 @@ PROJECT_ROOT = /opt/project
 # which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
 # name collisions between different users.
+# The timezone is Asia/Seoul by default because I live here.
+TZ ?= Asia/Seoul
 GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
@@ -40,6 +42,7 @@ IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
 ENV_TEXT = "$\
+TZ=${TZ}\n\
 GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
