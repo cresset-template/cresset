@@ -42,16 +42,16 @@ IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
 ENV_TEXT = "$\
-TZ=${TZ}\n\
 GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
-PROJECT=${PROJECT}\n$\
 SERVICE=${SERVICE}\n$\
-COMMAND=${COMMAND}\n$\
-IMAGE_NAME=${IMAGE_NAME}\n$\
+PROJECT=${PROJECT}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
+IMAGE_NAME=${IMAGE_NAME}\n$\
+COMMAND=${COMMAND}\n$\
+TZ=${TZ}\n$\
 "
 
 # The `.env` file must be checked via shell as is cannot be a Makefile target.
