@@ -85,6 +85,8 @@ ENV PYTHONIOENCODING=UTF-8
 ARG CONDA_MANAGER
 # Shortcut to simplify downstream installation.
 ENV conda=/opt/conda/bin/${CONDA_MANAGER}
+# Packages from `conda` have higher priority during the build and fetch stages.
+ENV PATH=/opt/conda/bin:${PATH}
 
 ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
@@ -97,9 +99,7 @@ RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && $conda clean -fya && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
-    update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM install-conda AS build-base
@@ -157,8 +157,7 @@ WORKDIR /opt/ccache
 # Force `ccache` to use the faster `direct_mode`.
 # N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
 ENV CCACHE_DIRECT=True
-# Packages installed by `conda` have higher priority during the build.
-ENV PATH=/opt/conda/bin/ccache:/opt/conda/bin:${PATH}
+ENV PATH=/opt/conda/bin/ccache:${PATH}
 # Ensure that `ccache` is used by `cmake`.
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
