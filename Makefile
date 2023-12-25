@@ -124,7 +124,7 @@ ls:  # List all services.
 
 # Utility for installing Docker Compose on Linux (but not WSL) systems.
 # Visit https://docs.docker.com/compose/install for the full documentation.
-COMPOSE_VERSION = v2.18.1
+COMPOSE_VERSION = v2.23.3
 COMPOSE_OS_ARCH = linux-x86_64
 COMPOSE_URL = https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-${COMPOSE_OS_ARCH}
 COMPOSE_PATH = ${HOME}/.docker/cli-plugins
