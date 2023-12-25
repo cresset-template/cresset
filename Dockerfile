@@ -65,7 +65,7 @@ FROM ${GIT_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSkL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -275,7 +275,7 @@ ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 ARG PATH=/opt/conda/bin:${PATH}
 RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
      $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSkL ${BREW_URL})"
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-vision

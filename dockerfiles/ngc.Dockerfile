@@ -45,7 +45,7 @@ WORKDIR /tmp/conda
 
 # Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
-RUN curl -fsSkL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
     $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
@@ -83,7 +83,7 @@ ARG PYTHONUNBUFFERED=1
 
 # Install HomeBrew.
 ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSkL ${BREW_URL})"
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base

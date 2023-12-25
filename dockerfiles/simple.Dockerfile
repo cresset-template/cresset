@@ -42,7 +42,7 @@ COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 # the differences between the base images will cause issues.
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSkL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
@@ -54,7 +54,7 @@ ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
 ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
      $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSkL ${BREW_URL})"
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
 
 WORKDIR /
 
