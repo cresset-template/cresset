@@ -45,23 +45,45 @@ WORKDIR /tmp/conda
 
 # Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
-RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/_conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
     $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
     find /opt/_conda -type d -name '__pycache__' | xargs rm -rf
 
 # Install the same version of Python as the system Python in the NGC image.
 # The `readwrite` option is necessary for `pip` installation via `conda`.
-
+ARG INDEX_URL
+ARG EXTRA_INDEX_URL
+ARG TRUSTED_HOST
+ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/_conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,readwrite,from=stash,source=/tmp/env,target=/tmp/env \
     $conda create --copy -p /opt/conda python=$(python -V | cut -d ' ' -f2) && \
+    {   echo "[global]"; \
+        echo "index-url=${INDEX_URL}"; \
+        echo "extra-index-url=${EXTRA_INDEX_URL}"; \
+        echo "trusted-host=${TRUSTED_HOST}"; \
+    } > ${PIP_CONFIG_FILE} && \
     $conda env update -p /opt/conda --file /tmp/env/environment.yaml && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc
+
+########################################################################
+FROM ${BASE_IMAGE} AS install-brew
+
+LABEL maintainer="veritas9872@gmail.com"
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+ARG PYTHONDONTWRITEBYTECODE=1
+ARG PYTHONUNBUFFERED=1
+
+# Install HomeBrew.
+ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -76,10 +98,6 @@ ARG PYTHONUNBUFFERED=1
 # The base NGC image sets `SHELL=bash`. Docker cannot unset an `ENV` variable,
 # therefore, `SHELL=''` is used for best compatibility with the other services.
 ENV SHELL=''
-
-# Install HomeBrew.
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
 
 # Install `apt` requirements.
 # `tzdata` requires noninteractive mode.
@@ -107,7 +125,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=install-brew --chown=${UID}:${GID}  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -117,7 +136,8 @@ FROM train-base AS train-adduser-exclude
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
 # Note that `zsh` configs are available but these images do not require `zsh`.
-COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=install-conda /opt/conda      /opt/conda
+COPY --link --from=install-brew  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train

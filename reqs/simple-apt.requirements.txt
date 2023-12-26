@@ -1,5 +1,7 @@
 # `openssl`, `sudo`, and `zsh` are required packages.
 at
+curl
+git
 openssl
 sudo
 zsh

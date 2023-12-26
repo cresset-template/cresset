@@ -65,7 +65,7 @@ FROM ${GIT_IMAGE} AS curl-conda
 
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fsSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
@@ -85,20 +85,21 @@ ENV PYTHONIOENCODING=UTF-8
 ARG CONDA_MANAGER
 # Shortcut to simplify downstream installation.
 ENV conda=/opt/conda/bin/${CONDA_MANAGER}
+# Packages from `conda` have higher priority during the build and fetch stages.
+ENV PATH=/opt/conda/bin:${PATH}
 
 ARG PYTHON_VERSION
 # The `.condarc` file in the installation directory portably configures the
 # `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
 # No effect if Miniforge is used as this is the default anyway.
 # Clean out package and `__pycache__` directories to save space.
-# Configure aliases to use `conda` Python instead of system Python.
+# Configure aliases to use `conda` Python instead of system Python
+# without prepending `/opt/conda/bin` to the `${PATH}`.
 RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\n" > /opt/conda/.condarc && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     $conda install -y python=${PYTHON_VERSION} && $conda clean -fya && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf && \
-    update-alternatives --install /usr/bin/python  python  /opt/conda/bin/python  1 && \
-    update-alternatives --install /usr/bin/python3 python3 /opt/conda/bin/python3 1
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM install-conda AS build-base
@@ -156,8 +157,7 @@ WORKDIR /opt/ccache
 # Force `ccache` to use the faster `direct_mode`.
 # N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
 ENV CCACHE_DIRECT=True
-# Packages installed by `conda` have higher priority during the build.
-ENV PATH=/opt/conda/bin/ccache:/opt/conda/bin:${PATH}
+ENV PATH=/opt/conda/bin/ccache:${PATH}
 # Ensure that `ccache` is used by `cmake`.
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -275,7 +275,7 @@ ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
 ARG PATH=/opt/conda/bin:${PATH}
 RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
      $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL ${BREW_URL})"
+     NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
 
 ########################################################################
 FROM ${GIT_IMAGE} AS clone-vision
@@ -485,7 +485,8 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -499,15 +500,13 @@ FROM train-base AS train-adduser-exclude
 # to a container repository for reproducibility.
 # Note that this image does not require `zsh` but has `zsh` configs available.
 
-COPY --link --from=train-builds /opt/conda /opt/conda
+COPY --link --from=train-builds /opt/conda      /opt/conda
+COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
 # Common configurations performed after `/opt/conda` installation
 # should be placed here. Do not include any user-related options.
-
-# Install HomeBrew for Linux.
-COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
 
 # The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
 # See the `zsh` manual for details. https://zsh-manual.netlify.app/files

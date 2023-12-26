@@ -25,6 +25,8 @@ PROJECT_ROOT = /opt/project
 # which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
 # name collisions between different users.
+# The timezone is Asia/Seoul by default because I live here.
+TZ ?= Asia/Seoul
 GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
@@ -44,11 +46,12 @@ GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
-PROJECT=${PROJECT}\n$\
 SERVICE=${SERVICE}\n$\
-COMMAND=${COMMAND}\n$\
-IMAGE_NAME=${IMAGE_NAME}\n$\
+PROJECT=${PROJECT}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
+IMAGE_NAME=${IMAGE_NAME}\n$\
+COMMAND=${COMMAND}\n$\
+TZ=${TZ}\n$\
 "
 
 # The `.env` file must be checked via shell as is cannot be a Makefile target.
@@ -121,7 +124,7 @@ ls:  # List all services.
 
 # Utility for installing Docker Compose on Linux (but not WSL) systems.
 # Visit https://docs.docker.com/compose/install for the full documentation.
-COMPOSE_VERSION = v2.18.1
+COMPOSE_VERSION = v2.23.3
 COMPOSE_OS_ARCH = linux-x86_64
 COMPOSE_URL = https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-${COMPOSE_OS_ARCH}
 COMPOSE_PATH = ${HOME}/.docker/cli-plugins
@@ -129,7 +132,7 @@ COMPOSE_FILE = ${COMPOSE_PATH}/docker-compose
 
 ${COMPOSE_FILE}:
 	mkdir -p "${COMPOSE_PATH}"
-	curl -fsSL "${COMPOSE_URL}" -o "${COMPOSE_FILE}"
+	curl -fksSL "${COMPOSE_URL}" -o "${COMPOSE_FILE}"
 	chmod +x "${COMPOSE_FILE}"
 
 install-compose: ${COMPOSE_FILE}

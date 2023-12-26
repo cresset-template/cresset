@@ -53,7 +53,7 @@ services:
     environment: # Equivalent to `--env`
       CUDA_DEVICE_ORDER: PCI_BUS_ID
       HISTSIZE: 50000 # Hard-coded large command history size.
-      TZ: ${TZ:-Asia/Seoul} # Timezone settings used during runtime.
+      TZ: ${TZ:-UTC} # Timezone settings used during runtime.
       # PyTorch cuDNN v8 info: https://github.com/pytorch/pytorch/pull/60755
       TORCH_CUDNN_V8_API_ENABLED: 1 # cuDNN v8 uses cuDNN bfloat16 kernels directly.
       TORCH_CUDNN_V8_API_DEBUG: 0 # Enable to verify whether the cuDNN v8 frontend is being used.
@@ -91,7 +91,7 @@ services:
         GRP: ${GRP:-user}
         USR: ${USR:-user}
         # `TZ` is placed here even if not used for consistency with the runtime.
-        TZ: ${TZ:-Asia/Seoul}
+        TZ: ${TZ:-UTC}
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
         # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
@@ -117,12 +117,12 @@ services:
       dockerfile: Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-        BUILD_TEST: 0
-        USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
-        USE_QNNPACK: 0 # legacy libraries and most users do not need them.
-        BUILD_CAFFE2: 0 # Most users do not need Caffe2.
-        BUILD_CAFFE2_OPS: 0
-        USE_PRECOMPILED_HEADERS: 1
+#        BUILD_TEST: 0
+#        USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
+#        USE_QNNPACK: 0 # legacy libraries and most users do not need them.
+#        BUILD_CAFFE2: 0 # Most users do not need Caffe2.
+#        BUILD_CAFFE2_OPS: 0
+#        USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-12.1.1}
@@ -133,19 +133,19 @@ services:
         # Fails if `BUILD_MODE=include` but `CCC` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCC} # Ignore the missing CCC warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.1.1}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.16.1}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.1.2}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.16.2}
         # Variables for downloading PyTorch instead of building.
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}
         # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
         # Also remember to change the index url to the nightly version.
         PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.1.1}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.16.1}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.1.2}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.16.2}
         # URLs for faster `apt` and `pip` installs.
         # Use URLs optimized for location and security requirements.
-        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-        DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
+#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+#        DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
         INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
         EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
         TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
@@ -167,7 +167,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-11}
+        NGC_MONTH: ${NGC_MONTH:-12}
 
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
