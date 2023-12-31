@@ -194,6 +194,8 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     } >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
+    # Clear out `/tmp` and restore its default permissions.
+    rm -rf /tmp && mkdir /tmp && chmod 1777 /tmp && \
     ldconfig  # Update dynamic link cache.
 
 # No alternative to adding the `/opt/conda/bin` directory to `PATH`.
