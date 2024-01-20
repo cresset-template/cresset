@@ -103,11 +103,11 @@ RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
 
 ########################################################################
 FROM install-conda AS build-base
-# `build-base` is the base stage for all heavy builds in the Dockerfile.
+# `build-base` is the base stage for all heavy builds in the train.Dockerfile.
 
 # Get build requirements. Set package versions manually if compatibility issues arise.
 ARG BUILD_REQS=/tmp/conda/build-requirements.txt
-COPY --link reqs/train-conda-build.requirements.txt ${BUILD_REQS}
+COPY --link ../reqs/train-conda-build.requirements.txt ${BUILD_REQS}
 
 # Conda packages are preferable to system packages because they
 # are much more likely to be the latest (and the greatest!) packages.
@@ -359,7 +359,7 @@ FROM ${BUILD_IMAGE} AS train-stash
 
 # This stage prevents direct contact between the `train` stage and external files.
 # Other files such as `.deb` package files may also be stashed here.
-COPY --link reqs/train-apt.requirements.txt /tmp/apt/requirements.txt
+COPY --link ../reqs/train-apt.requirements.txt /tmp/apt/requirements.txt
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-include
@@ -422,7 +422,7 @@ ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
-COPY --link reqs/train-environment.yaml ${CONDA_ENV_FILE}
+COPY --link ../reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \

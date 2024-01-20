@@ -80,7 +80,7 @@ services:
 
     build:
       context: . # Nearly all files are ignored due to `.dockerignore` settings.
-      target: ${TARGET_STAGE:-train} # Specify Dockerfile target build stage.
+      target: ${TARGET_STAGE:-train} # Specify the `train.Dockerfile` target build stage.
       args: # Common build-time environment variables.
         # Even if these variables are unnecessary during the build,
         # they can be ignored simply by not defining them in that stage.
@@ -114,7 +114,7 @@ services:
       service: base
     build: # Options for building. Used when `--build` is called in `docker compose`.
       # Set `TARGET_STAGE` to `train-builds` to get just the wheels in `/tmp/dist`.
-      dockerfile: Dockerfile
+      dockerfile: dockerfiles/train.Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
 #        BUILD_TEST: 0
@@ -155,7 +155,7 @@ services:
       service: base
     build:
       target: ${TARGET_STAGE:-build-base} # All builds begin at `build-base`.
-      dockerfile: Dockerfile
+      dockerfile: dockerfiles/train.Dockerfile
 
   ngc: # Service based on images from the NGC PyTorch image catalog.
     # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/running.html
