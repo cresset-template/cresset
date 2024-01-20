@@ -113,7 +113,7 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
 
 # Remove pre-installed `pip` packages that should use the versions installed via `conda` instead.
 RUN --mount=type=bind,from=stash,source=/tmp/pip,target=/tmp/pip \
-    python -m pip uninstall -r /tmp/pip/uninstalls.txt
+    python -m pip uninstall -y -r /tmp/pip/uninstalls.txt
 
 ########################################################################
 FROM train-base AS train-adduser-include
