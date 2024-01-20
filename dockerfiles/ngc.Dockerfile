@@ -44,12 +44,15 @@ ARG CONDA_MANAGER
 WORKDIR /tmp/conda
 
 # Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
+# Create a symbolic link adding Python `site-packages` to `PYTHONPATH` to reduce package downloads.
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
+ARG PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}/usr/local/lib/python3/dist-packages
 RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
     $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
-    find /opt/_conda -type d -name '__pycache__' | xargs rm -rf
+    find /opt/_conda -type d -name '__pycache__' | xargs rm -rf && \
+    ln -s /usr/local/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') /usr/local/lib/python3
 
 # Install the same version of Python as the system Python in the NGC image.
 # The `readwrite` option is necessary for `pip` installation via `conda`.
