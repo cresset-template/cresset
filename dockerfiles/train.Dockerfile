@@ -566,6 +566,6 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
 ENV PATH=/opt/conda/bin:${PATH}
 # `PROJECT_ROOT` is where the project code will reside.
 ARG PROJECT_ROOT=/opt/project
-ENV PYTHONPATH=${PROJECT_ROOT}
+ENV PYTHONPATH=${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}
 WORKDIR ${PROJECT_ROOT}
 CMD ["/bin/zsh"]

@@ -208,7 +208,8 @@ ENV PATH=${PATH}:/opt/conda/bin
 # Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
 # prevent conflict when `conda` installs different versions of the same package.
 ARG PROJECT_ROOT=/opt/project
-ENV PYTHONPATH=${PROJECT_ROOT}:/usr/local/lib/python3/dist-packages
+ENV PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}${PROJECT_ROOT}
+ENV PYTHONPATH=${PYTHONPATH}:/usr/local/lib/python3/dist-packages
 ENV PYTHONPATH=${PYTHONPATH}:/opt/conda/lib/python3/site-packages
 
 WORKDIR ${PROJECT_ROOT}
