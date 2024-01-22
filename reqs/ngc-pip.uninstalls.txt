@@ -1,0 +1,2 @@
+# Remove pre-installed `pip` packages that should use the versions installed via `conda` instead.
+dummy  # Placeholder package to prevent errors durring the build.

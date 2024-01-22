@@ -22,6 +22,7 @@ RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 # Copy `apt` and `conda` requirements for ngc images.
 COPY --link ../reqs/ngc-apt.requirements.txt /tmp/apt/requirements.txt
 COPY --link ../reqs/ngc-environment.yaml /tmp/env/environment.yaml
+COPY --link ../reqs/ngc-pip.uninstalls.txt /tmp/pip/uninstalls.txt
 
 ########################################################################
 FROM ${BASE_IMAGE} AS install-conda
@@ -109,6 +110,10 @@ RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs -r apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
+
+# Remove pre-installed `pip` packages that should use the versions installed via `conda` instead.
+RUN --mount=type=bind,from=stash,source=/tmp/pip,target=/tmp/pip \
+    python -m pip uninstall -y -r /tmp/pip/uninstalls.txt
 
 ########################################################################
 FROM train-base AS train-adduser-include
@@ -208,7 +213,8 @@ ENV PATH=${PATH}:/opt/conda/bin
 # Configure `PYTHONPATH` to prioritize system packages over `conda` packages to
 # prevent conflict when `conda` installs different versions of the same package.
 ARG PROJECT_ROOT=/opt/project
-ENV PYTHONPATH=${PROJECT_ROOT}:/usr/local/lib/python3/dist-packages
+ENV PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}${PROJECT_ROOT}
+ENV PYTHONPATH=${PYTHONPATH}:/usr/local/lib/python3/dist-packages
 ENV PYTHONPATH=${PYTHONPATH}:/opt/conda/lib/python3/site-packages
 
 WORKDIR ${PROJECT_ROOT}

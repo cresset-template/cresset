@@ -1,4 +1,4 @@
-# Packages to be installed in `Dockerfile` in `train` mode.
+# Packages to be installed in `train.Dockerfile` in `train` mode.
 # PyTorch install variables are in the Docker Compose file.
 # PyTorch and related libraries are either compiled or installed via pip
 # to reduce dependency issues with conda and for greater flexibility.
