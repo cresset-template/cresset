@@ -73,20 +73,6 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc
 
 ########################################################################
-FROM ${BASE_IMAGE} AS install-brew
-
-LABEL maintainer="veritas9872@gmail.com"
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONIOENCODING=UTF-8
-ARG PYTHONDONTWRITEBYTECODE=1
-ARG PYTHONUNBUFFERED=1
-
-# Install HomeBrew.
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
-
-########################################################################
 FROM ${BASE_IMAGE} AS train-base
 
 LABEL maintainer="veritas9872@gmail.com"
@@ -131,7 +117,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda      /opt/conda
-COPY --link --from=install-brew --chown=${UID}:${GID}  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -142,7 +127,6 @@ FROM train-base AS train-adduser-exclude
 # to a container repository for reproducibility.
 # Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda      /opt/conda
-COPY --link --from=install-brew  /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
@@ -179,6 +163,10 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     # Setting the prompt to `pure`.
     {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
+        # Change the `tmux` path color to cyan since
+        # the default blue is unreadable on a dark terminal.
+        echo "zmodload zsh/nearcolor"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
@@ -192,11 +180,8 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
     echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
-    # Activate HomeBrew for Linux on login.
-    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
-        # For some reason, `tmux` does not read `/etc/tmux.conf`.
-        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
-    } >> ${ZDOTDIR}/.zprofile && \
+    # For some reason, `tmux` does not read `/etc/tmux.conf`.
+    echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     # Clear out `/tmp` and restore its default permissions.
