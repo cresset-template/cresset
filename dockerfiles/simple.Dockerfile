@@ -36,25 +36,11 @@ RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
 RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
-COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
-
-# Both `conda` and `brew` are installed here despite worries that
-# the differences between the base images will cause issues.
 ARG CONDA_URL
 WORKDIR /tmp/conda
-RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
-    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 
-ARG CONDA_MANAGER
-ARG PATH=/opt/conda/bin:${PATH}
-ARG conda=/opt/conda/bin/${CONDA_MANAGER}
-ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
-     $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
+COPY --link ../reqs/simple-apt.requirements.txt /tmp/apt/requirements.txt
 
 WORKDIR /
 
@@ -78,7 +64,11 @@ ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 # Use `docker builder prune` to clear out the build cache if it does.
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
-COPY --link --from=stash /opt/conda /opt/conda
+RUN --mount=type=bind,from=stash,source=/tmp/conda,target=/tmp/conda \
+    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
 COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
 
 ARG INDEX_URL
@@ -107,7 +97,8 @@ ARG CONDA_MANAGER
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
-    $conda install conda-lock
+    $conda install conda-lock && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM ${BASE_IMAGE} AS conda-lock-include
@@ -186,7 +177,6 @@ FROM train-base AS train-adduser-exclude
 # container registries such as Docker Hub. No users or interactive settings.
 # Note that `zsh` configs are available but these images do not require `zsh`.
 COPY --link --from=install-conda /opt/conda /opt/conda
-COPY --link --from=stash /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-include
@@ -206,7 +196,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
-COPY --link --from=stash --chown=${UID}:${GID} /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
@@ -239,6 +228,10 @@ COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
+        # Change the `tmux` path color to cyan since
+        # the default blue is unreadable on a dark terminal.
+        echo "zmodload zsh/nearcolor"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
@@ -252,11 +245,8 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
     echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
-    # Activate HomeBrew for Linux on login.
-    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
-        # For some reason, `tmux` does not read `/etc/tmux.conf`.
-        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
-    } >> ${ZDOTDIR}/.zprofile && \
+    # For some reason, `tmux` does not read `/etc/tmux.conf`.
+    echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     # Clear out `/tmp` and restore its default permissions.

@@ -268,16 +268,6 @@ RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
         Pillow-SIMD${PILLOW_SIMD_VERSION}
 
 ########################################################################
-FROM install-conda AS fetch-brew
-
-ARG HOMEBREW_CACHE=/home/linuxbrew/.cache
-ARG BREW_URL=https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
-ARG PATH=/opt/conda/bin:${PATH}
-RUN  --mount=type=cache,target=${HOMEBREW_CACHE},sharing=locked \
-     $conda install -y curl git && $conda clean -fya && \
-     NONINTERACTIVE=1 /bin/bash -c "$(curl -fksSL ${BREW_URL})"
-
-########################################################################
 FROM ${GIT_IMAGE} AS clone-vision
 
 ARG TORCHVISION_VERSION_TAG
@@ -376,7 +366,6 @@ COPY --link --from=install-conda /opt/conda /opt/conda
 COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=build-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
-COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
@@ -390,7 +379,6 @@ COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
-COPY --link --from=fetch-brew /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -486,7 +474,6 @@ RUN groupadd -f -g ${GID} ${GRP} && \
 
 # Get conda with the directory ownership given to the user.
 COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda      /opt/conda
-COPY --link --from=train-builds --chown=${UID}:${GID} /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -501,7 +488,6 @@ FROM train-base AS train-adduser-exclude
 # Note that this image does not require `zsh` but has `zsh` configs available.
 
 COPY --link --from=train-builds /opt/conda      /opt/conda
-COPY --link --from=train-builds /home/linuxbrew /home/linuxbrew
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
@@ -539,6 +525,10 @@ ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,m
 
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
+        # Change the `tmux` path color to cyan since
+        # the default blue is unreadable on a dark terminal.
+        echo "zmodload zsh/nearcolor"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
@@ -552,11 +542,8 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
     echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
-    # Activate HomeBrew for Linux on login.
-    {   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'; \
-        # For some reason, `tmux` does not read `/etc/tmux.conf`.
-        echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf'; \
-    } >> ${ZDOTDIR}/.zprofile && \
+    # For some reason, `tmux` does not read `/etc/tmux.conf`.
+    echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
     chmod 755 ${ZDOTDIR} && \
     # Clear out `/tmp` and restore its default permissions.
