@@ -529,10 +529,10 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
 
 1. **MORE STARS**. _**No Contribution Without Appreciation!**_
 
-2Bug reports are welcome. Only the latest versions have been tested rigorously.
+2. Bug reports are welcome. Only the latest versions have been tested rigorously.
    Please raise an issue if there are any versions that do not build properly.
    However, please check that your host Docker, Docker Compose,
    and especially NVIDIA Driver are up-to-date before doing so.
 
-3Translations into other languages and updates to existing translations are welcome.
+3. Translations into other languages and updates to existing translations are welcome.
    Please create a separate `LANG.README.md` file and make a pull request.
