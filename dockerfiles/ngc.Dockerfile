@@ -70,6 +70,8 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     } > ${PIP_CONFIG_FILE} && \
     $conda env update -p /opt/conda --file /tmp/env/environment.yaml
 
+RUN $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
 
@@ -114,7 +116,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -124,7 +126,7 @@ FROM train-base AS train-adduser-exclude
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
 # Note that `zsh` configs are available but these images do not require `zsh`.
-COPY --link --from=install-conda /opt/conda      /opt/conda
+COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
