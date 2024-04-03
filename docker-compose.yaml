@@ -166,8 +166,8 @@ services:
     build:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
-        NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-12}
+        NGC_YEAR: ${NGC_YEAR:-24}
+        NGC_MONTH: ${NGC_MONTH:-03}
 
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
