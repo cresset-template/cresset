@@ -218,8 +218,6 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
-
-
 ENV ZDOTDIR=/root
 # Setting the prompt to `pure`.
 ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
