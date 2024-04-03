@@ -44,13 +44,13 @@ ARG CONDA_URL
 ARG CONDA_MANAGER
 WORKDIR /tmp/conda
 
-# Weird paths necessary because `CONDA_PREFIX` is immutable post-installation.
-ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
-    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
+    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
+    python=$(python -V | cut -d ' ' -f2) && \
     $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
-    find /opt/_conda -type d -name '__pycache__' | xargs rm -rf
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 # Install the same version of Python as the system Python in the NGC image.
 # The `readwrite` option is necessary for `pip` installation via `conda`.
@@ -59,18 +59,18 @@ ARG EXTRA_INDEX_URL
 ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 ARG PIP_CACHE_DIR=/root/.cache/pip
-ARG CONDA_PKGS_DIRS=/opt/_conda/pkgs
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,readwrite,from=stash,source=/tmp/env,target=/tmp/env \
-    $conda create --copy -p /opt/conda python=$(python -V | cut -d ' ' -f2) && \
     {   echo "[global]"; \
         echo "index-url=${INDEX_URL}"; \
         echo "extra-index-url=${EXTRA_INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
     } > ${PIP_CONFIG_FILE} && \
-    $conda env update -p /opt/conda --file /tmp/env/environment.yaml && \
-    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc
+    $conda env update -p /opt/conda --file /tmp/env/environment.yaml
+
+RUN $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
@@ -116,7 +116,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=install-conda --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -126,7 +126,7 @@ FROM train-base AS train-adduser-exclude
 # Most users may safely ignore this stage except when publishing an image
 # to a container repository for reproducibility.
 # Note that `zsh` configs are available but these images do not require `zsh`.
-COPY --link --from=install-conda /opt/conda      /opt/conda
+COPY --link --from=install-conda /opt/conda /opt/conda
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train

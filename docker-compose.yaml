@@ -133,15 +133,15 @@ services:
         # Fails if `BUILD_MODE=include` but `CCC` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCC} # Ignore the missing CCC warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.1.2}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.16.2}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.2.2}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.17.2}
         # Variables for downloading PyTorch instead of building.
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}
         # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
         # Also remember to change the index url to the nightly version.
         PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.1.2}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.16.2}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.2.2}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.17.2}
         # URLs for faster `apt` and `pip` installs.
         # Use URLs optimized for location and security requirements.
 #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
@@ -166,8 +166,8 @@ services:
     build:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
-        NGC_YEAR: ${NGC_YEAR:-23}
-        NGC_MONTH: ${NGC_MONTH:-12}
+        NGC_YEAR: ${NGC_YEAR:-24}
+        NGC_MONTH: ${NGC_MONTH:-03}
 
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:

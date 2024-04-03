@@ -414,8 +414,9 @@ COPY --link ../reqs/train-environment.yaml ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
-    $conda env update --file ${CONDA_ENV_FILE} && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+    $conda env update --file ${CONDA_ENV_FILE}
+
+RUN $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 # Enable Intel MKL optimizations on AMD CPUs.
 # https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
