@@ -67,7 +67,7 @@ ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 RUN --mount=type=bind,from=stash,source=/tmp/conda,target=/tmp/conda \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
-    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+    $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
 
@@ -97,7 +97,7 @@ ARG CONDA_MANAGER
 ARG conda=/opt/_conda/bin/${CONDA_MANAGER}
 RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/_conda/.condarc && \
-    $conda install conda-lock && \
+    $conda install conda-lock && $conda clean -fya && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
 ########################################################################
