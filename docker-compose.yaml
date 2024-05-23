@@ -45,9 +45,9 @@ services:
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
     ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
     # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-    hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
-    extra_hosts: # Prevents "unknown host" issue when using `sudo`.
-      - "${SERVICE}:127.0.0.1"
+#    hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
+#    extra_hosts: # Prevents "unknown host" issue when using `sudo`.
+#      - "${SERVICE}:127.0.0.1"
 
     # Common environment variables for the container runtime. No effect on build.
     environment: # Equivalent to `--env`
