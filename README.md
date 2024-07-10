@@ -525,6 +525,10 @@ For other VSCode problems, try deleting `~/.vscode-server` on the host.
    version is too low on Linux hosts. Update Docker to the latest
    version (23.0+) to use Docker Compose V2.
 
+6. If the user is set to `root` in the `.env` file, i.e., `UID=0, USR=root`,
+   then set `ADD_USER=exclude` to prevent the creation of a new user, which is
+   expected to be non-root.
+
 # Desiderata
 
 1. **MORE STARS**. _**No Contribution Without Appreciation!**_
