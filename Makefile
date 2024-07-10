@@ -17,7 +17,7 @@ COMMAND = /usr/bin/zsh --login
 # Specify `PROJECT` for the `make` command if this is the case.
 _PROJECT = "${SERVICE}-${USR}"
 # The `COMPOSE_PROJECT_NAME` variable must be lowercase.
-PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")
+PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")-`date +"%Y%m%d-%H%M%S"`
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in ${PWD} if it does not exist.
