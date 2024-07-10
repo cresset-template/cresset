@@ -474,7 +474,7 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Get conda with the directory ownership given to the user.
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda      /opt/conda
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/conda /opt/conda
 
 ########################################################################
 FROM train-base AS train-adduser-exclude
@@ -488,7 +488,7 @@ FROM train-base AS train-adduser-exclude
 # to a container repository for reproducibility.
 # Note that this image does not require `zsh` but has `zsh` configs available.
 
-COPY --link --from=train-builds /opt/conda      /opt/conda
+COPY --link --from=train-builds /opt/conda /opt/conda
 
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
