@@ -5,7 +5,7 @@
 # system Python found in the image, so there should be no compatibility issues.
 name: extras
 channels:
-  - nodefaults # Do not use the default environment.
+  - nodefaults # Do not use the default channel.
   - conda-forge # Always use conda-forge instead.
 dependencies: # Use conda packages if possible.
   - gdb
