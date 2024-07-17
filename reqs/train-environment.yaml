@@ -11,7 +11,7 @@
 # `conda-lock lock --micromamba -f ${CONDA_FILE} -p linux-64 --lockfile ${LOCKFILE}`
 name: base # Always use the `base` environment.
 channels:
-  - nodefaults # Do not use the default environment.
+  - nodefaults # Do not use the default channel.
   - conda-forge # Always use conda-forge instead.
 dependencies: # Use conda packages if possible.
   # Requirements.
@@ -48,7 +48,6 @@ dependencies: # Use conda packages if possible.
   - pre-commit
   - pytest
   - pytest-xdist
-  - pytype
   - rsync
   - snoop
   - tmux==3.2a

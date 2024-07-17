@@ -5,11 +5,11 @@
 # `conda-lock lock --micromamba -f ${CONDA_FILE} -p linux-64 --lockfile ${LOCKFILE}`
 name: base # Always use the `base` environment.
 channels:
-  - nodefaults # Do not use the default environment.
+  - nodefaults # Do not use the default channel.
   - conda-forge # Always use conda-forge instead.
   - nvidia # CUDA-related packages are available in the NVIDIA channel.
 dependencies: # Use conda packages if possible.
-  - python==3.10
+  - python==3.12
   - pytorch::pytorch # Only install PyTorch-related packages from the PyTorch channel.
   - pytorch::torchvision
   - pytorch::pytorch-cuda==12.1
