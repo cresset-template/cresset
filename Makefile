@@ -42,11 +42,12 @@ IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
 ENV_TEXT = "$\
-\# When using the \`root\` user with UID=0/USR=root, set \`ADD_USER=exclude\`.\n$\
+\# When using the \`root\` user with \`UID=0\`/\`USR=root\`, set \`ADD_USER=exclude\`.\n$\
 GID=${GID}\n$\
 UID=${UID}\n$\
 GRP=${GRP}\n$\
 USR=${USR}\n$\
+HOST_ROOT=.\n$\
 SERVICE=${SERVICE}\n$\
 \# Do not use the same \`PROJECT\` name for different projects on the same host!\n$\
 PROJECT=${PROJECT}\n$\

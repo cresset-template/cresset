@@ -70,7 +70,7 @@ services:
       # Current working directory `.` is connected to `PROJECT_ROOT`.
       # Mount `.` if the docker-compose.yaml file is at the project root.
       # Mount `..` if Cresset is a subdirectory in a different project, etc.
-      - .:${PROJECT_ROOT:-/opt/project}
+      - ${HOST_ROOT:-.}:${PROJECT_ROOT:-/opt/project}
       # Preserve VSCode extensions between containers.
       # Assumes default VSCode server directory.
       # May cause VSCode issues if multiple Cresset-based projects are on the
