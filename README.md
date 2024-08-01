@@ -51,13 +51,16 @@ If this is your first time using this project, follow these steps:
    _N.B._ Linux hosts may also install via this
    [repo](https://github.com/docker/docker-install).
 
-3. Run `make install-compose` to install Docker Compose V2 for Linux hosts.
+3. Install the NVIDIA Container Toolkit as specified in this
+[link](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+4. Run `make install-compose` to install Docker Compose V2 for Linux hosts.
    Installation does _**not**_ require `root` permissions. Visit the
    [documentation](https://docs.docker.com/compose/cli-command/#install-on-linux)
    for the latest installation information. Note that Docker Compose V2
    is available for WSL users with Docker Desktop by default.
 
-4. Run `make env SERVICE=(train|devel|ngc|simple)` on the terminal
+5. Run `make env SERVICE=(train|devel|ngc|simple)` on the terminal
    at project root to create a basic `.env` file.
    The `.env` file provides environment variables for `docker-compose.yaml`,
    allowing different users and machines to set their own variables as required.
@@ -65,11 +68,11 @@ If this is your first time using this project, follow these steps:
    if it exists, allowing non-default values to be specified only once.
    Each host should have a separate `.env` file for host-specific configurations.
 
-5. Run `make over` to create a `docker-compose.override.yaml` file.
+6. Run `make over` to create a `docker-compose.override.yaml` file.
    Add configurations that should not be shared via source control there.
    For example, volume-mount pairs specific to each host machine.
 
-6. If Cresset is being placed within a pre-existing project's subdirectory,
+7. If Cresset is being placed within a pre-existing project's subdirectory,
    change the `volume` pairing from `.:${PROJECT_ROOT}` to `..:${PROJECT_ROOT}`.
    All commands in Cresset assume that they are being run at project root
    but this can be changed easily.
