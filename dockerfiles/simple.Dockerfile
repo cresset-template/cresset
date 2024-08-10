@@ -183,8 +183,8 @@ FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
-ARG GRP=user
-ARG USR=user
+ARG GRP
+ARG USR
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
 # Creating user with password-free sudo permissions.
