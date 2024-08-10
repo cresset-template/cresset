@@ -16,8 +16,9 @@ COMMAND = /usr/bin/zsh --login
 # which may cause issues if multiple users are using the same account.
 # Specify `PROJECT` for the `make` command if this is the case.
 _PROJECT = "${SERVICE}-${USR}"
+_TIMESTAMP = $(shell date +"%Y%m%d-%H%M%S")
 # The `COMPOSE_PROJECT_NAME` variable must be lowercase.
-PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")-`date +"%Y%m%d-%H%M%S"`
+PROJECT = $(shell echo ${_PROJECT} | tr "[:upper:]" "[:lower:]")-${_TIMESTAMP}
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in ${PWD} if it does not exist.
@@ -34,7 +35,7 @@ USR = $(shell id -un)
 
 REPOSITORY = cresset
 TAG = "${SERVICE}-${USR}"
-_IMAGE_NAME = "${REPOSITORY}:${TAG}"
+_IMAGE_NAME = "${REPOSITORY}:${TAG}-${_TIMESTAMP}"
 # Image names are made lowercase even though Docker can
 # recognize uppercase for cross-platform compatibility.
 IMAGE_NAME = $(shell echo ${_IMAGE_NAME} | tr "[:upper:]" "[:lower:]")
