@@ -106,8 +106,8 @@ FROM train-base AS train-adduser-include
 
 ARG GID
 ARG UID
-ARG GRP=user
-ARG USR=user
+ARG GRP
+ARG USR
 ARG PASSWD=ubuntu
 # Create user with password-free `sudo` permissions.
 RUN groupadd -f -g ${GID} ${GRP} && \

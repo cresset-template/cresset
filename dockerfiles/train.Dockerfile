@@ -462,8 +462,8 @@ FROM train-base AS train-adduser-include
 # A new `sudo` user is created to help prevent file ownership issues and accidents.
 ARG GID
 ARG UID
-ARG GRP=user
-ARG USR=user
+ARG GRP
+ARG USR
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
 # Creating user with password-free sudo permissions.
