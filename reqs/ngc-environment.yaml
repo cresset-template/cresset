@@ -8,10 +8,8 @@ channels:
   - nodefaults # Do not use the default channel.
   - conda-forge # Always use conda-forge instead.
 dependencies: # Use conda packages if possible.
-  - gdb
   - hydra-core
   - jemalloc
-  - lldb
 
   # For `pip` dependencies that are not available in conda.
   - pip
