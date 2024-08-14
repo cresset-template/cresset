@@ -90,7 +90,6 @@ services:
         UID: ${UID:-1000}
         GRP: ${GRP:-user}
         USR: ${USR:-user}
-        # `TZ` is placed here even if not used for consistency with the runtime.
         TZ: ${TZ:-UTC}
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over

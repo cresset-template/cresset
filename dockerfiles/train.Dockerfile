@@ -70,7 +70,7 @@ RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-conda
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 

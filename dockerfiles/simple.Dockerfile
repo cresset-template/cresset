@@ -20,7 +20,7 @@ ARG GIT_IMAGE=bitnami/git:latest
 ########################################################################
 FROM ${GIT_IMAGE} AS stash
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8

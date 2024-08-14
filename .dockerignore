@@ -9,4 +9,5 @@
 !**/*environment*.yaml
 !*conda-lock*.yaml
 !**/*conda-lock*.yaml
+!*uninstalls*.txt
 !**/*uninstalls*.txt
