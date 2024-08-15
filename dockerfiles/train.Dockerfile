@@ -524,6 +524,7 @@ ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
 ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
+ARG TMUX_HIST_LIMIT
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         # Change the `tmux` path color to cyan since
@@ -542,7 +543,9 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
-    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    {   echo "set -g default-command $(which zsh)"; \
+        echo "set-option -g history-limit ${TMUX_HIST_LIMIT}"; \
+    } >> /etc/tmux.conf && \
     # For some reason, `tmux` does not read `/etc/tmux.conf`.
     echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.

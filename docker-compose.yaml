@@ -91,6 +91,7 @@ services:
         GRP: ${GRP:-user}
         USR: ${USR:-user}
         TZ: ${TZ:-UTC}
+        TMUX_HIST_LIMIT: 50000  # Size of `tmux` scrolling history.
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
         # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
