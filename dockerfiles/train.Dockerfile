@@ -544,7 +544,7 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
     {   echo "set -g default-command $(which zsh)"; \
-        echo "set-option -g history-limit ${TMUX_HIST_LIMIT}"; \
+        echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
     } >> /etc/tmux.conf && \
     # For some reason, `tmux` does not read `/etc/tmux.conf`.
     echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
