@@ -60,6 +60,7 @@ ARG TRUSTED_HOST
 ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+ARG CONDA_ENV_FILE=/tmp/env/environment.yaml
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     --mount=type=bind,readwrite,from=stash,source=/tmp/env,target=/tmp/env \
@@ -68,7 +69,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
         echo "extra-index-url=${EXTRA_INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
     } > ${PIP_CONFIG_FILE} && \
-    $conda env update -p /opt/conda --file /tmp/env/environment.yaml
+    $conda env update -p /opt/conda --file ${CONDA_ENV_FILE}
 
 RUN $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
@@ -154,6 +155,7 @@ ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 
+ARG TMUX_HIST_LIMIT
 # Search for additional Python packages installed via `conda`.
 RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3}') \
     /opt/conda/lib/python3 && \
@@ -179,7 +181,9 @@ RUN ln -s /opt/conda/lib/$(python -V | awk -F '[ \.]' '{print "python" $2 "." $3
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
-    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    {   echo "set -g default-command $(which zsh)"; \
+        echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
+    } >> /etc/tmux.conf && \
     # For some reason, `tmux` does not read `/etc/tmux.conf`.
     echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.

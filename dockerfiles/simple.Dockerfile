@@ -69,7 +69,8 @@ RUN --mount=type=bind,from=stash,source=/tmp/conda,target=/tmp/conda \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
     $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
-COPY --link ../reqs/simple-environment.yaml /tmp/req/environment.yaml
+ARG CONDA_ENV_FILE=/tmp/env/environment.yaml
+COPY --link ../reqs/simple-environment.yaml ${CONDA_ENV_FILE}
 
 ARG INDEX_URL
 ARG EXTRA_INDEX_URL
@@ -82,7 +83,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
         echo "extra-index-url=${EXTRA_INDEX_URL}"; \
         echo "trusted-host=${TRUSTED_HOST}"; \
     } > ${PIP_CONFIG_FILE} && \
-    $conda env update --file /tmp/req/environment.yaml
+    $conda env update --file ${CONDA_ENV_FILE}
 
 # Cleaning must be in a separate `RUN` command to preserve the Docker cache.
 RUN $conda clean -fya
@@ -224,6 +225,8 @@ ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
 ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
 COPY --link --from=stash /opt/zsh/pure ${PURE_PATH}
 COPY --link --from=stash /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+
+ARG TMUX_HIST_LIMIT
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         # Change the `tmux` path color to cyan since
@@ -242,7 +245,9 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
-    echo "set -g default-command $(which zsh)" >> /etc/tmux.conf && \
+    {   echo "set -g default-command $(which zsh)"; \
+        echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
+    } >> /etc/tmux.conf && \
     # For some reason, `tmux` does not read `/etc/tmux.conf`.
     echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
     # Change `ZDOTDIR` directory permissions to allow configuration sharing.
