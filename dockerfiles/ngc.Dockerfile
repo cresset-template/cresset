@@ -48,7 +48,7 @@ ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL} && \
     /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
     printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc && \
-    python=$(python -V | cut -d ' ' -f2) && \
+    $conda install python=$(python -V | cut -d ' ' -f2) && \
     $conda clean -fya && rm -rf /tmp/conda/miniconda.sh && \
     find /opt/conda -type d -name '__pycache__' | xargs rm -rf
 
