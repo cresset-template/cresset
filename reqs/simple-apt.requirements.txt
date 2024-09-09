@@ -1,4 +1,5 @@
-# `openssl`, `sudo`, and `zsh` are required packages.
+# `ca-certificates`, `openssl`, `sudo`, and `zsh` are required packages.
+ca-certificates
 curl
 git
 openssl
