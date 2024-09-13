@@ -559,4 +559,4 @@ ENV PATH=/opt/conda/bin:${PATH}
 ARG PROJECT_ROOT=/opt/project
 ENV PYTHONPATH=${PROJECT_ROOT}${PYTHONPATH:+:${PYTHONPATH}}
 WORKDIR ${PROJECT_ROOT}
-CMD ["/bin/zsh"]
+CMD ["/usr/bin/zsh"]
