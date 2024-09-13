@@ -91,9 +91,6 @@ Different Docker Compose services are organized to serve different needs.
   their projects on the NGC images provided by NVIDIA. Note that the NGC images
   change between different releases and that configurations for one
   release may not work for another one.
-- `hub` is derived from the official PyTorch Docker Hub image and serves a
-  similar function as the `ngc` service described above. However,
-  the PyTorch Docker images have a more stable interface than the NGC images.
 - `simple` is derived from the Official Ubuntu Linux image by default as some
   corporations restrict the use of Docker images not officially verified by
   Docker. It installs all packages via `conda` by default and can optionally
@@ -169,15 +166,19 @@ can either be downloaded or installed via `apt`, `conda`, or `pip`.
 
 ```text
 # Generated automatically by `make env`.
+# When using the `root` user with `UID=0`/`USR=root`, set `ADD_USER=exclude`.
 GID=1000
 UID=1000
 GRP=GROUPNAME
 USR=USERNAME
-PROJECT=train-username             # `PROJECT` must be in lowercase.
+HOST_ROOT=.
 SERVICE=train
-COMMAND=/bin/zsh                   # Command to execute on starting the container.
-IMAGE_NAME=cresset:train-username  # `IMAGE_NAME` is also converted to lowercase.
+# Do not use the same `PROJECT` name for different projects on the same host!
+PROJECT=train-username             # `PROJECT` must be in lowercase.
 PROJECT_ROOT=/opt/project
+IMAGE_NAME=cresset:train-username  # `IMAGE_NAME` is also converted to lowercase.
+COMMAND=/usr/bin/zsh --login       # Command to execute on starting the container.
+TZ=Asia/Seoul                      # Set the container timezone.
 
 # [[Optional]]: Fill in these configurations manually if the defaults do not suffice.
 
@@ -199,7 +200,6 @@ CUDA_VERSION=11.8.0   # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8       # Only major version specifications are available.
 PYTHON_VERSION=3.10   # Specify the Python version.
 MKL_MODE=include      # Enable MKL for Intel CPUs.
-TZ=Asia/Seoul         # Set the container timezone.
 
 # Advanced Usage.
 TARGET_STAGE=train    # Target Dockerfile stage. The `*.whl` files are available in `train-builds`.
