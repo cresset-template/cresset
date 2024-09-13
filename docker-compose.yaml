@@ -125,23 +125,23 @@ services:
 #        USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-12.1.1}
-        CUDNN_VERSION: ${CUDNN_VERSION:-8}
+        CUDA_VERSION: ${CUDA_VERSION:-12.4.1}
+        CUDNN_VERSION: ${CUDNN_VERSION}  # Leave empty for CUDA 12.4+.
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         # Fails if `BUILD_MODE=include` but `CCC` is not set explicitly.
         TORCH_CUDA_ARCH_LIST: ${CCC} # Ignore the missing CCC warning otherwise.
         # Variables for building PyTorch. Must be valid git tags or commits.
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.4.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.19.0}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.4.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.19.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu124}
         # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
         # Also remember to change the index url to the nightly version.
         PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.4.0}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.19.0}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.4.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.19.1}
         # URLs for faster `apt` and `pip` installs.
         # Use URLs optimized for location and security requirements.
 #        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
@@ -167,7 +167,7 @@ services:
       dockerfile: dockerfiles/ngc.Dockerfile
       args:
         NGC_YEAR: ${NGC_YEAR:-24}
-        NGC_MONTH: ${NGC_MONTH:-07}
+        NGC_MONTH: ${NGC_MONTH:-08}
 
   simple: # Service installed purely from official/verified Docker images and `conda`.
     extends:
