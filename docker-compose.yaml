@@ -101,6 +101,13 @@ services:
         # Installing `mamba` via mini-forge is strongly recommended.
         CONDA_URL: ${CONDA_URL:-https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh}
         CONDA_MANAGER: ${CONDA_MANAGER:-mamba}
+        # URLs for faster `apt` and `pip` installs.
+        # Use URLs optimized for location and security requirements.
+        # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        # DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
+        INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
+        EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
+        TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
     deploy: # API dependent on compose version.
       resources:
         reservations:
@@ -142,13 +149,6 @@ services:
         PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-2.4.1}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.19.1}
-        # URLs for faster `apt` and `pip` installs.
-        # Use URLs optimized for location and security requirements.
-#        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
-#        DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
-        INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
-        EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
-        TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
 
   devel: # Skeleton service for development and debugging.
     extends: # This service may be useful for PyTorch CUDA/C++ contributors.

@@ -165,9 +165,12 @@ ARG PYTHONUNBUFFERED=1
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # `tzdata` requires noninteractive mode.
 ARG TZ
+ARG DEB_OLD
+ARG DEB_NEW
 ARG DEBIAN_FRONTEND=noninteractive
 RUN --mount=type=bind,from=stash,source=/tmp/apt,target=/tmp/apt \
     ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
     apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
