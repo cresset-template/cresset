@@ -52,7 +52,7 @@ If this is your first time using this project, follow these steps:
    [repo](https://github.com/docker/docker-install).
 
 3. Install the NVIDIA Container Toolkit as specified in this
-[link](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+   [link](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 4. Run `make install-compose` to install Docker Compose V2 for Linux hosts.
    Installation does _**not**_ require `root` permissions. Visit the

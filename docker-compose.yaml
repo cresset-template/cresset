@@ -45,9 +45,9 @@ services:
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
     ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
     # shm_size: 1GB  # Explicit shared memory limit. No security issues this way.
-#    hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
-#    extra_hosts: # Prevents "unknown host" issue when using `sudo`.
-#      - "${SERVICE}:127.0.0.1"
+    # hostname: ${SERVICE} # Makes `pure` terminals easier to tell apart.
+    # extra_hosts: # Prevents "unknown host" issue when using `sudo`.
+    #   - "${SERVICE}:127.0.0.1"
 
     # Common environment variables for the container runtime. No effect on build.
     environment: # Equivalent to `--env`
@@ -91,7 +91,7 @@ services:
         GRP: ${GRP:-user}
         USR: ${USR:-user}
         TZ: ${TZ:-UTC}
-        TMUX_HIST_LIMIT: 50000  # Size of `tmux` scrolling history.
+        TMUX_HIST_LIMIT: 50000 # Size of `tmux` scrolling history.
         # Change the `CONDA_URL` for different hardware architectures.
         # URLs from https://github.com/conda-forge/miniforge are recommended over
         # Miniconda URLs from https://docs.conda.io/en/latest/miniconda.html.
@@ -124,16 +124,16 @@ services:
       dockerfile: dockerfiles/train.Dockerfile
       args: # Equivalent to `--build-arg`.
         BUILD_MODE: ${BUILD_MODE:-exclude}
-#        BUILD_TEST: 0
-#        USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
-#        USE_QNNPACK: 0 # legacy libraries and most users do not need them.
-#        BUILD_CAFFE2: 0 # Most users do not need Caffe2.
-#        BUILD_CAFFE2_OPS: 0
-#        USE_PRECOMPILED_HEADERS: 1
+        # BUILD_TEST: 0
+        # USE_NNPACK: 0 # Disabling NNPack and QNNPack by default as they are
+        # USE_QNNPACK: 0 # legacy libraries and most users do not need them.
+        # BUILD_CAFFE2: 0 # Most users do not need Caffe2.
+        # BUILD_CAFFE2_OPS: 0
+        # USE_PRECOMPILED_HEADERS: 1
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
         CUDA_VERSION: ${CUDA_VERSION:-12.4.1}
-        CUDNN_VERSION: ${CUDNN_VERSION}  # Leave empty for CUDA 12.4+.
+        CUDNN_VERSION: ${CUDNN_VERSION} # Leave empty for CUDA 12.4+.
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
