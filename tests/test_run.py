@@ -183,5 +183,6 @@ def _get_cuda_info(device):  # Using as a fixture to get device info.
             ],
             capture_output=True,
             text=True,
+            check=False,
         ).stdout.strip()
         logger.info(f"NVIDIA Driver Version: {dv}")
