@@ -108,7 +108,8 @@ services:
         INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
         EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
         TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
-    deploy: # API dependent on compose version.
+    runtime: nvidia  # The official `deploy` option is not working for some reason.
+    deploy: # API dependent on compose version. Remove if this is causing problems.
       resources:
         reservations:
           devices:

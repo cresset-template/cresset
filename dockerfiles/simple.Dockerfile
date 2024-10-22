@@ -48,7 +48,7 @@ WORKDIR /
 FROM ${BASE_IMAGE} AS conda-lock-exclude
 # Use this stage for rough requirements specified during development.
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -105,7 +105,7 @@ RUN /bin/bash /tmp/conda/miniconda.sh -b -p /opt/_conda && \
 FROM ${BASE_IMAGE} AS conda-lock-include
 # Use this stage only if installing from `conda-lock`.
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -154,7 +154,7 @@ COPY --link --from=train-builds /opt/conda/libfakeintel.so /opt/conda/libfakeint
 ########################################################################
 FROM ${BASE_IMAGE} AS train-base
 
-LABEL maintainer=veritas9872@gmail.com
+LABEL maintainer="veritas9872@gmail.com"
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
