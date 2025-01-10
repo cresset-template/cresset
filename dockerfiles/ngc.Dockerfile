@@ -134,22 +134,22 @@ COPY --link --from=install-conda /opt/conda /opt/conda
 ########################################################################
 FROM train-adduser-${ADD_USER} AS train
 
-ENV KMP_BLOCKTIME=0
-# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-# Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
-# Using the older system MKL to prevent version clashes with NGC packages.
-ENV LD_PRELOAD=/usr/local/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
-
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
-# This part requires `gcc`, which may not be present in `runtime` imags.
-ENV MKL_DEBUG_CPU_TYPE=5
-RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /tmp/fakeintel.c && \
-    gcc -shared -fPIC -o /usr/local/bin/libfakeintel.so /tmp/fakeintel.c
-ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
-# Configure Jemalloc as the default memory allocator.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
-ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+#ENV KMP_BLOCKTIME=0
+## ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+## Use `/opt/conda/lib/libiomp5.so` for older NGC images using `conda`.
+## Using the older system MKL to prevent version clashes with NGC packages.
+#ENV LD_PRELOAD=/usr/local/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
+#
+## Enable Intel MKL optimizations on AMD CPUs.
+## https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+## This part requires `gcc`, which may not be present in `runtime` imags.
+#ENV MKL_DEBUG_CPU_TYPE=5
+#RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /tmp/fakeintel.c && \
+#    gcc -shared -fPIC -o /usr/local/bin/libfakeintel.so /tmp/fakeintel.c
+#ENV LD_PRELOAD=/usr/local/bin/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
+## Configure Jemalloc as the default memory allocator.
+#ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
+#ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 ENV ZDOTDIR=/root
 ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
