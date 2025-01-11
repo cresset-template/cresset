@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     $conda env update --file ${CONDA_ENV_FILE}
 
 # Cleaning must be in a separate `RUN` command to preserve the Docker cache.
-RUN $conda clean -fya
+#RUN $conda clean -fya  # Causing bugs in edge cases for unknown reasons.
 
 ########################################################################
 FROM stash AS lock-stash
