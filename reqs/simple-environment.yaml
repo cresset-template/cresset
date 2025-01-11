@@ -8,9 +8,9 @@ channels:
   - nodefaults # Do not use the default channel.
   - conda-forge # Always use conda-forge instead.
 dependencies: # Use conda packages if possible.
-  - python==3.12
-  - jemalloc
-  - mkl
+  - python==3.10
+  - jemalloc  # Used for CPU optimization in the Docker image.
+  - mkl  # Used for CPU optimization in the Docker image.
   - numpy
   - pytest
   - tmux==3.2a
