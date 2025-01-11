@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     $conda env update --file ${CONDA_ENV_FILE}
 
 # Cleaning must be in a separate `RUN` command to preserve the Docker cache.
-RUN $conda clean -fya
+#RUN $conda clean -fya  # Causing bugs in edge cases for unknown reasons.
 
 ########################################################################
 FROM stash AS lock-stash
@@ -208,19 +208,21 @@ FROM train-adduser-${ADD_USER} AS train
 # Setting this in the image for alternative container runtime configurations.
 ENV NVIDIA_VISIBLE_DEVICES=all
 
-# Use Intel OpenMP with optimizations. See the documentation for details.
-# https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
-ENV KMP_BLOCKTIME=0
-# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
-ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
-
-# Enable Intel MKL optimizations on AMD CPUs.
-# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
-ENV MKL_DEBUG_CPU_TYPE=5
-ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
-# Configure Jemalloc as the default memory allocator.
-ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
-ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+# The CPU optimizations are causing issues with some libraries, e.g., vLLM.
+# Make these configurable later on.
+## Use Intel OpenMP with optimizations. See the documentation for details.
+## https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
+#ENV KMP_BLOCKTIME=0
+## ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+#ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
+#
+## Enable Intel MKL optimizations on AMD CPUs.
+## https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+#ENV MKL_DEBUG_CPU_TYPE=5
+#ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
+## Configure Jemalloc as the default memory allocator.
+#ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
+#ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
 
 ENV ZDOTDIR=/root
 # Setting the prompt to `pure`.
